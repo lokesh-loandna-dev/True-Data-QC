@@ -1,0 +1,15 @@
+/home/truedatauser/truedataqc/backend/logs/backend.log
+
+{
+    su truedatauser truedatauser
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    dateformat -%Y%m%d
+    copytruncate
+}
+

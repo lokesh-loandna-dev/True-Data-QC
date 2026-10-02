@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0
+pandas>=2.0
+python-multipart>=0.0.9
+pyodbc>=5.0          # SQL Server driver (requires the "ODBC Driver 17/18 for SQL Server" installed on the host)

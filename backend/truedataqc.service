@@ -1,0 +1,15 @@
+[Unit]
+Description=Truedata FastAPI Backend
+After=network.target
+
+[Service]
+User=truedatauser
+Group=truedatauser
+WorkingDirectory=/home/truedatauser/truedataqc/backend
+EnvironmentFile=/home/truedatauser/truedataqc/backend/.env
+ExecStart=/home/truedatauser/truedataqc/venv/bin/python /home/truedatauser/truedataqc/backend/run_truedataqc_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

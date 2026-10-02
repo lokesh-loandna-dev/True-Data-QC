@@ -1,0 +1,43 @@
+.auth-background {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  /* Gradient background */
+  background: linear-gradient(135deg, #1f6f8b, #2ea3d6);
+}
+
+/* Common circle style */
+.auth-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Left big circle */
+.auth-circle-left {
+  width: 500px;
+  height: 500px;
+  top: -100px;
+  left: -100px;
+}
+
+/* Right medium circle */
+.auth-circle-right {
+  width: 300px;
+  height: 300px;
+  right: 80px;
+  top: 200px;
+}
+
+/* Bottom white curve */
+.auth-bottom-curve {
+  position: absolute;
+  bottom: -150px;
+  left: -10%;
+  width: 120%;
+  height: 400px;
+
+  background: #eaeaea;
+  border-top-left-radius: 50% 100%;
+  border-top-right-radius: 50% 100%;
+}
