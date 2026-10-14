@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.config import EMAIL_REGEX
 from app.database.connection import db_status
-from app.auth.schemas import UserRegisterRequest, UserLoginRequest
+from app.auth.schemas import UserRegisterRequest, UserLoginRequest, ForgotPasswordRequest
 from app.auth.security import hash_password, verify_password, generate_token, get_current_user_id
-from app.database.operations import get_user_by_email, get_user_by_username, get_user_by_id, create_user, get_audit_logs
+from app.database.operations import get_user_by_email, get_user_by_username, get_user_by_id, create_user, update_user_password, get_audit_logs
 from app.logger import log_event
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
@@ -102,6 +102,59 @@ def login_user(req: UserLoginRequest):
             "role": user["role"]
         }
     }
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    email = req.email.strip()
+    password = req.password
+    confirm_password = req.confirm_password
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+        
+    if not EMAIL_REGEX.match(email):
+        issue = f"Password reset failed: Invalid email format '{email}'"
+        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=400, detail="Invalid email address")
+        
+    if not password:
+        raise HTTPException(status_code=400, detail="Updated password is required")
+        
+    if len(password) < 6:
+        issue = "Password reset failed: Password must be at least 6 characters long"
+        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+    if password != confirm_password:
+        issue = "Password reset failed: Passwords do not match"
+        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    # Check database status
+    if not db_status["connected"]:
+        issue = f"Password reset failed: Database not connected. Error details: {db_status.get('error')}"
+        log_event("ERROR", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=503, detail="Database not connected")
+
+    user = get_user_by_email(email)
+    if not user:
+        issue = f"Password reset failed: No account registered with email '{email}'"
+        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=404, detail="No account registered with this email address")
+
+    try:
+        pwd_hash = hash_password(password)
+        update_user_password(email, pwd_hash)
+        username = user.get("username", "N/A")
+        log_event("INFO", "FORGOT_PASSWORD_SUCCESS", f"Password updated successfully for email '{email}'", username=username, email=email)
+        return {
+            "status": "success",
+            "message": "Password updated successfully"
+        }
+    except Exception as e:
+        issue = f"Password reset failed: Error updating password in database - {str(e)}"
+        log_event("ERROR", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        raise HTTPException(status_code=500, detail=f"Failed to update password: {str(e)}")
 
 @router.get("/profile")
 def get_profile(user_id: int = Depends(get_current_user_id)):

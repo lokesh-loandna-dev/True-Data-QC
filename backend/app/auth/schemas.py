@@ -11,3 +11,9 @@ class UserLoginRequest(BaseModel):
 
 class UserRoleUpdateRequest(BaseModel):
     role: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+    password: str
+    confirm_password: str
+

@@ -62,6 +62,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email, password, confirmPassword) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.forgotPassword(email, password, confirmPassword);
+      return response;
+    } catch (err) {
+      const errMsg = err.message || 'Password update failed';
+      setError(errMsg);
+      throw new Error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     api.clearToken();
     setUser(null);
@@ -74,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     register,
+    forgotPassword,
     logout,
     isAuthenticated: !!user
   };

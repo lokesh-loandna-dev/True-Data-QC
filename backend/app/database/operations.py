@@ -65,6 +65,18 @@ def update_user_role(user_id: int, role: str):
         connection.commit()
         return True
 
+def update_user_password(email: str, password_hash: str):
+    if not engine:
+        raise Exception("Database engine not initialized")
+    with engine.connect() as connection:
+        connection.execute(
+            text("UPDATE users SET password_hash = :password_hash WHERE LOWER(email) = :email"),
+            {"password_hash": password_hash, "email": email.lower()}
+        )
+        connection.commit()
+        return True
+
+
 def create_audit_log(log_level: str, action: str, username: str, email: str, issue: str):
     if not engine:
         return False

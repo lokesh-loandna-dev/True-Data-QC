@@ -6,7 +6,7 @@ from app.auth.security import (
     verify_token,
     get_current_user_id,
 )
-from app.auth.schemas import UserRegisterRequest, UserLoginRequest, UserRoleUpdateRequest
+from app.auth.schemas import UserRegisterRequest, UserLoginRequest, UserRoleUpdateRequest, ForgotPasswordRequest
 
 __all__ = [
     "router",
@@ -18,4 +18,5 @@ __all__ = [
     "UserRegisterRequest",
     "UserLoginRequest",
     "UserRoleUpdateRequest",
+    "ForgotPasswordRequest",
 ]

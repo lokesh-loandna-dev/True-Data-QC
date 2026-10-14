@@ -119,9 +119,13 @@ const LoginPage = () => {
         />
 
         <div className="flex justify-end mb-5 -mt-2">
-          <span className="text-sm text-blue-500 hover:underline cursor-pointer font-medium">
+          <Link
+            to="/forgot-password"
+            state={{ email }}
+            className="text-sm text-blue-500 hover:underline font-medium"
+          >
             Forgot password?
-          </span>
+          </Link>
         </div>
 
         <div className="mt-4">

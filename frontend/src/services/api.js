@@ -102,5 +102,8 @@ export const api = new ApiClient();
 export const authApi = {
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   register: (username, email, password) => api.post('/api/auth/register', { username, email, password }),
+  forgotPassword: (email, password, confirm_password) =>
+    api.post('/api/auth/forgot-password', { email, password, confirm_password }),
   getProfile: () => api.get('/api/auth/profile'),
 };
+
