@@ -203,7 +203,9 @@ export const exportProhanceToExcel = ({
   tabSheetMap.forEach(({ key, title }) => {
     const rawRows = Array.isArray(tabs[key]) ? tabs[key] : [];
     const rows = rawRows.map(r => {
-      const { _id, _sno, ...cleanRow } = r;
+      const cleanRow = { ...r };
+      delete cleanRow._id;
+      delete cleanRow._sno;
       return cleanRow;
     });
 
@@ -218,6 +220,56 @@ export const exportProhanceToExcel = ({
 
   const cleanName = filename ? String(filename).replace(/\.[^/.]+$/, '') : 'Prohance_Report';
   const finalFilename = `${cleanName}${reportSuffix}.xlsx`;
+
+  XLSX.writeFile(workbook, finalFilename);
+};
+
+/**
+ * Utility to export User Management records to an Excel file (.xlsx)
+ *
+ * @param {Object} params
+ * @param {Array} params.users - List of user objects
+ * @param {string} [params.filename='User_Management'] - Base name for the generated file
+ */
+export const exportUsersToExcel = ({
+  users = [],
+  filename = 'User_Management'
+}) => {
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  const rows = safeUsers.map((u, idx) => {
+    const row = {
+      'S.No': idx + 1,
+      'Username': u.username ?? '',
+      'Email': u.email ?? '',
+      'Role': u.role ? (u.role.charAt(0).toUpperCase() + u.role.slice(1)) : ''
+    };
+    if (u.created_at) {
+      row['Created At'] = u.created_at;
+    }
+    return row;
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(
+    rows.length > 0 ? rows : [{ 'S.No': '', 'Username': '', 'Email': '', 'Role': 'No users found' }]
+  );
+
+  if (rows.length > 0) {
+    const cols = Object.keys(rows[0]).map(key => {
+      const maxLen = Math.max(
+        key.length,
+        ...rows.map(row => String(row[key] ?? '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen + 4, 12), 40) };
+    });
+    ws['!cols'] = cols;
+  }
+
+  XLSX.utils.book_append_sheet(workbook, ws, 'Users');
+
+  const cleanName = filename ? String(filename).replace(/\.[^/.]+$/, '') : 'User_Management';
+  const finalFilename = `${cleanName}.xlsx`;
 
   XLSX.writeFile(workbook, finalFilename);
 };

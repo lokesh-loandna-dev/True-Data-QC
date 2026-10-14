@@ -599,7 +599,11 @@ export const DataTable = ({
           </div>
 
           {customHeader && (
-            <div>{customHeader}</div>
+            <div>
+              {typeof customHeader === 'function'
+                ? customHeader({ data, filteredData, sortedData })
+                : customHeader}
+            </div>
           )}
         </div>
       )}
