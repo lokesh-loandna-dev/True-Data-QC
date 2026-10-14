@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DataTable } from '../../../components/DataTable';
+import Tooltip from '../../../components/Tooltip';
 import { useAuth } from '../../../hooks/useAuth';
 import { notify } from '../../../utils/toast';
 import { prohanceService } from '../../../services/prohanceService';
@@ -389,27 +390,31 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
         sortable: false,
         render: (row) => (
           <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => handleViewClick(row.id)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-lg text-xs shadow-xs transition-colors cursor-pointer"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <span>View</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDeleteClick(row)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-xs transition-colors shadow-xs cursor-pointer"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              <span>Delete</span>
-            </button>
+            <Tooltip text="View Report" position="top">
+              <button
+                type="button"
+                onClick={() => handleViewClick(row.id)}
+                className="inline-flex items-center justify-center p-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-lg text-xs shadow-xs transition-colors cursor-pointer"
+                aria-label="View Report"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="Delete Report" position="top">
+              <button
+                type="button"
+                onClick={() => handleDeleteClick(row)}
+                className="inline-flex items-center justify-center p-2 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-xs transition-colors shadow-xs cursor-pointer"
+                aria-label="Delete Report"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </Tooltip>
           </div>
         ),
       },
@@ -498,29 +503,32 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-sm font-medium rounded-lg shadow-sm transition-colors cursor-pointer"
-            >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Upload</span>
-            </button>
-
-            {reportsList.length > 0 && (
+            <Tooltip text="Upload Prohance Report" position="bottom">
               <button
                 type="button"
-                onClick={() => setIsDeleteAllModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
-                title="Delete all uploaded reports"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-sm font-medium rounded-xl shadow-sm transition-colors cursor-pointer"
+                aria-label="Upload Prohance Report"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                <span>Delete All</span>
               </button>
+            </Tooltip>
+
+            {reportsList.length > 0 && (
+              <Tooltip text="Delete All Reports" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteAllModalOpen(true)}
+                  className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-sm font-medium rounded-xl transition-colors shadow-sm cursor-pointer"
+                  aria-label="Delete All Reports"
+                >
+                  <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { TableSkeleton } from './SkeletonLoader';
+import Tooltip from './Tooltip';
 
 // Small modal popover for column filtering when clicking the filter icon
 // Small modal popover for column filtering with multi-select checkboxes
@@ -773,24 +774,36 @@ export const DataTable = ({
               <span className="text-sm text-slate-600">
                 Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries} entries
               </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors cursor-pointer"
-                >
-                  Prev
-                </button>
-                <div className="flex items-center px-3.5 py-1.5 rounded-lg bg-[#24A1DD] text-white text-sm font-medium">
+              <div className="flex items-center gap-1.5">
+                <Tooltip text="Previous page" position="top">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    aria-label="Previous page"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </Tooltip>
+                <div className="flex items-center justify-center min-w-[32px] h-8 px-2 rounded-lg bg-[#24A1DD] text-white text-xs sm:text-sm font-semibold shadow-xs">
                   {currentPage}
                 </div>
-                <button
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage >= totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors cursor-pointer"
-                >
-                  Next
-                </button>
+                <Tooltip text="Next page" position="top">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    aria-label="Next page"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>

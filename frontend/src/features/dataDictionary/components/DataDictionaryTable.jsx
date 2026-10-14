@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { dataDictionaryService } from '../../../services/dataDictionaryService';
 import { DataTable } from '../../../components/DataTable';
+import Tooltip from '../../../components/Tooltip';
 import { notify } from '../../../utils/toast';
 
 const DataDictionaryTable = () => {
@@ -331,43 +332,45 @@ const DataDictionaryTable = () => {
   }, [allAvailableColumns, columnSearch]);
 
   const customHeader = (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={handleOpenManageColumns}
-        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-medium rounded-xl transition-all shadow-xs cursor-pointer"
-      >
-        <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-        </svg>
-        Manage Columns
-        <span className="ml-1 px-2 py-0.5 text-xs font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full inline-flex items-center justify-center min-w-[38px] h-5">
-          {columnsLoading ? (
-            <svg
-              className="animate-spin h-3 w-3 text-[#24A1DD]"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          ) : (
-            `${selectedColumnKeys.length}/${allAvailableColumns.length}`
-          )}
-        </span>
-      </button>
+    <div className="flex items-center gap-2 sm:gap-3">
+      <Tooltip text="Manage Columns" position="bottom">
+        <button
+          type="button"
+          onClick={handleOpenManageColumns}
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-medium rounded-xl transition-all shadow-xs cursor-pointer"
+          aria-label="Manage Columns"
+        >
+          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+          </svg>
+          <span className="px-1.5 py-0.5 text-xs font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full inline-flex items-center justify-center min-w-[32px] h-5">
+            {columnsLoading ? (
+              <svg
+                className="animate-spin h-3 w-3 text-[#24A1DD]"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            ) : (
+              `${selectedColumnKeys.length}/${allAvailableColumns.length}`
+            )}
+          </span>
+        </button>
+      </Tooltip>
       {isAdmin && (
         <>
           <input
@@ -377,33 +380,39 @@ const DataDictionaryTable = () => {
             ref={fileInputRef}
             onChange={handleFileChange}
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || deleting}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-[#24A1DD]/20 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {uploading ? (
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <Tooltip text="Upload Excel" position="bottom">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || deleting}
+              className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-[#24A1DD]/20 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+              aria-label="Upload Excel"
+            >
+              {uploading ? (
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip text="Delete All" position="bottom">
+            <button
+              type="button"
+              onClick={() => setShowConfirmModal(true)}
+              disabled={loading || uploading || deleting || data.length === 0}
+              className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              aria-label="Delete All"
+            >
+              <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            )}
-            {uploading ? 'Uploading...' : 'Upload Excel'}
-          </button>
-          <button
-            onClick={() => setShowConfirmModal(true)}
-            disabled={loading || uploading || deleting || data.length === 0}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Delete All
-          </button>
+            </button>
+          </Tooltip>
         </>
       )}
     </div>
