@@ -66,14 +66,14 @@ export const UserManagementTable = () => {
             type="button"
             onClick={() => handleExport(exportData)}
             disabled={loading || count === 0}
-            className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-sm hover:shadow cursor-pointer select-none"
+            className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
             aria-label="Export to Excel"
           >
-            <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             {isFiltered && (
-              <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-700/80 rounded-md text-[11px] font-bold">
+              <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-bold">
                 {count}
               </span>
             )}
@@ -84,10 +84,10 @@ export const UserManagementTable = () => {
             type="button"
             onClick={fetchUsers}
             disabled={loading}
-            className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors shadow-2xs cursor-pointer select-none"
+            className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 text-slate-600 hover:text-slate-900 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
             aria-label="Refresh Users"
           >
-            <svg className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-current ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
           </button>
@@ -165,10 +165,10 @@ export const UserManagementTable = () => {
                 <button
                   type="button"
                   onClick={() => handleSave(u.id)}
-                  className="text-white bg-[#24A1DD] hover:bg-[#1e88bb] p-1.5 rounded-lg text-xs font-medium transition-colors inline-flex items-center justify-center cursor-pointer"
+                  className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                   aria-label="Save Role"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </button>
@@ -177,10 +177,10 @@ export const UserManagementTable = () => {
                 <button
                   type="button"
                   onClick={() => setEditingId(null)}
-                  className="text-slate-600 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg text-xs font-medium transition-colors inline-flex items-center justify-center cursor-pointer"
+                  className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                   aria-label="Cancel"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -193,10 +193,10 @@ export const UserManagementTable = () => {
             <button
               type="button"
               onClick={() => handleEditClick(u)}
-              className="text-[#24A1DD] hover:text-[#1e88bb] p-1.5 hover:bg-[#24A1DD]/10 rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer"
+              className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
               aria-label="Edit Role"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>

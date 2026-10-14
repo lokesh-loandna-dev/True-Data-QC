@@ -389,12 +389,12 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
         align: 'right',
         sortable: false,
         render: (row) => (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-1.5">
             <Tooltip text="View Report" position="top">
               <button
                 type="button"
                 onClick={() => handleViewClick(row.id)}
-                className="inline-flex items-center justify-center p-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-lg text-xs shadow-xs transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="View Report"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -407,7 +407,7 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
               <button
                 type="button"
                 onClick={() => handleDeleteClick(row)}
-                className="inline-flex items-center justify-center p-2 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-xs transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Delete Report"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -507,10 +507,10 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-sm font-medium rounded-xl shadow-sm transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Upload Prohance Report"
               >
-                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </button>
@@ -521,7 +521,7 @@ export const ProhanceDashboard = ({ registerFileInputRef }) => {
                 <button
                   type="button"
                   onClick={() => setIsDeleteAllModalOpen(true)}
-                  className="inline-flex items-center justify-center p-2 sm:p-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-sm font-medium rounded-xl transition-colors shadow-sm cursor-pointer"
+                  className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                   aria-label="Delete All Reports"
                 >
                   <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
