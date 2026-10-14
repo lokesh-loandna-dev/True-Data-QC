@@ -274,5 +274,76 @@ export const exportUsersToExcel = ({
   XLSX.writeFile(workbook, finalFilename);
 };
 
+/**
+ * Utility to export Dashboard Loan Packages records to an Excel file (.xlsx)
+ *
+ * @param {Object} params
+ * @param {Array} params.packages - List of package objects
+ * @param {string} [params.filename='Loan_Packages'] - Base name for the generated file
+ */
+export const exportPackagesToExcel = ({
+  packages = [],
+  filename = 'Loan_Packages'
+}) => {
+  const safePackages = Array.isArray(packages) ? packages : [];
+
+  const rows = safePackages.map((pkg, idx) => {
+    const row = {
+      'S.No': idx + 1,
+      'File Name': pkg.filename ?? '',
+      'Loan ID': pkg.loan_id ?? '',
+    };
+    if (pkg.uploaded_by !== undefined) {
+      row['Uploaded By'] = pkg.uploaded_by || 'System';
+    }
+    row['Date Uploaded'] = pkg.uploaded_at
+      ? new Date(pkg.uploaded_at).toLocaleString()
+      : '';
+    row['Total Fields'] = pkg.total_fields ?? 0;
+    row['Final Valid'] = pkg.final_valid ?? 0;
+    row['Final Invalid'] = pkg.final_invalid ?? 0;
+    row['Final Blank'] = pkg.final_blank ?? 0;
+
+    return row;
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(
+    rows.length > 0
+      ? rows
+      : [{
+          'S.No': '',
+          'File Name': 'No loan packages found',
+          'Loan ID': '',
+          'Uploaded By': '',
+          'Date Uploaded': '',
+          'Total Fields': '',
+          'Final Valid': '',
+          'Final Invalid': '',
+          'Final Blank': ''
+        }]
+  );
+
+  if (rows.length > 0) {
+    const cols = Object.keys(rows[0]).map(key => {
+      const maxLen = Math.max(
+        key.length,
+        ...rows.map(row => String(row[key] ?? '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen + 4, 12), 45) };
+    });
+    ws['!cols'] = cols;
+  }
+
+  XLSX.utils.book_append_sheet(workbook, ws, 'Loan Packages');
+
+  const cleanName = filename ? String(filename).replace(/\.[^/.]+$/, '') : 'Loan_Packages';
+  const finalFilename = `${cleanName}.xlsx`;
+
+  XLSX.writeFile(workbook, finalFilename);
+};
+
+export const exportDashboardPackagesToExcel = exportPackagesToExcel;
+
 export default exportToExcel;
 
