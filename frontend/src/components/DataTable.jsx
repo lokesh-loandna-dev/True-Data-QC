@@ -287,6 +287,7 @@ export const DataTable = ({
   onSortChange,
   onFilterChange,
   serverFilterOptions = {},
+  onClearFilters = null,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [columnFilters, setColumnFilters] = useState(initialColumnFilters);
@@ -476,6 +477,9 @@ export const DataTable = ({
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setColumnFilters({});
+    if (onClearFilters) {
+      onClearFilters();
+    }
     if (serverSide) {
       if (onSearchChange) onSearchChange('');
       if (onFilterChange) onFilterChange({});

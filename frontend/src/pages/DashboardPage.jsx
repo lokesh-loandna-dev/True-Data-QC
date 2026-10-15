@@ -23,6 +23,11 @@ const DashboardPage = () => {
   const [detailsError, setDetailsError] = useState('');
   const [rowExportLoadingId, setRowExportLoadingId] = useState(null);
 
+  // Date-based filter state
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('');
+
   const isAdmin = user?.role === 'admin';
 
   const fetchPackages = useCallback(async () => {
@@ -154,25 +159,123 @@ const DashboardPage = () => {
     }
   }, []);
 
+  // Filter packages based on fromDate and toDate
+  const dateFilteredPackages = useMemo(() => {
+    if (!fromDate && !toDate) return packages;
+
+    let startTimestamp = null;
+    if (fromDate) {
+      const [y, m, d] = fromDate.split('-').map(Number);
+      startTimestamp = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+    }
+
+    let endTimestamp = null;
+    if (toDate) {
+      const [y, m, d] = toDate.split('-').map(Number);
+      endTimestamp = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+    }
+
+    return packages.filter((pkg) => {
+      if (!pkg.uploaded_at) return false;
+      const pkgTime = new Date(pkg.uploaded_at).getTime();
+      if (isNaN(pkgTime)) return false;
+
+      if (startTimestamp !== null && pkgTime < startTimestamp) return false;
+      if (endTimestamp !== null && pkgTime > endTimestamp) return false;
+      return true;
+    });
+  }, [packages, fromDate, toDate]);
+
+  const handlePresetSelect = useCallback((preset) => {
+    setSelectedPreset(preset);
+    if (!preset || preset === 'clear') {
+      setFromDate('');
+      setToDate('');
+      return;
+    }
+
+    const now = new Date();
+    const formatYMD = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayStr = formatYMD(now);
+
+    if (preset === 'today') {
+      setFromDate(todayStr);
+      setToDate(todayStr);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(now);
+      yest.setDate(yest.getDate() - 1);
+      const yestStr = formatYMD(yest);
+      setFromDate(yestStr);
+      setToDate(yestStr);
+    } else if (preset === 'last7') {
+      const past = new Date(now);
+      past.setDate(past.getDate() - 6);
+      setFromDate(formatYMD(past));
+      setToDate(todayStr);
+    } else if (preset === 'last30') {
+      const past = new Date(now);
+      past.setDate(past.getDate() - 29);
+      setFromDate(formatYMD(past));
+      setToDate(todayStr);
+    } else if (preset === 'thisMonth') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      setFromDate(formatYMD(startOfMonth));
+      setToDate(todayStr);
+    }
+  }, []);
+
+  const handleFromDateChange = useCallback((e) => {
+    const val = e.target.value;
+    setFromDate(val);
+    setSelectedPreset('');
+    if (toDate && val && val > toDate) {
+      setToDate(val);
+    }
+  }, [toDate]);
+
+  const handleToDateChange = useCallback((e) => {
+    const val = e.target.value;
+    setToDate(val);
+    setSelectedPreset('');
+    if (fromDate && val && val < fromDate) {
+      setFromDate(val);
+    }
+  }, [fromDate]);
+
+  const handleClearDateFilter = useCallback(() => {
+    setFromDate('');
+    setToDate('');
+    setSelectedPreset('');
+  }, []);
+
   // Export full or filtered dashboard packages list to Excel
   const handleExportPackages = useCallback((dataToExport) => {
     try {
-      const records = dataToExport && dataToExport.length > 0 ? dataToExport : packages;
+      const records = dataToExport !== undefined ? dataToExport : (fromDate || toDate ? dateFilteredPackages : packages);
       if (!records || records.length === 0) {
-        notify.warning('No package data to export');
+        notify.warning('No package data to export for the selected filter');
         return;
       }
       const dateStr = new Date().toISOString().split('T')[0];
+      const filenameSuffix = (fromDate || toDate)
+        ? `_${fromDate || 'start'}_to_${toDate || 'end'}`
+        : '';
       exportPackagesToExcel({
         packages: records,
-        filename: `Loan_Packages_${dateStr}`
+        filename: `Loan_Packages_${dateStr}${filenameSuffix}`
       });
       notify.success(`Exported ${records.length} package${records.length === 1 ? '' : 's'} to Excel successfully!`);
     } catch (err) {
       console.error('Failed to export loan packages to Excel:', err);
       notify.error('Failed to export packages to Excel');
     }
-  }, [packages]);
+  }, [packages, dateFilteredPackages, fromDate, toDate]);
 
   // Main Dashboard Saved Packages Table Columns
   const packageColumns = useMemo(() => {
@@ -345,12 +448,77 @@ const DashboardPage = () => {
   }, [isAdmin, rowExportLoadingId, handleViewDetails, handleExportRowPackage, handleDeletePackage]);
 
   const packageHeaderActions = useCallback(({ filteredData }) => {
-    const exportData = filteredData !== undefined ? filteredData : packages;
-    const isFiltered = filteredData && filteredData.length !== packages.length;
+    const exportData = filteredData !== undefined ? filteredData : dateFilteredPackages;
+    const isFiltered = Boolean(fromDate || toDate) || (exportData && exportData.length !== packages.length);
     const count = exportData?.length || 0;
 
     return (
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {/* Date Filter Group */}
+        <div className={`flex items-center gap-1.5 bg-white border ${
+          fromDate || toDate
+            ? 'border-[#24A1DD] ring-2 ring-[#24A1DD]/10'
+            : 'border-slate-200 hover:border-slate-300'
+        } rounded-xl px-2.5 py-1.5 shadow-2xs transition-all`}>
+          <svg className={`w-3.5 h-3.5 flex-shrink-0 ${fromDate || toDate ? 'text-[#24A1DD]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={handleFromDateChange}
+              max={toDate || undefined}
+              className="text-xs text-slate-700 bg-transparent border-0 outline-none focus:ring-0 cursor-pointer p-0"
+              aria-label="From Date"
+            />
+          </div>
+          <span className="text-slate-300 text-xs font-semibold">→</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={handleToDateChange}
+              min={fromDate || undefined}
+              className="text-xs text-slate-700 bg-transparent border-0 outline-none focus:ring-0 cursor-pointer p-0"
+              aria-label="To Date"
+            />
+          </div>
+          {(fromDate || toDate) && (
+            <Tooltip text="Clear date filter" position="bottom">
+              <button
+                type="button"
+                onClick={handleClearDateFilter}
+                className="ml-0.5 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                aria-label="Clear date filter"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </Tooltip>
+          )}
+        </div>
+
+        {/* Quick Presets Dropdown */}
+        <select
+          value={selectedPreset}
+          onChange={(e) => handlePresetSelect(e.target.value)}
+          className="text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-2.5 py-1.5 sm:py-2 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] cursor-pointer transition-all"
+          aria-label="Date range quick presets"
+        >
+          <option value="">Presets</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="last7">Last 7 Days</option>
+          <option value="last30">Last 30 Days</option>
+          <option value="thisMonth">This Month</option>
+          {(fromDate || toDate) && <option value="clear">Clear Filter</option>}
+        </select>
+
+        {/* Export Button */}
         <Tooltip text={isFiltered ? `Export ${count} filtered package(s) to Excel` : 'Export packages to Excel'} position="bottom">
           <button
             type="button"
@@ -400,7 +568,22 @@ const DashboardPage = () => {
         </Tooltip>
       </div>
     );
-  }, [packages, isAdmin, loading, handleExportPackages, handleDeleteAll, fetchPackages]);
+  }, [
+    dateFilteredPackages,
+    fromDate,
+    toDate,
+    selectedPreset,
+    packages,
+    isAdmin,
+    loading,
+    handleFromDateChange,
+    handleToDateChange,
+    handleClearDateFilter,
+    handlePresetSelect,
+    handleExportPackages,
+    handleDeleteAll,
+    fetchPackages
+  ]);
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 text-slate-900 overflow-hidden pt-[60px]">
@@ -409,12 +592,20 @@ const DashboardPage = () => {
       <main className="flex-1 flex flex-col min-h-0 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         {/* Dashboard Main Area / Saved Packages DataTable */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="mb-4 flex-shrink-0">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+          <div className="mb-4 flex-shrink-0 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+              {(fromDate || toDate) && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#24A1DD]/10 text-[#24A1DD] border border-[#24A1DD]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD]"></span>
+                  Date Filter Active
+                </span>
+              )}
+            </div>
           </div>
 
           <DataTable
-            data={packages}
+            data={dateFilteredPackages}
             columns={packageColumns}
             loading={loading}
             error={error}
@@ -422,7 +613,25 @@ const DashboardPage = () => {
             pagination={true}
             itemsPerPageOptions={[5, 10, 25, 50]}
             defaultItemsPerPage={10}
-            emptyMessage="No Results Found"
+            emptyMessage={
+              (fromDate || toDate) ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-4">
+                  <span className="text-slate-600 font-medium">
+                    No packages found for the selected date range ({fromDate || 'Start'} to {toDate || 'End'}).
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearDateFilter}
+                    className="px-3 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Clear Date Filter
+                  </button>
+                </div>
+              ) : (
+                'No Results Found'
+              )
+            }
+            onClearFilters={handleClearDateFilter}
             customHeader={packageHeaderActions}
             className="flex flex-col min-h-0"
           />
