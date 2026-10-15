@@ -453,60 +453,44 @@ const DashboardPage = () => {
     const count = exportData?.length || 0;
 
     return (
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {/* Date Filter Group */}
-        <div className={`flex items-center gap-1.5 bg-white border ${
-          fromDate || toDate
-            ? 'border-[#24A1DD] ring-2 ring-[#24A1DD]/10'
-            : 'border-slate-200 hover:border-slate-300'
-        } rounded-xl px-2.5 py-1.5 shadow-2xs transition-all`}>
-          <svg className={`w-3.5 h-3.5 flex-shrink-0 ${fromDate || toDate ? 'text-[#24A1DD]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">From</span>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={handleFromDateChange}
-              max={toDate || undefined}
-              className="text-xs text-slate-700 bg-transparent border-0 outline-none focus:ring-0 cursor-pointer p-0"
-              aria-label="From Date"
-            />
-          </div>
-          <span className="text-slate-300 text-xs font-semibold">→</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">To</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={handleToDateChange}
-              min={fromDate || undefined}
-              className="text-xs text-slate-700 bg-transparent border-0 outline-none focus:ring-0 cursor-pointer p-0"
-              aria-label="To Date"
-            />
-          </div>
-          {(fromDate || toDate) && (
-            <Tooltip text="Clear date filter" position="bottom">
-              <button
-                type="button"
-                onClick={handleClearDateFilter}
-                className="ml-0.5 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                aria-label="Clear date filter"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </Tooltip>
-          )}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        {/* From Date Field */}
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="dashboard-from-date" className="text-xs font-medium text-slate-600 select-none">
+            From:
+          </label>
+          <input
+            id="dashboard-from-date"
+            type="date"
+            value={fromDate}
+            onChange={handleFromDateChange}
+            max={toDate || undefined}
+            className="h-[38px] px-2.5 text-xs font-creato text-slate-700 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
+            title="From Date"
+          />
+        </div>
+
+        {/* To Date Field */}
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="dashboard-to-date" className="text-xs font-medium text-slate-600 select-none">
+            To:
+          </label>
+          <input
+            id="dashboard-to-date"
+            type="date"
+            value={toDate}
+            onChange={handleToDateChange}
+            min={fromDate || undefined}
+            className="h-[38px] px-2.5 text-xs font-creato text-slate-700 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
+            title="To Date"
+          />
         </div>
 
         {/* Quick Presets Dropdown */}
         <select
           value={selectedPreset}
           onChange={(e) => handlePresetSelect(e.target.value)}
-          className="text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-2.5 py-1.5 sm:py-2 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] cursor-pointer transition-all"
+          className="h-[38px] px-2.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
           aria-label="Date range quick presets"
         >
           <option value="">Presets</option>
@@ -515,8 +499,27 @@ const DashboardPage = () => {
           <option value="last7">Last 7 Days</option>
           <option value="last30">Last 30 Days</option>
           <option value="thisMonth">This Month</option>
-          {(fromDate || toDate) && <option value="clear">Clear Filter</option>}
         </select>
+
+        {/* Clear Filter Button */}
+        {(fromDate || toDate) && (
+          <Tooltip text="Clear date filter" position="bottom">
+            <button
+              type="button"
+              onClick={handleClearDateFilter}
+              className="h-[38px] px-2.5 inline-flex items-center gap-1 border border-rose-200 bg-rose-50/60 hover:bg-rose-50 text-rose-600 hover:text-rose-700 font-semibold rounded-xl text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              aria-label="Clear date filter"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Clear</span>
+            </button>
+          </Tooltip>
+        )}
+
+        {/* Divider */}
+        <div className="h-5 w-px bg-slate-200 hidden sm:block"></div>
 
         {/* Export Button */}
         <Tooltip text={isFiltered ? `Export ${count} filtered package(s) to Excel` : 'Export packages to Excel'} position="bottom">

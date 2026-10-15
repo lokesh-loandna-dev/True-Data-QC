@@ -48,6 +48,34 @@
   font-family: "Creato Display", sans-serif !important;
 }
 
+input,
+button,
+select,
+textarea {
+  font-family: "Creato Display", sans-serif !important;
+}
+
+/* Ensure date input values and placeholder fields (mm/dd/yyyy) use application font */
+input[type="date"],
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  font-family: "Creato Display", sans-serif !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .custom-font-jura {
   font-family: "Jura", sans-serif !important;
   font-weight: 700;
