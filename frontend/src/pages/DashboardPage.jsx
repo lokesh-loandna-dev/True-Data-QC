@@ -187,12 +187,13 @@ const DashboardPage = () => {
   }, [packages, fromDate, toDate]);
 
   const handlePresetSelect = useCallback((preset) => {
-    setSelectedPreset(preset);
-    if (!preset || preset === 'clear') {
+    if (!preset || preset === 'clear' || preset === 'all') {
+      setSelectedPreset('');
       setFromDate('');
       setToDate('');
       return;
     }
+    setSelectedPreset(preset);
 
     const now = new Date();
     const formatYMD = (d) => {
@@ -233,7 +234,11 @@ const DashboardPage = () => {
   const handleFromDateChange = useCallback((e) => {
     const val = e.target.value;
     setFromDate(val);
-    setSelectedPreset('');
+    if (!val && !toDate) {
+      setSelectedPreset('');
+    } else {
+      setSelectedPreset('custom');
+    }
     if (toDate && val && val > toDate) {
       setToDate(val);
     }
@@ -242,7 +247,11 @@ const DashboardPage = () => {
   const handleToDateChange = useCallback((e) => {
     const val = e.target.value;
     setToDate(val);
-    setSelectedPreset('');
+    if (!val && !fromDate) {
+      setSelectedPreset('');
+    } else {
+      setSelectedPreset('custom');
+    }
     if (fromDate && val && val < fromDate) {
       setFromDate(val);
     }
@@ -493,7 +502,8 @@ const DashboardPage = () => {
           className="h-[38px] px-2.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
           aria-label="Date range quick presets"
         >
-          <option value="">Presets</option>
+          <option value="">All</option>
+          {selectedPreset === 'custom' && <option value="custom" disabled hidden>Custom</option>}
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
           <option value="last7">Last 7 Days</option>
