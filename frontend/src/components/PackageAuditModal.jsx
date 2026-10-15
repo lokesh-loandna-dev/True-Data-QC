@@ -438,9 +438,10 @@ export const PackageAuditModal = ({
                 r.action === 'Incorrect Status' ? 'text-rose-700' :
                   r.action === 'Not Applicable' ? 'text-slate-600' :
                     r.action === 'Need Review' ? 'text-amber-700' :
-                      r.action === 'Out of Scope' ? 'text-purple-700' :
-                        r.action === 'Others' ? 'text-blue-700' :
-                          'text-slate-700'
+                      (r.action === 'Review completed' || r.action === 'Review Completed') ? 'text-teal-700' :
+                        r.action === 'Out of Scope' ? 'text-purple-700' :
+                          r.action === 'Others' ? 'text-blue-700' :
+                            'text-slate-700'
               }`}
           >
             <option value="">-- Select --</option>
@@ -448,6 +449,8 @@ export const PackageAuditModal = ({
             <option value="Incorrect Status">Incorrect Status</option>
             <option value="Not Applicable">Not Applicable</option>
             <option value="Need Review">Need Review</option>
+            <option value="Review completed">Review completed</option>
+            {r.action === 'Review Completed' && <option value="Review Completed">Review Completed</option>}
             <option value="Out of Scope">Out of Scope</option>
             <option value="Others">Others</option>
           </select>
