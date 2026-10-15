@@ -33,6 +33,19 @@ if CONDITION_SPEC_PATH.exists():
 _LOCAL_DICT_VERSION = None
 DATA_DICT = None
 
+def _format_utc_iso(dt_val):
+    """Serialize a database datetime (stored in UTC) as an ISO-8601 string with 'Z' suffix."""
+    if not dt_val:
+        return None
+    if isinstance(dt_val, str):
+        if not dt_val.endswith("Z") and "+" not in dt_val:
+            return dt_val + "Z"
+        return dt_val
+    iso = dt_val.isoformat()
+    if not iso.endswith("Z") and "+" not in iso:
+        return iso + "Z"
+    return iso
+
 def _build_dict_df(rows):
     data_list = []
     for row in rows:
@@ -483,7 +496,7 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
             for row in result:
                 p = dict(row)
                 if p.get("uploaded_at"):
-                    p["uploaded_at"] = p["uploaded_at"].isoformat()
+                    p["uploaded_at"] = _format_utc_iso(p["uploaded_at"])
                 packages.append(p)
 
         return {"status": "success", "packages": packages}
@@ -618,7 +631,7 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 "id": lp["id"],
                 "filename": lp["filename"],
                 "loan_id": loan_id_val,
-                "uploaded_at": lp["uploaded_at"].isoformat() if lp["uploaded_at"] else None,
+                "uploaded_at": _format_utc_iso(lp["uploaded_at"]) if lp["uploaded_at"] else None,
                 "uploaded_by_id": lp["user_id"]
             },
             "loan_id": loan_id_val,

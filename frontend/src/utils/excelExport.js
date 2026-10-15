@@ -296,8 +296,13 @@ export const exportPackagesToExcel = ({
     if (pkg.uploaded_by !== undefined) {
       row['Uploaded By'] = pkg.uploaded_by || 'System';
     }
-    row['Date Uploaded'] = pkg.uploaded_at
-      ? new Date(pkg.uploaded_at).toLocaleString()
+    const parsedDate = pkg.uploaded_at
+      ? (typeof pkg.uploaded_at === 'string' && !pkg.uploaded_at.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(pkg.uploaded_at)
+          ? new Date(pkg.uploaded_at + 'Z')
+          : new Date(pkg.uploaded_at))
+      : null;
+    row['Date Uploaded'] = parsedDate && !isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleString()
       : '';
     row['Total Fields'] = pkg.total_fields ?? 0;
     row['Final Valid'] = pkg.final_valid ?? 0;

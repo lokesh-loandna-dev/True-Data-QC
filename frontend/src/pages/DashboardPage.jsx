@@ -9,6 +9,14 @@ import { exportPackagesToExcel, exportToExcel } from '../utils/excelExport';
 
 const PackageAuditModal = lazy(() => import('../components/PackageAuditModal'));
 
+/** Safely parse dates, ensuring UTC timestamps without a timezone suffix are treated as UTC */
+const parseUtcDate = (dateVal) => {
+  if (!dateVal) return null;
+  if (typeof dateVal === 'string' && !dateVal.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(dateVal)) {
+    return new Date(dateVal + 'Z');
+  }
+  return new Date(dateVal);
+};
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -177,7 +185,8 @@ const DashboardPage = () => {
 
     return packages.filter((pkg) => {
       if (!pkg.uploaded_at) return false;
-      const pkgTime = new Date(pkg.uploaded_at).getTime();
+      const parsed = parseUtcDate(pkg.uploaded_at);
+      const pkgTime = parsed ? parsed.getTime() : NaN;
       if (isNaN(pkgTime)) return false;
 
       if (startTimestamp !== null && pkgTime < startTimestamp) return false;
@@ -341,12 +350,18 @@ const DashboardPage = () => {
         header: 'Date Uploaded',
         accessor: 'uploaded_at',
         sortable: true,
-        render: (pkg) => (
-          <span className="text-slate-500 text-xs">
-            {pkg.uploaded_at ? new Date(pkg.uploaded_at).toLocaleString() : '-'}
-          </span>
-        ),
-        sortValue: (pkg) => (pkg.uploaded_at ? new Date(pkg.uploaded_at).getTime() : 0),
+        render: (pkg) => {
+          const parsed = parseUtcDate(pkg.uploaded_at);
+          return (
+            <span className="text-slate-500 text-xs">
+              {parsed && !isNaN(parsed.getTime()) ? parsed.toLocaleString() : '-'}
+            </span>
+          );
+        },
+        sortValue: (pkg) => {
+          const parsed = parseUtcDate(pkg.uploaded_at);
+          return parsed && !isNaN(parsed.getTime()) ? parsed.getTime() : 0;
+        },
       },
       {
         header: 'Total Fields',

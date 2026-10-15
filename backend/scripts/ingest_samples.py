@@ -60,7 +60,7 @@ def generate_past_timestamps(count: int, base_time: datetime = None):
     All timestamps are strictly in the past.
     """
     if base_time is None:
-        base_time = datetime.now()
+        base_time = datetime.utcnow()
 
     # Pre-planned relative past offsets for up to 10 sample files
     preset_offsets = [
