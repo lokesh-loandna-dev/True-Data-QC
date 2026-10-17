@@ -68,6 +68,12 @@ if not any(isinstance(h, logging.StreamHandler) and not isinstance(h, logging.Fi
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+# Route SQLAlchemy pool warnings into the same log file for early pool exhaustion visibility
+_sa_pool_logger = logging.getLogger("sqlalchemy.pool")
+_sa_pool_logger.setLevel(logging.WARNING)
+if not any(isinstance(h, logging.FileHandler) for h in _sa_pool_logger.handlers):
+    _sa_pool_logger.addHandler(file_handler)
+
 
 def cleanup_old_logs(retention_days: int = 3):
     """

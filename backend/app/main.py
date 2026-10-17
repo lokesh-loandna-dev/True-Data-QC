@@ -14,14 +14,13 @@ from app.routers.loans import router as loans_router
 from app.logger import log_event, cleanup_old_logs
 
 from prohance.app.main import router as prohance_router
-from prohance.app.database import init_db as init_prohance_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Purge file and database logs older than 3 days
     cleanup_old_logs(retention_days=3)
     purge_old_audit_logs(retention_days=3)
-    
+
     # Startup logic
     log_event("INFO", "SERVER_STARTUP", f"Starting OPS_QC Backend API on port {BACKEND_PORT}")
     init_db()

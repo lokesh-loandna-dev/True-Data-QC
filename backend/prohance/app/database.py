@@ -21,13 +21,13 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 
 
 def init_db(target_engine=None) -> None:
-    """Create all Prohance tables if they don't already exist."""
-    from . import models  # noqa: F401  (ensures models are registered on Base)
-
-    eng = target_engine or engine
-    Base.metadata.create_all(bind=eng)
+    """Tables are created via sql/create_tables.sql at deployment; nothing to do here."""
+    pass

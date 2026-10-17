@@ -202,4 +202,4 @@ app.include_router(router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "time": dt.datetime.utcnow().isoformat()}
+    return {"status": "ok", "time": dt.datetime.now(dt.timezone.utc).isoformat()}

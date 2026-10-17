@@ -12,7 +12,7 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
 BEGIN
     CREATE TABLE users (
         id INT IDENTITY(1,1) PRIMARY KEY,
-        username VARCHAR(100) NOT NULL UNIQUE,
+        username VARCHAR(100) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'user',
@@ -25,18 +25,42 @@ BEGIN
     BEGIN
         ALTER TABLE users ADD role VARCHAR(50) NOT NULL DEFAULT 'user';
     END
+    -- Drop the UNIQUE constraint on username if it still exists (usernames are not required to be unique)
+    DECLARE @uq_username NVARCHAR(200) = NULL;
+    SELECT @uq_username = kc.name
+    FROM sys.key_constraints kc
+    JOIN sys.index_columns ic ON kc.unique_index_id = ic.index_id AND kc.parent_object_id = ic.object_id
+    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+    WHERE OBJECT_NAME(kc.parent_object_id) = 'users' AND kc.type = 'UQ' AND c.name = 'username';
+    IF @uq_username IS NOT NULL
+        EXEC('ALTER TABLE dbo.users DROP CONSTRAINT [' + @uq_username + ']');
 END;
 
 -- 2. Data Dictionary Table
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='data_dictionary' AND xtype='U')
 BEGIN
     CREATE TABLE data_dictionary (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        field_name NVARCHAR(MAX),
-        field_label NVARCHAR(MAX),
-        data_type NVARCHAR(MAX),
-        field_enumerations NVARCHAR(MAX),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        id                        INT IDENTITY(1,1) PRIMARY KEY,
+        field_name                NVARCHAR(MAX) NULL,
+        field_label               NVARCHAR(MAX) NULL,
+        data_type                 NVARCHAR(MAX) NULL,
+        field_enumerations        NVARCHAR(MAX) NULL,
+        page_source               NVARCHAR(MAX) NULL,
+        actions                   NVARCHAR(MAX) NULL,
+        unnamed_0                 NVARCHAR(MAX) NULL,
+        allow_tape_map            NVARCHAR(MAX) NULL,
+        add_to_guideline_library  NVARCHAR(MAX) NULL,
+        true_data                 NVARCHAR(MAX) NULL,
+        compare_data              NVARCHAR(MAX) NULL,
+        display_type              NVARCHAR(MAX) NULL,
+        field_description         NVARCHAR(MAX) NULL,
+        custom_field_description  NVARCHAR(MAX) NULL,
+        active                    NVARCHAR(MAX) NULL,
+        page                      NVARCHAR(MAX) NULL,
+        doc_exists                NVARCHAR(MAX) NULL,
+        reports                   NVARCHAR(MAX) NULL,
+        category                  NVARCHAR(MAX) NULL,
+        created_at                DATETIME DEFAULT CURRENT_TIMESTAMP NULL
     );
 END;
 

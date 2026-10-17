@@ -29,7 +29,7 @@ class ProhanceReport(Base):
     raw_file_content: Mapped[bytes] = mapped_column(LargeBinary)  # original CSV, verbatim
     report_period: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    uploaded_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+    uploaded_at: Mapped[dt.datetime] = mapped_column(DateTime, default=lambda: dt.datetime.now(dt.timezone.utc).replace(tzinfo=None))
     processed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), default="PROCESSING")  # PROCESSING/COMPLETED/FAILED

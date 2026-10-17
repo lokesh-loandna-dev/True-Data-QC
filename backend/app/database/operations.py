@@ -36,13 +36,12 @@ def get_user_by_id(user_id: int):
 def create_user(username: str, email: str, password_hash: str, role: str = "user"):
     if not engine:
         raise Exception("Database engine not initialized")
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         result = connection.execute(
             text("INSERT INTO users (username, email, password_hash, role) OUTPUT INSERTED.id VALUES (:username, :email, :password_hash, :role)"),
             {"username": username, "email": email.lower(), "password_hash": password_hash, "role": role}
         )
         inserted_id = result.fetchone()[0]
-        connection.commit()
         return {"id": inserted_id, "username": username, "email": email.lower(), "role": role}
 
 def get_all_users():
@@ -57,23 +56,21 @@ def get_all_users():
 def update_user_role(user_id: int, role: str):
     if not engine:
         raise Exception("Database engine not initialized")
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         connection.execute(
             text("UPDATE users SET role = :role WHERE id = :id"),
             {"role": role, "id": user_id}
         )
-        connection.commit()
         return True
 
 def update_user_password(email: str, password_hash: str):
     if not engine:
         raise Exception("Database engine not initialized")
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         connection.execute(
-            text("UPDATE users SET password_hash = :password_hash WHERE LOWER(email) = :email"),
+            text("UPDATE users SET password_hash = :password_hash WHERE email = :email"),
             {"password_hash": password_hash, "email": email.lower()}
         )
-        connection.commit()
         return True
 
 
@@ -81,7 +78,7 @@ def create_audit_log(log_level: str, action: str, username: str, email: str, iss
     if not engine:
         return False
     try:
-        with engine.connect() as connection:
+        with engine.begin() as connection:
             connection.execute(
                 text("""
                     INSERT INTO audit_logs (log_level, action, username, email, issue)
@@ -95,7 +92,6 @@ def create_audit_log(log_level: str, action: str, username: str, email: str, iss
                     "issue": issue
                 }
             )
-            connection.commit()
             return True
     except Exception:
         return False
@@ -114,18 +110,14 @@ def get_audit_logs(limit: int = 100):
         return []
 
 def purge_old_audit_logs(retention_days: int = 3):
-    """
-    Deletes audit log entries from database older than retention_days.
-    """
     if not engine:
         return False
     try:
-        with engine.connect() as connection:
+        with engine.begin() as connection:
             connection.execute(
                 text("DELETE FROM audit_logs WHERE timestamp < DATEADD(day, -:days, GETUTCDATE())"),
                 {"days": retention_days}
             )
-            connection.commit()
             return True
     except Exception:
         return False
@@ -163,7 +155,7 @@ def save_user_column_preferences(user_id: int, table_key: str, selected_columns:
         return False
     try:
         cols_json = json.dumps(list(selected_columns))
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(
                 text("""
                 MERGE dbo.user_column_preferences AS target
@@ -177,25 +169,20 @@ def save_user_column_preferences(user_id: int, table_key: str, selected_columns:
                 """),
                 {"uid": user_id, "key": table_key, "cols": cols_json}
             )
-            conn.commit()
             return True
     except Exception as e:
         print(f"Error saving user column preferences: {e}")
         return False
 
 def delete_user_column_preferences(user_id: int, table_key: str):
-    """
-    Remove saved column preferences (reset to default) for a user and table_key.
-    """
     if not engine or not user_id:
         return False
     try:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(
                 text("DELETE FROM dbo.user_column_preferences WHERE user_id = :uid AND table_key = :key"),
                 {"uid": user_id, "key": table_key}
             )
-            conn.commit()
             return True
     except Exception as e:
         print(f"Error deleting user column preferences: {e}")
@@ -223,7 +210,7 @@ def set_system_setting(setting_key: str, setting_value: str):
     if not engine:
         return False
     try:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(
                 text("""
                 MERGE dbo.system_settings AS target
@@ -237,7 +224,6 @@ def set_system_setting(setting_key: str, setting_value: str):
                 """),
                 {"key": setting_key, "val": str(setting_value)}
             )
-            conn.commit()
             return True
     except Exception as e:
         print(f"Error writing system setting {setting_key}: {e}")

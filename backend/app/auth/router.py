@@ -3,10 +3,16 @@ from app.config import EMAIL_REGEX
 from app.database.connection import db_status
 from app.auth.schemas import UserRegisterRequest, UserLoginRequest, ForgotPasswordRequest
 from app.auth.security import hash_password, verify_password, generate_token, get_current_user_id
-from app.database.operations import get_user_by_email, get_user_by_username, get_user_by_id, create_user, update_user_password, get_audit_logs
+from app.database.operations import get_user_by_email, get_user_by_id, create_user, update_user_password, get_audit_logs
 from app.logger import log_event
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
+
+def _require_admin(user_id: int = Depends(get_current_user_id)):
+    user = get_user_by_id(user_id)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return user
 
 @router.post("/register")
 def register_user(req: UserRegisterRequest):
@@ -36,12 +42,7 @@ def register_user(req: UserRegisterRequest):
         log_event("ERROR", "REGISTER_FAILED", issue, username=username, email=email)
         raise HTTPException(status_code=503, detail=f"Database not connected. Error: {db_status['error']}")
 
-    # Check duplicates
-    if get_user_by_username(username):
-        issue = f"Registration failed: Username '{username}' already registered"
-        log_event("WARNING", "REGISTER_FAILED", issue, username=username, email=email)
-        raise HTTPException(status_code=400, detail="Username already registered")
-        
+    # Only email must be unique; usernames may be shared across accounts
     if get_user_by_email(email):
         issue = f"Registration failed: Email '{email}' already registered"
         log_event("WARNING", "REGISTER_FAILED", issue, username=username, email=email)
@@ -171,10 +172,7 @@ def get_profile(user_id: int = Depends(get_current_user_id)):
     }
 
 @router.get("/logs")
-def fetch_audit_logs(limit: int = 100):
-    """
-    Returns recent audit logs stored in backend database/memory.
-    """
+def fetch_audit_logs(limit: int = 100, _: dict = Depends(_require_admin)):
     logs = get_audit_logs(limit=limit)
     return {
         "status": "success",

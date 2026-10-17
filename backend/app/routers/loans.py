@@ -1,5 +1,7 @@
 import io
 import json
+import random
+import time
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from app.auth import get_current_user_id
 from pydantic import BaseModel
@@ -17,6 +19,20 @@ router = APIRouter(
     prefix="/api/loans",
     tags=["Loans"]
 )
+
+def _is_deadlock(exc: Exception) -> bool:
+    s = str(exc)
+    return "1205" in s or "deadlock" in s.lower()
+
+def _retry_on_deadlock(fn, max_retries: int = 3):
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except Exception as exc:
+            if attempt < max_retries - 1 and _is_deadlock(exc):
+                time.sleep(0.05 * (2 ** attempt) + random.random() * 0.05)
+                continue
+            raise
 
 # Load condition rules once at startup if spec exists
 CONDITION_SPEC_PATH = Path(__file__).resolve().parent.parent.parent / "lm_helper" / "Condition_Validation_v2.xlsx"
@@ -393,41 +409,43 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
         )
         """)
 
-        with engine.connect() as conn:
-            package_id = conn.execute(insert_package_sql, params).scalar()
+        def _do_save():
+            with engine.begin() as conn:
+                pkg_id = conn.execute(insert_package_sql, params).scalar()
 
-            # Bulk insert records in chunks
-            chunk_size = 1000
-            for i in range(0, len(body.records), chunk_size):
-                chunk = body.records[i:i + chunk_size]
-                record_params = []
-                for r in chunk:
-                    record_params.append({
-                        "package_id": package_id,
-                        "loan_id": str(r.loan_id) if r.loan_id is not None else None,
-                        "data_field": str(r.data_field) if r.data_field is not None else None,
-                        "data_label": str(r.data_label) if r.data_label is not None else None,
-                        "true_data": str(r.true_data) if r.true_data is not None else None,
-                        "dictionary_match_status": str(r.dictionary_match_status) if r.dictionary_match_status is not None else None,
-                        "data_type_validation": str(r.data_type_validation) if r.data_type_validation is not None else None,
-                        "data_type_remarks": str(r.data_type_remarks) if r.data_type_remarks is not None else None,
-                        "numeric_format_flag": str(r.numeric_format_flag) if r.numeric_format_flag is not None else None,
-                        "enum_validation": str(r.enum_validation) if r.enum_validation is not None else None,
-                        "enum_remarks": str(r.enum_remarks) if r.enum_remarks is not None else None,
-                        "macro_validation_result": str(r.macro_validation_result) if r.macro_validation_result is not None else None,
-                        "result": str(r.result) if r.result is not None else None,
-                        "final_result": str(r.final_result) if r.final_result is not None else (str(r.result) if r.result is not None else None),
-                        "final_remarks": str(r.final_remarks) if r.final_remarks is not None else None,
-                        "condition_validation": str(r.condition_validation) if r.condition_validation is not None else None,
-                        "condition_rule_type": str(r.condition_rule_type) if r.condition_rule_type is not None else None,
-                        "condition_remarks": str(r.condition_remarks) if r.condition_remarks is not None else None,
-                        "action": str(r.action) if r.action is not None else None,
-                        "remark": str(r.remark) if r.remark is not None else None,
-                        "raw_data": json.dumps(r.raw_data) if r.raw_data else None
-                    })
-                conn.execute(insert_record_sql, record_params)
+                # Bulk insert records in chunks
+                chunk_size = 1000
+                for i in range(0, len(body.records), chunk_size):
+                    chunk = body.records[i:i + chunk_size]
+                    record_params = []
+                    for r in chunk:
+                        record_params.append({
+                            "package_id": pkg_id,
+                            "loan_id": str(r.loan_id) if r.loan_id is not None else None,
+                            "data_field": str(r.data_field) if r.data_field is not None else None,
+                            "data_label": str(r.data_label) if r.data_label is not None else None,
+                            "true_data": str(r.true_data) if r.true_data is not None else None,
+                            "dictionary_match_status": str(r.dictionary_match_status) if r.dictionary_match_status is not None else None,
+                            "data_type_validation": str(r.data_type_validation) if r.data_type_validation is not None else None,
+                            "data_type_remarks": str(r.data_type_remarks) if r.data_type_remarks is not None else None,
+                            "numeric_format_flag": str(r.numeric_format_flag) if r.numeric_format_flag is not None else None,
+                            "enum_validation": str(r.enum_validation) if r.enum_validation is not None else None,
+                            "enum_remarks": str(r.enum_remarks) if r.enum_remarks is not None else None,
+                            "macro_validation_result": str(r.macro_validation_result) if r.macro_validation_result is not None else None,
+                            "result": str(r.result) if r.result is not None else None,
+                            "final_result": str(r.final_result) if r.final_result is not None else (str(r.result) if r.result is not None else None),
+                            "final_remarks": str(r.final_remarks) if r.final_remarks is not None else None,
+                            "condition_validation": str(r.condition_validation) if r.condition_validation is not None else None,
+                            "condition_rule_type": str(r.condition_rule_type) if r.condition_rule_type is not None else None,
+                            "condition_remarks": str(r.condition_remarks) if r.condition_remarks is not None else None,
+                            "action": str(r.action) if r.action is not None else None,
+                            "remark": str(r.remark) if r.remark is not None else None,
+                            "raw_data": json.dumps(r.raw_data) if r.raw_data else None
+                        })
+                    conn.execute(insert_record_sql, record_params)
+                return pkg_id
 
-            conn.commit()
+        package_id = _retry_on_deadlock(_do_save)
 
         # Build response from request body — avoids a full re-SELECT of all inserted rows
         saved_records = []
@@ -646,16 +664,19 @@ def delete_all_packages(user_id: int = Depends(get_current_user_id)):
     if not engine:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
 
-    try:
-        with engine.connect() as conn:
-            user_row = conn.execute(
-                text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
-            ).fetchone()
-            if not user_row:
-                raise HTTPException(status_code=404, detail="User not found")
-            role = user_row[0]
+    with engine.connect() as conn:
+        user_row = conn.execute(
+            text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+        role = user_row[0]
 
+    def _do_delete_all():
+        with engine.begin() as conn:
             if role == "admin":
+                # Acquire table-level exclusive lock on parent first — same order as INSERT
+                conn.execute(text("SELECT TOP 0 id FROM loan_packages WITH (TABLOCKX, HOLDLOCK)"))
                 conn.execute(text("DELETE FROM loan_package_records"))
                 conn.execute(text("DELETE FROM loan_packages"))
             else:
@@ -667,35 +688,36 @@ def delete_all_packages(user_id: int = Depends(get_current_user_id)):
                     text("DELETE FROM loan_packages WHERE user_id = :user_id"),
                     {"user_id": user_id}
                 )
-            conn.commit()
 
-        return {"status": "success", "message": "All packages deleted successfully"}
+    try:
+        _retry_on_deadlock(_do_delete_all)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "success", "message": "All packages deleted successfully"}
 
 @router.delete("/{package_id}")
 def delete_package(package_id: int, user_id: int = Depends(get_current_user_id)):
     if not engine:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
 
-    try:
-        with engine.connect() as conn:
+    with engine.connect() as conn:
+        user_row = conn.execute(
+            text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        role = user_row[0] if user_row else "user"
+
+    def _do_delete():
+        with engine.begin() as conn:
+            # UPDLOCK: auth check and delete are atomic — eliminates the TOCTOU gap
             lp = conn.execute(
-                text("SELECT user_id FROM loan_packages WHERE id = :id"),
+                text("SELECT user_id FROM loan_packages WITH (UPDLOCK) WHERE id = :id"),
                 {"id": package_id}
             ).mappings().first()
-
             if not lp:
                 raise HTTPException(status_code=404, detail="Package not found")
-
-            user_row = conn.execute(
-                text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
-            ).fetchone()
-            role = user_row[0] if user_row else "user"
-
             if role != "admin" and lp["user_id"] != user_id:
                 raise HTTPException(status_code=403, detail="Not authorized to delete this package")
-
             conn.execute(
                 text("DELETE FROM loan_package_records WHERE package_id = :package_id"),
                 {"package_id": package_id}
@@ -704,11 +726,15 @@ def delete_package(package_id: int, user_id: int = Depends(get_current_user_id))
                 text("DELETE FROM loan_packages WHERE id = :id"),
                 {"id": package_id}
             )
-            conn.commit()
 
-        return {"status": "success", "message": "Package deleted successfully"}
+    try:
+        _retry_on_deadlock(_do_delete)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "success", "message": "Package deleted successfully"}
 
 @router.put("/{package_id}/records")
 def update_package_records(
@@ -721,57 +747,68 @@ def update_package_records(
 
     records = payload.get("records", [])
 
-    try:
-        with engine.connect() as conn:
-            lp = conn.execute(
-                text("SELECT user_id FROM loan_packages WHERE id = :id"),
+    with engine.connect() as conn:
+        lp = conn.execute(
+            text("SELECT user_id FROM loan_packages WHERE id = :id"),
+            {"id": package_id}
+        ).mappings().first()
+        if not lp:
+            raise HTTPException(status_code=404, detail="Package not found")
+        user_row = conn.execute(
+            text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        role = user_row[0] if user_row else "user"
+        if role != "admin" and lp["user_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this package")
+
+    def _do_update():
+        with engine.begin() as conn:
+            # UPDLOCK prevents S→X upgrade deadlock when concurrent saves are in flight
+            lp_check = conn.execute(
+                text("SELECT user_id FROM loan_packages WITH (UPDLOCK) WHERE id = :id"),
                 {"id": package_id}
             ).mappings().first()
+            if not lp_check:
+                return
 
-            if not lp:
-                raise HTTPException(status_code=404, detail="Package not found")
+            # Split OR predicate into 3 targeted index seeks — avoids full-table scan locking
+            by_id: list = []
+            by_field_with_loan: list = []
+            by_field_null_loan: list = []
+            for r in records:
+                rec_id = r.get("id")
+                try:
+                    rec_id = int(rec_id) if rec_id is not None else None
+                except (ValueError, TypeError):
+                    rec_id = None
+                base = {"package_id": package_id, "action": r.get("action"), "remark": r.get("remark")}
+                if rec_id is not None:
+                    by_id.append({**base, "record_id": rec_id})
+                elif r.get("loan_id") is not None:
+                    by_field_with_loan.append({**base, "data_field": r.get("data_field"), "loan_id": r.get("loan_id")})
+                else:
+                    by_field_null_loan.append({**base, "data_field": r.get("data_field")})
 
-            user_row = conn.execute(
-                text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
-            ).fetchone()
-            role = user_row[0] if user_row else "user"
+            if by_id:
+                conn.execute(
+                    text("UPDATE loan_package_records SET action=:action, remark=:remark WHERE package_id=:package_id AND id=:record_id"),
+                    by_id
+                )
+            if by_field_with_loan:
+                conn.execute(
+                    text("UPDATE loan_package_records SET action=:action, remark=:remark WHERE package_id=:package_id AND data_field=:data_field AND loan_id=:loan_id"),
+                    by_field_with_loan
+                )
+            if by_field_null_loan:
+                conn.execute(
+                    text("UPDATE loan_package_records SET action=:action, remark=:remark WHERE package_id=:package_id AND data_field=:data_field AND loan_id IS NULL"),
+                    by_field_null_loan
+                )
+            # engine.begin() auto-commits here — UPDLOCK released
 
-            if role != "admin" and lp["user_id"] != user_id:
-                raise HTTPException(status_code=403, detail="Not authorized to update this package")
-
-            if records:
-                update_sql = text("""
-                UPDATE loan_package_records
-                SET action = :action,
-                    remark = :remark
-                WHERE package_id = :package_id
-                  AND (
-                      (:record_id IS NOT NULL AND id = :record_id)
-                      OR
-                      (:record_id IS NULL AND data_field = :data_field AND (loan_id = :loan_id OR (:loan_id IS NULL AND loan_id IS NULL)))
-                  )
-                """)
-
-                update_params = []
-                for r in records:
-                    rec_id = r.get("id")
-                    try:
-                        rec_id = int(rec_id) if rec_id is not None else None
-                    except (ValueError, TypeError):
-                        rec_id = None
-
-                    update_params.append({
-                        "package_id": package_id,
-                        "record_id": rec_id,
-                        "data_field": r.get("data_field"),
-                        "loan_id": r.get("loan_id"),
-                        "action": r.get("action"),
-                        "remark": r.get("remark")
-                    })
-
-                conn.execute(update_sql, update_params)
-                conn.commit()
-
-        return {"status": "success", "message": "Package records updated successfully"}
+    try:
+        _retry_on_deadlock(_do_update)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "success", "message": "Package records updated successfully"}

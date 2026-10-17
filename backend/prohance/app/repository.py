@@ -64,8 +64,8 @@ def save_report(
         original_filename=original_filename,
         raw_file_content=raw_file_content,
         report_period=result.stats.get("report_period"),
-        uploaded_at=dt.datetime.utcnow(),
-        processed_at=dt.datetime.utcnow(),
+        uploaded_at=dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),
+        processed_at=dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),
         status="COMPLETED",
         rows_processed=result.stats.get("rows_processed"),
         pdf_rows=result.stats.get("pdf_rows"),
@@ -172,30 +172,23 @@ def list_reports(db: Session, limit: int = 50) -> list[models.ProhanceReport]:
 
 
 def delete_report(db: Session, report_id: int) -> bool:
-    """Delete a ProhanceReport and all associated 5 tab rows safely."""
-    report = db.get(models.ProhanceReport, report_id)
+    """Delete a ProhanceReport; child rows removed by ON DELETE CASCADE FK constraints."""
+    report = (
+        db.query(models.ProhanceReport)
+        .filter(models.ProhanceReport.id == report_id)
+        .with_for_update()
+        .first()
+    )
     if report is None:
         return False
-
-    db.query(models.PackageSummary).filter(models.PackageSummary.report_id == report_id).delete(synchronize_session=False)
-    db.query(models.UnmappedReview).filter(models.UnmappedReview.report_id == report_id).delete(synchronize_session=False)
-    db.query(models.UnverifiedReview).filter(models.UnverifiedReview.report_id == report_id).delete(synchronize_session=False)
-    db.query(models.OverallActivitySummary).filter(models.OverallActivitySummary.report_id == report_id).delete(synchronize_session=False)
-    db.query(models.OverallByUser).filter(models.OverallByUser.report_id == report_id).delete(synchronize_session=False)
-
     db.delete(report)
     db.commit()
     return True
 
 
 def delete_all_reports(db: Session) -> int:
-    """Delete all ProhanceReport entries and associated 5 tab rows safely."""
+    """Delete all ProhanceReport entries; child rows removed by ON DELETE CASCADE FK constraints."""
     count = db.query(models.ProhanceReport).count()
-    db.query(models.PackageSummary).delete(synchronize_session=False)
-    db.query(models.UnmappedReview).delete(synchronize_session=False)
-    db.query(models.UnverifiedReview).delete(synchronize_session=False)
-    db.query(models.OverallActivitySummary).delete(synchronize_session=False)
-    db.query(models.OverallByUser).delete(synchronize_session=False)
     db.query(models.ProhanceReport).delete(synchronize_session=False)
     db.commit()
     return count
