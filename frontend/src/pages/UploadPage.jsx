@@ -10,9 +10,11 @@ import { ManageColumnsModal } from '../components/ManageColumnsModal';
 import Tooltip from '../components/Tooltip';
 import { extractLoanId } from '../utils/loanUtils';
 import { userPreferencesService } from '../services/userPreferencesService';
+import { useAuth } from '../hooks/useAuth';
 
 const UploadPage = () => {
 
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -255,12 +257,15 @@ const UploadPage = () => {
 
   const handleDownloadExcel = () => {
     try {
-      const fn = validationData?.filename || 'Validation_Report';
+      const fn = validationData?.filename || file?.name || 'Validation_Report';
       exportToExcel({
         filename: fn,
         records: validationData?.records || [],
         summary: validationData?.summary || {},
-        reportSuffix: '_Validation_Report'
+        reportSuffix: '_Validation_Report',
+        loanId: modalLoanId,
+        username: user?.username,
+        email: user?.email
       });
       notify.success('Excel validation report downloaded successfully!');
     } catch (err) {
@@ -414,7 +419,44 @@ const UploadPage = () => {
       }
     });
 
-    // 2. Validation Process Results Columns (lm_helper)
+    // 2. Package-level info columns (same value for every row in this upload)
+    cols.push(
+      {
+        header: 'Loan Id',
+        accessor: 'pkg_loan_id',
+        sortable: false,
+        render: () => (
+          <span className="font-mono text-xs font-semibold text-slate-700 whitespace-nowrap">
+            {modalLoanId || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      },
+      {
+        header: 'Username',
+        accessor: 'pkg_username',
+        sortable: false,
+        render: () => (
+          <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+            {user?.username || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      },
+      {
+        header: 'Email',
+        accessor: 'pkg_email',
+        sortable: false,
+        render: () => (
+          <span className="text-xs text-slate-600 whitespace-nowrap">
+            {user?.email || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      }
+    );
+
+    // 3. Validation Process Results Columns (lm_helper)
     cols.push(
       {
         header: 'Dict Match',
@@ -554,7 +596,7 @@ const UploadPage = () => {
     );
 
     return cols;
-  }, [validationData]);
+  }, [validationData, modalLoanId, user]);
 
   const visibleValidationColumns = useMemo(() => {
     if (!allAvailableColumns || allAvailableColumns.length === 0) return [];

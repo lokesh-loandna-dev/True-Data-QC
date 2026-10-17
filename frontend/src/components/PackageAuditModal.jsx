@@ -11,12 +11,23 @@ import { userPreferencesService } from '../services/userPreferencesService';
 
 export const PackageAuditModal = ({
   selectedPackageId,
+  selectedPackage,
   packageDetails,
   detailsLoading,
   detailsError,
   onClose,
   onRetry,
 }) => {
+  const packageUsername = packageDetails?.package?.uploaded_by ||
+    packageDetails?.uploaded_by ||
+    selectedPackage?.uploaded_by ||
+    '';
+
+  const packageEmail = packageDetails?.package?.uploaded_email ||
+    packageDetails?.uploaded_email ||
+    selectedPackage?.uploaded_email ||
+    '';
+
   const [activeSheet, setActiveSheet] = useState('results'); // 'results' or 'summary'
   const [showAll, setShowAll] = useState(false);
 
@@ -222,7 +233,10 @@ export const PackageAuditModal = ({
         filename: fn,
         records: localRecords,
         summary: packageDetails?.summary || {},
-        reportSuffix: '_Audit_Report'
+        reportSuffix: '_Audit_Report',
+        loanId: loanId,
+        username: packageUsername,
+        email: packageEmail
       });
       notify.success('Excel report downloaded successfully!');
     } catch (err) {
@@ -336,7 +350,44 @@ export const PackageAuditModal = ({
       }
     });
 
-    // 2. Validation Results Columns
+    // 2. Package-level info columns (same value for every row in this package)
+    cols.push(
+      {
+        header: 'Loan Id',
+        accessor: 'pkg_loan_id',
+        sortable: false,
+        render: () => (
+          <span className="font-mono text-xs font-semibold text-slate-700 whitespace-nowrap">
+            {loanId || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      },
+      {
+        header: 'Username',
+        accessor: 'pkg_username',
+        sortable: false,
+        render: () => (
+          <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+            {packageUsername || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      },
+      {
+        header: 'Email',
+        accessor: 'pkg_email',
+        sortable: false,
+        render: () => (
+          <span className="text-xs text-slate-600 whitespace-nowrap">
+            {packageEmail || '-'}
+          </span>
+        ),
+        category: 'Package Info'
+      }
+    );
+
+    // 3. Validation Results Columns
     cols.push(
       {
         header: 'Dict Match',
@@ -476,7 +527,7 @@ export const PackageAuditModal = ({
     );
 
     return cols;
-  }, [localRecords]);
+  }, [localRecords, packageDetails, selectedPackage, loanId, packageUsername, packageEmail]);
 
   const visibleAuditColumns = useMemo(() => {
     if (!allAvailableAuditColumns || allAvailableAuditColumns.length === 0) return [];

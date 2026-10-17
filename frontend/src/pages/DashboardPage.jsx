@@ -153,7 +153,10 @@ const DashboardPage = () => {
           filename: response.package?.filename || pkg.filename || 'Package_Audit',
           records: response.records,
           summary: response.summary || {},
-          reportSuffix: '_Audit_Report'
+          reportSuffix: '_Audit_Report',
+          loanId: response.loan_id || response.package?.loan_id || pkg.loan_id,
+          username: response.package?.uploaded_by || pkg.uploaded_by,
+          email: response.package?.uploaded_email || pkg.uploaded_email
         });
         notify.success(`Exported "${pkg.filename}" audit report successfully!`);
       } else {
@@ -669,6 +672,7 @@ const DashboardPage = () => {
       <Suspense fallback={null}>
         <PackageAuditModal
           selectedPackageId={selectedPackageId}
+          selectedPackage={packages.find(p => p.id === selectedPackageId)}
           packageDetails={packageDetails}
           detailsLoading={detailsLoading}
           detailsError={detailsError}

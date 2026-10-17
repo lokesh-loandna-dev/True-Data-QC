@@ -1,4 +1,5 @@
 # Agent customizations (rules, skills, MCP configs)
 .agents/
 .claude/
-
+.openqodex/
+*.md

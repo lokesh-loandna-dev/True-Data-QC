@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { extractLoanId } from './loanUtils';
 
 /**
  * Utility to export Package Audit / Validation records and summary to an Excel file with two sheets:
@@ -10,17 +11,47 @@ import * as XLSX from 'xlsx';
  * @param {Array} params.records - List of validation record objects
  * @param {Object} params.summary - Aggregated summary object
  * @param {string} [params.reportSuffix='_Audit_Report'] - Suffix added to generated file
+ * @param {string} [params.loanId] - Loan ID string (e.g. 26070036249)
+ * @param {string} [params.username] - Uploader username
+ * @param {string} [params.email] - Uploader email
  */
 export const exportToExcel = ({
   filename = 'Loan_Package',
   records = [],
   summary = {},
-  reportSuffix = '_Audit_Report'
+  reportSuffix = '_Audit_Report',
+  loanId = '',
+  username = '',
+  email = ''
 }) => {
   const safeRecords = Array.isArray(records) ? records : [];
   const safeSummary = summary || {};
 
-  const hasLoanId = safeRecords.some(r => (r.loan_id != null && String(r.loan_id).trim() !== '') || (r.raw_data && ('Loan ID' in r.raw_data || 'loan_id' in r.raw_data)));
+  // Resolve package-level metadata fallbacks if not explicitly provided
+  let effectiveLoanId = loanId || '';
+  if (!effectiveLoanId && safeRecords.length > 0) {
+    effectiveLoanId = extractLoanId(safeRecords, null) || '';
+  }
+  if (!effectiveLoanId && filename) {
+    const m = String(filename).match(/(?:loan\s*id|loanid)[^\d]*(\d+)/i) || String(filename).match(/\b(\d{7,12})\b/);
+    if (m) effectiveLoanId = m[1];
+  }
+
+  let effectiveUsername = username || '';
+  if (!effectiveUsername && safeRecords.length > 0) {
+    const foundUser = safeRecords.find(r => r.pkg_username || r.username || r.uploaded_by);
+    if (foundUser) {
+      effectiveUsername = foundUser.pkg_username || foundUser.username || foundUser.uploaded_by || '';
+    }
+  }
+
+  let effectiveEmail = email || '';
+  if (!effectiveEmail && safeRecords.length > 0) {
+    const foundEmail = safeRecords.find(r => r.pkg_email || r.email || r.uploaded_email);
+    if (foundEmail) {
+      effectiveEmail = foundEmail.pkg_email || foundEmail.email || foundEmail.uploaded_email || '';
+    }
+  }
 
   // 1. Map records to Excel row objects for "Result Sheet"
   const resultRows = safeRecords.map(r => {
@@ -33,9 +64,21 @@ export const exportToExcel = ({
 
     // Ensure standard columns are populated
     if (!('Data Field' in rowObj)) rowObj['Data Field'] = r.data_field || '';
-    if (hasLoanId && !('Loan ID' in rowObj)) rowObj['Loan ID'] = r.loan_id || '';
     if (!('Data Label' in rowObj)) rowObj['Data Label'] = r.data_label || '';
     if (!('True Data' in rowObj)) rowObj['True Data'] = r.true_data || '';
+
+    // Remove legacy or duplicate raw loan id keys if present to avoid duplicate columns
+    delete rowObj['Loan ID'];
+    delete rowObj['loan_id'];
+
+    // Add newly added Package Info columns (Loan Id, Username, Email) matching preview table
+    const rowLoanId = r.pkg_loan_id ?? (r.loan_id != null && String(r.loan_id).trim() !== '' ? String(r.loan_id).trim() : null) ?? (r.raw_data && (r.raw_data['Loan ID'] || r.raw_data['loan_id'] || r.raw_data['Loan Id'])) ?? effectiveLoanId ?? '';
+    const rowUsername = r.pkg_username ?? r.uploaded_by ?? r.username ?? effectiveUsername ?? '';
+    const rowEmail = r.pkg_email ?? r.uploaded_email ?? r.email ?? effectiveEmail ?? '';
+
+    rowObj['Loan Id'] = rowLoanId;
+    rowObj['Username'] = rowUsername;
+    rowObj['Email'] = rowEmail;
 
     // Add validation and audit outcome columns
     rowObj['Dict Match'] = r.dictionary_match_status || '';

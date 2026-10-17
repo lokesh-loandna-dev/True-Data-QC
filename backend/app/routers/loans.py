@@ -499,7 +499,7 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
             role = user_row[0]
 
             query = """
-            SELECT lp.*, u.username as uploaded_by
+            SELECT lp.*, u.username as uploaded_by, u.email as uploaded_email
             FROM loan_packages lp
             LEFT JOIN users u ON lp.user_id = u.id
             """
@@ -535,9 +535,14 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
-            # Get the package
+            # Get the package (with uploader info via JOIN)
             lp = conn.execute(
-                text("SELECT * FROM loan_packages WHERE id = :id"),
+                text("""
+                    SELECT lp.*, u.username AS uploaded_by, u.email AS uploaded_email
+                    FROM loan_packages lp
+                    LEFT JOIN users u ON lp.user_id = u.id
+                    WHERE lp.id = :id
+                """),
                 {"id": package_id}
             ).mappings().first()
 
@@ -650,9 +655,13 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 "filename": lp["filename"],
                 "loan_id": loan_id_val,
                 "uploaded_at": _format_utc_iso(lp["uploaded_at"]) if lp["uploaded_at"] else None,
-                "uploaded_by_id": lp["user_id"]
+                "uploaded_by_id": lp["user_id"],
+                "uploaded_by": lp.get("uploaded_by"),
+                "uploaded_email": lp.get("uploaded_email"),
             },
             "loan_id": loan_id_val,
+            "uploaded_by": lp.get("uploaded_by"),
+            "uploaded_email": lp.get("uploaded_email"),
             "summary": summary,
             "records": records
         }
