@@ -499,9 +499,32 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
             role = user_row[0]
 
             query = """
-            SELECT lp.*, u.username as uploaded_by, u.email as uploaded_email
+            SELECT 
+                lp.*, 
+                u.username as uploaded_by, 
+                u.email as uploaded_email,
+                COALESCE(act.action_corrected, 0) as action_corrected,
+                COALESCE(act.action_incorrect_status, 0) as action_incorrect_status,
+                COALESCE(act.action_not_applicable, 0) as action_not_applicable,
+                COALESCE(act.action_need_review, 0) as action_need_review,
+                COALESCE(act.action_review_completed, 0) as action_review_completed,
+                COALESCE(act.action_out_of_scope, 0) as action_out_of_scope,
+                COALESCE(act.action_others, 0) as action_others
             FROM loan_packages lp
             LEFT JOIN users u ON lp.user_id = u.id
+            LEFT JOIN (
+                SELECT 
+                    package_id,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'corrected' THEN 1 ELSE 0 END) as action_corrected,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'incorrect status' THEN 1 ELSE 0 END) as action_incorrect_status,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'not applicable' THEN 1 ELSE 0 END) as action_not_applicable,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'need review' THEN 1 ELSE 0 END) as action_need_review,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'review completed' THEN 1 ELSE 0 END) as action_review_completed,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'out of scope' THEN 1 ELSE 0 END) as action_out_of_scope,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'others' THEN 1 ELSE 0 END) as action_others
+                FROM loan_package_records
+                GROUP BY package_id
+            ) act ON lp.id = act.package_id
             """
             params = {}
             if role != "admin":

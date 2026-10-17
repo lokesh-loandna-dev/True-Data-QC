@@ -351,6 +351,13 @@ export const exportPackagesToExcel = ({
     row['Final Valid'] = pkg.final_valid ?? 0;
     row['Final Invalid'] = pkg.final_invalid ?? 0;
     row['Final Blank'] = pkg.final_blank ?? 0;
+    row['Corrected'] = pkg.action_corrected ?? 0;
+    row['Incorrect Status'] = pkg.action_incorrect_status ?? 0;
+    row['Not Applicable'] = pkg.action_not_applicable ?? 0;
+    row['Need Review'] = pkg.action_need_review ?? 0;
+    row['Review Completed'] = pkg.action_review_completed ?? 0;
+    row['Out of Scope'] = pkg.action_out_of_scope ?? 0;
+    row['Others'] = pkg.action_others ?? 0;
 
     return row;
   });
@@ -368,7 +375,14 @@ export const exportPackagesToExcel = ({
           'Total Fields': '',
           'Final Valid': '',
           'Final Invalid': '',
-          'Final Blank': ''
+          'Final Blank': '',
+          'Corrected': '',
+          'Incorrect Status': '',
+          'Not Applicable': '',
+          'Need Review': '',
+          'Review Completed': '',
+          'Out of Scope': '',
+          'Others': ''
         }]
   );
 

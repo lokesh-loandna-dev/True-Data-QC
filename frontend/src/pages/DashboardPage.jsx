@@ -105,6 +105,7 @@ const DashboardPage = () => {
     setSelectedPackageId(null);
     setPackageDetails(null);
     setDetailsError('');
+    fetchPackages();
   };
 
   const handleDeletePackage = useCallback(async (packageId, filename) => {
@@ -411,6 +412,111 @@ const DashboardPage = () => {
         ),
       },
       {
+        header: 'Corrected',
+        accessor: 'action_corrected',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[100px]',
+        render: (pkg) => {
+          const val = pkg.action_corrected ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Incorrect Status',
+        accessor: 'action_incorrect_status',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[125px]',
+        render: (pkg) => {
+          const val = pkg.action_incorrect_status ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Not Applicable',
+        accessor: 'action_not_applicable',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[120px]',
+        render: (pkg) => {
+          const val = pkg.action_not_applicable ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Need Review',
+        accessor: 'action_need_review',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[110px]',
+        render: (pkg) => {
+          const val = pkg.action_need_review ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Review Completed',
+        accessor: 'action_review_completed',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[140px]',
+        render: (pkg) => {
+          const val = pkg.action_review_completed ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Out of Scope',
+        accessor: 'action_out_of_scope',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[110px]',
+        render: (pkg) => {
+          const val = pkg.action_out_of_scope ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-purple-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Others',
+        accessor: 'action_others',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[90px]',
+        render: (pkg) => {
+          const val = pkg.action_others ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
+      },
+      {
         header: 'Action',
         accessor: 'actions',
         align: 'right',
@@ -678,6 +784,7 @@ const DashboardPage = () => {
           detailsError={detailsError}
           onClose={handleCloseModal}
           onRetry={() => handleViewDetails(selectedPackageId)}
+          onSaveSuccess={fetchPackages}
         />
       </Suspense>
     </div>

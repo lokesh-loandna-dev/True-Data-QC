@@ -549,7 +549,21 @@ const UploadPage = () => {
         header: 'Action',
         accessor: 'action',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[140px]',
+        filterable: true,
+        filterValue: (r) => r.action || '(Blank)',
+        sortValue: (r) => r.action || '',
+        filterOptions: [
+          'Corrected',
+          'Incorrect Status',
+          'Not Applicable',
+          'Need Review',
+          'Review completed',
+          'Review Completed',
+          'Out of Scope',
+          'Others',
+          '(Blank)'
+        ],
+        headerClassName: 'whitespace-nowrap min-w-[150px]',
         render: (r) => (
           <select
             value={r.action || ''}

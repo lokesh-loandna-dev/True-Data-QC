@@ -313,13 +313,13 @@ export const DataTable = ({
   const getColumnValue = (item, col) => {
     if (col.filterValue) return col.filterValue(item);
     if (col.searchableValue) return col.searchableValue(item);
-    if (col.accessor && col.accessor !== 'actions' && col.accessor !== 'action') return item[col.accessor];
+    if (col.accessor && col.accessor !== 'actions') return item[col.accessor];
     return null;
   };
 
   const isColumnFilterable = (col) => {
     if (col.filterable === false) return false;
-    if (col.accessor === 'actions' || col.accessor === 'action') return false;
+    if (col.accessor === 'actions') return false;
     if (!col.accessor && !col.filterValue && !col.searchableValue) return false;
     return true;
   };

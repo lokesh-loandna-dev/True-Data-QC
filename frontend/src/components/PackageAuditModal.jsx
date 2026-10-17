@@ -17,6 +17,7 @@ export const PackageAuditModal = ({
   detailsError,
   onClose,
   onRetry,
+  onSaveSuccess,
 }) => {
   const packageUsername = packageDetails?.package?.uploaded_by ||
     packageDetails?.uploaded_by ||
@@ -217,6 +218,9 @@ export const PackageAuditModal = ({
       setUpdateMessage('Package records successfully updated in database!');
       if (packageDetails) {
         packageDetails.records = localRecords.map(r => ({ ...r }));
+      }
+      if (typeof onSaveSuccess === 'function') {
+        onSaveSuccess();
       }
       setTimeout(() => setUpdateMessage(''), 5000);
     } catch (err) {
@@ -480,7 +484,21 @@ export const PackageAuditModal = ({
         header: 'Action',
         accessor: 'action',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[140px]',
+        filterable: true,
+        filterValue: (r) => r.action || '(Blank)',
+        sortValue: (r) => r.action || '',
+        filterOptions: [
+          'Corrected',
+          'Incorrect Status',
+          'Not Applicable',
+          'Need Review',
+          'Review completed',
+          'Review Completed',
+          'Out of Scope',
+          'Others',
+          '(Blank)'
+        ],
+        headerClassName: 'whitespace-nowrap min-w-[150px]',
         render: (r) => (
           <select
             value={r.action || ''}

@@ -10,7 +10,7 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 
 # Ensure backend root is on sys.path
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 load_dotenv(BASE_DIR / ".env")
@@ -28,7 +28,7 @@ from app.routers.loans import (
 
 # Default configuration
 DEFAULT_SAMPLES_DIR = r"C:\Users\lsaravanan\Downloads\samples"
-DEFAULT_USER_EMAIL = "admin@loandna.com"
+DEFAULT_USER_EMAIL = "user@loandna.com"
 
 
 def natural_sort_key(s):
