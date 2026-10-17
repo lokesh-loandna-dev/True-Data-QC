@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { TableSkeleton } from './SkeletonLoader';
 import Tooltip from './Tooltip';
@@ -288,6 +288,13 @@ export const DataTable = ({
   onFilterChange,
   serverFilterOptions = {},
   onClearFilters = null,
+  // Expandable row props
+  renderExpandedRow = null,
+  rowKey = null,
+  expandedRowKeys = null,
+  onToggleExpand = null,
+  expandOnRowClick = false,
+  onRowClick = null,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [columnFilters, setColumnFilters] = useState(initialColumnFilters);
@@ -295,7 +302,71 @@ export const DataTable = ({
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
+  const [internalExpandedKeys, setInternalExpandedKeys] = useState(new Set());
   const filterBtnRefs = useRef({});
+  const tableContainerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!tableContainerRef.current) return;
+    const updateWidth = () => {
+      if (tableContainerRef.current) {
+        setContainerWidth(tableContainerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(tableContainerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const currentExpandedKeys = useMemo(() => {
+    if (expandedRowKeys !== null && expandedRowKeys !== undefined) {
+      if (expandedRowKeys instanceof Set) return expandedRowKeys;
+      if (Array.isArray(expandedRowKeys)) return new Set(expandedRowKeys);
+      return new Set([expandedRowKeys]);
+    }
+    return internalExpandedKeys;
+  }, [expandedRowKeys, internalExpandedKeys]);
+
+  const getRowKey = useCallback((row, rowIndex) => {
+    if (rowKey) {
+      if (typeof rowKey === 'function') return rowKey(row, rowIndex);
+      if (typeof rowKey === 'string' && row[rowKey] !== undefined) return row[rowKey];
+    }
+    if (row && row.id !== undefined && row.id !== null) return row.id;
+    return rowIndex;
+  }, [rowKey]);
+
+  const handleRowExpandToggle = useCallback((key, row, rowIndex) => {
+    if (onToggleExpand) {
+      onToggleExpand(key, row, rowIndex);
+    } else {
+      setInternalExpandedKeys(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    }
+  }, [onToggleExpand]);
+
+  const handleRowClick = useCallback((row, rowIndex, e) => {
+    const isInteractive = e.target.closest('button, a, input, select, textarea, [data-no-row-click="true"]');
+    if (isInteractive) return;
+
+    if (onRowClick) {
+      onRowClick(row, rowIndex, e);
+    }
+
+    if (renderExpandedRow && expandOnRowClick) {
+      const key = getRowKey(row, rowIndex);
+      handleRowExpandToggle(key, row, rowIndex);
+    }
+  }, [onRowClick, renderExpandedRow, expandOnRowClick, getRowKey, handleRowExpandToggle]);
 
   // Debounce server side search
   useEffect(() => {
@@ -625,7 +696,7 @@ export const DataTable = ({
             {error}
           </div>
         )}
-        <div className="overflow-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain">
+        <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead className="sticky top-0 z-20 bg-slate-50 shadow-xs">
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
@@ -724,15 +795,37 @@ export const DataTable = ({
                   showBorders={showColumnBorders}
                 />
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="group hover:bg-[#24A1DD]/[0.03] transition-colors duration-150">
-                    {columns.map((col, colIndex) => (
-                      <td key={colIndex} className={`${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} align-top break-words ${showColumnBorders ? 'border-r border-slate-200/60 last:border-r-0' : ''} ${col.cellClassName || 'text-slate-600'} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
-                        {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage) : row[col.accessor]}
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                paginatedData.map((row, rowIndex) => {
+                  const currentKey = getRowKey(row, rowIndex);
+                  const isExpanded = Boolean(renderExpandedRow && currentExpandedKeys.has(currentKey));
+
+                  return (
+                    <React.Fragment key={currentKey}>
+                      <tr
+                        onClick={(e) => handleRowClick(row, rowIndex, e)}
+                        className={`group transition-colors duration-150 ${
+                          isExpanded ? 'bg-sky-50/40 border-b-0' : 'hover:bg-[#24A1DD]/[0.03]'
+                        } ${(expandOnRowClick || onRowClick) ? 'cursor-pointer' : ''}`}
+                      >
+                        {columns.map((col, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className={`${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} align-middle break-words ${showColumnBorders ? 'border-r border-slate-200/60 last:border-r-0' : ''} ${col.cellClassName || 'text-slate-600'} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                          >
+                            {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded) : row[col.accessor]}
+                          </td>
+                        ))}
+                      </tr>
+                      {isExpanded && renderExpandedRow && (
+                        <tr key={`${currentKey}-expanded`} className="bg-slate-50/70 border-b border-slate-200">
+                          <td colSpan={columns.length} className="p-0">
+                            {renderExpandedRow(row, rowIndex, () => handleRowExpandToggle(currentKey, row, rowIndex), containerWidth)}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500 text-sm">

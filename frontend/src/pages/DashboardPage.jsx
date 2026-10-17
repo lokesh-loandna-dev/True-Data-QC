@@ -18,6 +18,181 @@ const parseUtcDate = (dateVal) => {
   return new Date(dateVal);
 };
 
+/**
+ * Compact, unified single-strip detailed row view showing package metrics and actions.
+ * Automatically fits 100% of the visible container width ("first view size").
+ */
+const PackageDetailedRowView = ({
+  pkg,
+  onViewDetails,
+  onExport,
+  isExporting,
+  onCollapse,
+  containerWidth
+}) => {
+  const parsedDate = parseUtcDate(pkg.uploaded_at);
+  const formattedDate = parsedDate && !isNaN(parsedDate.getTime()) 
+    ? parsedDate.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : '-';
+
+  return (
+    <div className="bg-slate-50/95 border-y border-slate-200/90 transition-all overflow-hidden">
+      {/* Sticky container stays anchored left and matches exact visible table width */}
+      <div 
+        className="sticky left-0 px-3.5 py-2 sm:px-4 sm:py-2.5 space-y-2 box-border"
+        style={containerWidth ? { width: `${containerWidth}px` } : { width: '100%' }}
+      >
+        {/* Top Bar: Identity & Actions */}
+        <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200/80">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <span className="text-xs font-bold text-slate-900 truncate max-w-sm sm:max-w-md" title={pkg.filename}>
+              {pkg.filename}
+            </span>
+            {pkg.loan_id && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700 font-mono text-[11px] font-semibold">
+                Loan ID: {pkg.loan_id}
+              </span>
+            )}
+            <span className="text-[11px] text-slate-500 hidden sm:inline">
+              Uploaded by <strong className="text-slate-700 font-medium">{pkg.uploaded_by || 'System'}</strong>
+              {pkg.uploaded_email && ` (${pkg.uploaded_email})`} • {formattedDate}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(pkg.id);
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-sky-50 text-[#24A1DD] hover:text-[#1e88bb] border border-slate-200 hover:border-[#24A1DD]/30 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>Audit Details</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onExport(pkg);
+              }}
+              disabled={isExporting}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 disabled:opacity-50 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            >
+              {isExporting ? (
+                <svg className="animate-spin w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              <span>Export</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCollapse();
+              }}
+              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+              title="Close details"
+              aria-label="Close details"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Unified Single Strip: Validation (4 items) + Divider + Action Breakdown (7 items) */}
+        <div className="bg-white rounded-lg border border-slate-200/90 shadow-2xs p-1.5 flex flex-col md:flex-row items-stretch gap-1.5">
+          {/* Validation Metrics Group (4 items - 36%) */}
+          <div className="w-full md:w-[36%] grid grid-cols-4 gap-1.5 text-center">
+            <div className="bg-slate-50 py-1 px-1 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Total Fields</span>
+              <span className="font-mono text-xs font-bold text-slate-800">{pkg.total_fields ?? 0}</span>
+            </div>
+            <div className="bg-emerald-50/50 py-1 px-1 rounded border border-emerald-100/70 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-emerald-700 font-medium leading-tight">Final Valid</span>
+              <span className="font-mono text-xs font-bold text-emerald-600">{pkg.final_valid ?? 0}</span>
+            </div>
+            <div className="bg-rose-50/50 py-1 px-1 rounded border border-rose-100/70 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-rose-700 font-medium leading-tight">Final Invalid</span>
+              <span className="font-mono text-xs font-bold text-rose-600">{pkg.final_invalid ?? 0}</span>
+            </div>
+            <div className="bg-amber-50/50 py-1 px-1 rounded border border-amber-100/70 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-amber-700 font-medium leading-tight">Final Blank</span>
+              <span className="font-mono text-xs font-bold text-amber-600">{pkg.final_blank ?? 0}</span>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden md:block w-px bg-slate-200 self-stretch my-0.5"></div>
+
+          {/* Action Status Breakdown Group (7 items - 64%) */}
+          <div className="w-full md:w-[64%] grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center">
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Corrected</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_corrected ?? 0) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {pkg.action_corrected ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Incorrect Status</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_incorrect_status ?? 0) > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                {pkg.action_incorrect_status ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Not Applicable</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_not_applicable ?? 0) > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+                {pkg.action_not_applicable ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Need Review</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_need_review ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                {pkg.action_need_review ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Review Completed</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_review_completed ?? 0) > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
+                {pkg.action_review_completed ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Out of Scope</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_out_of_scope ?? 0) > 0 ? 'text-purple-600' : 'text-slate-400'}`}>
+                {pkg.action_out_of_scope ?? 0}
+              </span>
+            </div>
+            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Others</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_others ?? 0) > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+                {pkg.action_others ?? 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DashboardPage = () => {
   const { user } = useAuth();
   const [packages, setPackages] = useState([]);
@@ -31,12 +206,19 @@ const DashboardPage = () => {
   const [detailsError, setDetailsError] = useState('');
   const [rowExportLoadingId, setRowExportLoadingId] = useState(null);
 
+  // Expandable Row State
+  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+
   // Date-based filter state
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
 
   const isAdmin = user?.role === 'admin';
+
+  const handleToggleExpand = useCallback((key) => {
+    setExpandedRowKeys((prev) => (prev.includes(key) ? [] : [key]));
+  }, []);
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
@@ -308,10 +490,22 @@ const DashboardPage = () => {
         sortable: false,
         headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        render: (_, index, globalIndexOffset = 0) => (
-          <span className="font-mono text-xs font-semibold text-slate-500">
-            {globalIndexOffset + index + 1}
-          </span>
+        render: (_, index, globalIndexOffset = 0, isExpanded = false) => (
+          <div className="flex items-center gap-2">
+            <span
+              className={`p-1 rounded-md text-slate-400 group-hover:text-[#24A1DD] transition-all duration-200 ${
+                isExpanded ? 'rotate-90 text-[#24A1DD] bg-[#24A1DD]/10' : ''
+              }`}
+              title={isExpanded ? 'Click to collapse row details' : 'Click to view row details'}
+            >
+              <svg className="w-3.5 h-3.5 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
+            <span className="font-mono text-xs font-semibold text-slate-500">
+              {globalIndexOffset + index + 1}
+            </span>
+          </div>
         ),
       },
       {
@@ -528,7 +722,10 @@ const DashboardPage = () => {
             <Tooltip text="Audit Details" position="top">
               <button
                 type="button"
-                onClick={() => handleViewDetails(pkg.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(pkg.id);
+                }}
                 className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Audit Details"
               >
@@ -541,7 +738,10 @@ const DashboardPage = () => {
             <Tooltip text={`Export ${pkg.filename} to Excel`} position="top">
               <button
                 type="button"
-                onClick={() => handleExportRowPackage(pkg)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExportRowPackage(pkg);
+                }}
                 disabled={rowExportLoadingId === pkg.id}
                 className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 disabled:opacity-50 text-emerald-600 hover:text-emerald-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Export to Excel"
@@ -562,7 +762,10 @@ const DashboardPage = () => {
               <Tooltip text={`Delete ${pkg.filename}`} position="top">
                 <button
                   type="button"
-                  onClick={() => handleDeletePackage(pkg.id, pkg.filename)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePackage(pkg.id, pkg.filename);
+                  }}
                   className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                   aria-label="Delete Package"
                 >
@@ -768,6 +971,20 @@ const DashboardPage = () => {
                 'No Results Found'
               )
             }
+            renderExpandedRow={(pkg, _, collapse, containerWidth) => (
+              <PackageDetailedRowView
+                pkg={pkg}
+                onViewDetails={handleViewDetails}
+                onExport={handleExportRowPackage}
+                isExporting={rowExportLoadingId === pkg.id}
+                onCollapse={collapse}
+                containerWidth={containerWidth}
+              />
+            )}
+            expandedRowKeys={expandedRowKeys}
+            onToggleExpand={handleToggleExpand}
+            expandOnRowClick={true}
+            rowKey={(pkg) => pkg.id}
             onClearFilters={handleClearDateFilter}
             customHeader={packageHeaderActions}
             className="flex flex-col min-h-0"
