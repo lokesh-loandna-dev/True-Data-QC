@@ -26,6 +26,19 @@ def init_db():
         try:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
+                try:
+                    connection.execute(text("""
+                        IF EXISTS (SELECT * FROM sysobjects WHERE name='loan_packages' AND xtype='U')
+                        BEGIN
+                            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('loan_packages') AND name = 'review_required')
+                            BEGIN
+                                ALTER TABLE loan_packages ADD review_required INT NULL DEFAULT 0;
+                            END
+                        END
+                    """))
+                    connection.commit()
+                except Exception as migration_err:
+                    print(f"Warning: review_required column migration check skipped: {migration_err}")
                 connection.commit()
             db_status["connected"] = True
             db_status["error"] = None

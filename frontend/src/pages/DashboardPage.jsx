@@ -94,8 +94,8 @@ const PackageDetailedRowView = ({
               <span className="font-mono text-xs font-bold text-rose-600">{pkg.final_invalid ?? 0}</span>
             </div>
             <div className="bg-amber-50/50 py-1 px-1 rounded border border-amber-100/70 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-amber-700 font-medium leading-tight">Final Blank</span>
-              <span className="font-mono text-xs font-bold text-amber-600">{pkg.final_blank ?? 0}</span>
+              <span className="block text-[10px] text-amber-700 font-medium leading-tight">Review Required</span>
+              <span className="font-mono text-xs font-bold text-amber-600">{pkg.review_required ?? 0}</span>
             </div>
           </div>
 
@@ -555,13 +555,14 @@ const DashboardPage = () => {
         ),
       },
       {
-        header: 'Final Blank',
-        accessor: 'final_blank',
+        header: 'Review Required',
+        accessor: 'review_required',
         sortable: true,
         align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[120px]',
         render: (pkg) => (
           <span className="font-mono font-semibold text-amber-600">
-            {pkg.final_blank ?? 0}
+            {pkg.review_required ?? 0}
           </span>
         ),
       },

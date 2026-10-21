@@ -1598,16 +1598,17 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
                     total_enum += 1
 
     total_macro = sum(1 for r in results if r[6] not in ("", None))
-    final_valid = sum(1 for r in results if r[7] == "Valid")
-    final_invalid = sum(1 for r in results if str(r[7]).startswith("Invalid"))
-    final_blank = sum(1 for r in results if r[7] == "N/A - blank value")
+    # Filter statistics directly from Final Result (column index 11), with fallback to r[7] if not consolidated
+    final_valid = sum(1 for r in results if (str(r[11]) == "Valid" if len(r) > 11 else str(r[7]) == "Valid"))
+    final_invalid = sum(1 for r in results if (str(r[11]) == "Invalid" if len(r) > 11 else str(r[7]).startswith("Invalid")))
+    review_required = sum(1 for r in results if len(r) > 11 and str(r[11]) == "Review Required")
+    # Informational count of blank field rows
+    final_blank = sum(1 for r in results if r[1] == "N/A - blank value")
 
-    # Never absorb unclassified rows into Final Valid: in a QC tool an unknown
-    # status must surface, not be reported as passing. Count it separately and
-    # warn so the buckets still reconcile to Total Fields.
-    final_other = total - (final_valid + final_invalid + final_blank)
+    # Any unclassified rows that do not fall into Valid, Invalid, or Review Required
+    final_other = total - (final_valid + final_invalid + review_required)
     if final_other > 0:
-        log.warning("%s: %d row(s) produced an unrecognised Result status; "
+        log.warning("%s: %d row(s) produced an unrecognised Final Result status; "
                     "reported as 'Final Unclassified'.", filename, final_other)
 
     return {
@@ -1634,8 +1635,9 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
         "Macro Invalid": sum(1 for r in results if r[6] not in ("", None, "Valid")),
         "Final Valid": final_valid,
         "Final Invalid": final_invalid,
+        "Review Required": review_required,
         "Final Blank": final_blank,
-        "Final Unclassified": final_other,
+        "Final Unclassified": final_other if final_other > 0 else 0,
         **_condition_counts(filename, results, total),
         **_final_counts(filename, results, total),
     }

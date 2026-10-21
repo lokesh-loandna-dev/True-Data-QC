@@ -122,12 +122,22 @@ export const exportToExcel = ({
   const condKnown = condValid + condValidPartial + condInvalid + condNotAutomated + condNoRule + condNotMet + condBlank + condInfo;
   const condUnclassified = safeSummary['Cond Unclassified'] ?? (condTotal - condKnown > 0 ? condTotal - condKnown : 0);
 
+  const getFinalResultVal = (r) => {
+    return String(r.final_result ?? r['Final Result'] ?? r.result ?? r['Result'] ?? '').trim();
+  };
+
+  const finalValidCount = safeSummary['Final Valid'] ?? safeRecords.filter(r => getFinalResultVal(r) === 'Valid').length;
+  const finalInvalidCount = safeSummary['Final Invalid'] ?? safeRecords.filter(r => getFinalResultVal(r) === 'Invalid').length;
+  const reviewRequiredCount = safeSummary['Review Required'] ?? safeRecords.filter(r => getFinalResultVal(r) === 'Review Required').length;
+  const finalBlankCount = safeSummary['Final Blank'] ?? safeRecords.filter(r => String(r.data_type_validation ?? r['Data Type Validation'] ?? '').startsWith('N/A - blank')).length;
+  const totalFieldsCount = safeSummary['Total Fields'] ?? safeRecords.length;
+
   // 2. Map summary metrics for "Summary Sheet"
   const summaryRows = [
-    { Section: 'General Statistics', Metric: 'Total Fields', Value: safeSummary['Total Fields'] ?? 0 },
-    { Section: 'General Statistics', Metric: 'Final Valid', Value: safeSummary['Final Valid'] ?? 0 },
-    { Section: 'General Statistics', Metric: 'Final Invalid', Value: safeSummary['Final Invalid'] ?? 0 },
-    { Section: 'General Statistics', Metric: 'Final Blank', Value: safeSummary['Final Blank'] ?? 0 },
+    { Section: 'General Statistics', Metric: 'Total Fields', Value: totalFieldsCount },
+    { Section: 'General Statistics', Metric: 'Final Valid', Value: finalValidCount },
+    { Section: 'General Statistics', Metric: 'Final Invalid', Value: finalInvalidCount },
+    { Section: 'General Statistics', Metric: 'Review Required', Value: reviewRequiredCount },
 
     { Section: 'Dictionary Match Checks', Metric: 'Total Fields', Value: safeSummary['Total Fields'] ?? 0 },
     { Section: 'Dictionary Match Checks', Metric: 'Matched Fields', Value: safeSummary['Matched'] ?? 0 },
@@ -350,7 +360,7 @@ export const exportPackagesToExcel = ({
     row['Total Fields'] = pkg.total_fields ?? 0;
     row['Final Valid'] = pkg.final_valid ?? 0;
     row['Final Invalid'] = pkg.final_invalid ?? 0;
-    row['Final Blank'] = pkg.final_blank ?? 0;
+    row['Review Required'] = pkg.review_required ?? 0;
     row['Corrected'] = pkg.action_corrected ?? 0;
     row['Incorrect Status'] = pkg.action_incorrect_status ?? 0;
     row['Not Applicable'] = pkg.action_not_applicable ?? 0;
@@ -375,7 +385,7 @@ export const exportPackagesToExcel = ({
           'Total Fields': '',
           'Final Valid': '',
           'Final Invalid': '',
-          'Final Blank': '',
+          'Review Required': '',
           'Corrected': '',
           'Incorrect Status': '',
           'Not Applicable': '',

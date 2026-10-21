@@ -352,14 +352,14 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
             filename, loan_id, user_id, uploaded_at, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
             total_enum, enum_pass, enum_format_variance, enum_fail, enum_no_list,
             numeric_format_flagged, total_macro, macro_valid, macro_invalid,
-            final_valid, final_invalid, final_blank
+            final_valid, final_invalid, final_blank, review_required
         )
         OUTPUT INSERTED.id
         VALUES (
             :filename, :loan_id, :user_id, SYSUTCDATETIME(), :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
             :total_enum, :enum_pass, :enum_format_variance, :enum_fail, :enum_no_list,
             :numeric_format_flagged, :total_macro, :macro_valid, :macro_invalid,
-            :final_valid, :final_invalid, :final_blank
+            :final_valid, :final_invalid, :final_blank, :review_required
         )
         """)
 
@@ -385,7 +385,8 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
             "macro_invalid": int(summary_dict.get("Macro Invalid", 0)),
             "final_valid": int(summary_dict.get("Final Valid", 0)),
             "final_invalid": int(summary_dict.get("Final Invalid", 0)),
-            "final_blank": int(summary_dict.get("Final Blank", 0))
+            "final_blank": int(summary_dict.get("Final Blank", 0)),
+            "review_required": int(summary_dict.get("Review Required", 0))
         }
 
         insert_record_sql = text("""
@@ -503,6 +504,9 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 lp.*, 
                 u.username as uploaded_by, 
                 u.email as uploaded_email,
+                COALESCE(fr.fr_valid, lp.final_valid) as final_valid,
+                COALESCE(fr.fr_invalid, lp.final_invalid) as final_invalid,
+                COALESCE(fr.fr_review_required, 0) as review_required,
                 COALESCE(act.action_corrected, 0) as action_corrected,
                 COALESCE(act.action_incorrect_status, 0) as action_incorrect_status,
                 COALESCE(act.action_not_applicable, 0) as action_not_applicable,
@@ -512,6 +516,15 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 COALESCE(act.action_others, 0) as action_others
             FROM loan_packages lp
             LEFT JOIN users u ON lp.user_id = u.id
+            LEFT JOIN (
+                SELECT 
+                    package_id,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(final_result))) = 'valid' THEN 1 ELSE 0 END) as fr_valid,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(final_result))) = 'invalid' THEN 1 ELSE 0 END) as fr_invalid,
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(final_result))) = 'review required' THEN 1 ELSE 0 END) as fr_review_required
+                FROM loan_package_records
+                GROUP BY package_id
+            ) fr ON lp.id = fr.package_id
             LEFT JOIN (
                 SELECT 
                     package_id,
@@ -643,7 +656,16 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
             cond_known = cond_valid + cond_partial + cond_invalid + cond_not_auto + cond_no_rule + cond_not_met + cond_blank + cond_info
             cond_unclass = total_rec - cond_known
 
+            fr_valid = sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Valid")
+            fr_invalid = sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Invalid")
+            fr_review = sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Review Required")
+            fr_not_validated = sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Not Validated")
+
             summary.update({
+                "Total Fields": total_rec,
+                "Final Valid": fr_valid,
+                "Final Invalid": fr_invalid,
+                "Review Required": fr_review,
                 "Cond Valid": cond_valid,
                 "Cond Valid - Partial": cond_partial,
                 "Cond Invalid": cond_invalid,
@@ -655,14 +677,18 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 "Cond Unclassified": cond_unclass,
                 "Cond Rules Applied": cond_valid + cond_partial + cond_invalid + cond_not_auto,
                 "Cond Total (reconciles)": total_rec,
-                "Overall Valid": sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Valid"),
-                "Overall Invalid": sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Invalid"),
-                "Overall Review Required": sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Review Required"),
-                "Overall Not Validated": sum(1 for r in records if _get_val(r, "final_result", "Final Result") == "Not Validated"),
+                "Overall Valid": fr_valid,
+                "Overall Invalid": fr_invalid,
+                "Overall Review Required": fr_review,
+                "Overall Not Validated": fr_not_validated,
             })
 
         # Determine loan_id for this package
         lp_dict = dict(lp)
+        lp_dict["total_fields"] = total_rec
+        lp_dict["final_valid"] = fr_valid
+        lp_dict["final_invalid"] = fr_invalid
+        lp_dict["review_required"] = fr_review
         loan_id_val = lp_dict.get("loan_id")
         if not loan_id_val:
             for r in records:

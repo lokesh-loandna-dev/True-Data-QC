@@ -747,9 +747,9 @@ export const PackageAuditModal = ({
                         <div className="text-3xl font-extrabold text-red-700">{packageDetails.summary["Final Invalid"]}</div>
                         <div className="text-xs text-red-600 mt-1 font-semibold">Final Invalid</div>
                       </div>
-                      <div className="bg-slate-100/70 border border-slate-200/50 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-slate-500">{packageDetails.summary["Final Blank"]}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-semibold">Final Blank</div>
+                      <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 text-center">
+                        <div className="text-3xl font-extrabold text-amber-700">{packageDetails.summary["Review Required"] ?? 0}</div>
+                        <div className="text-xs text-amber-600 mt-1 font-semibold">Review Required</div>
                       </div>
                     </div>
                   </div>

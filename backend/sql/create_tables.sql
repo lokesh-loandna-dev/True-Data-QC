@@ -90,7 +90,8 @@ BEGIN
         macro_invalid INT NOT NULL,
         final_valid INT NOT NULL,
         final_invalid INT NOT NULL,
-        final_blank INT NOT NULL
+        final_blank INT NOT NULL,
+        review_required INT NULL DEFAULT 0
     );
 END
 ELSE
@@ -102,6 +103,10 @@ BEGIN
     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('loan_packages') AND name = 'loan_id')
     BEGIN
         ALTER TABLE loan_packages ADD loan_id NVARCHAR(100) NULL;
+    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('loan_packages') AND name = 'review_required')
+    BEGIN
+        ALTER TABLE loan_packages ADD review_required INT NULL DEFAULT 0;
     END
 END;
 
