@@ -349,14 +349,14 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
 
         insert_package_sql = text("""
         INSERT INTO loan_packages (
-            filename, loan_id, user_id, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
+            filename, loan_id, user_id, uploaded_at, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
             total_enum, enum_pass, enum_format_variance, enum_fail, enum_no_list,
             numeric_format_flagged, total_macro, macro_valid, macro_invalid,
             final_valid, final_invalid, final_blank
         )
         OUTPUT INSERTED.id
         VALUES (
-            :filename, :loan_id, :user_id, :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
+            :filename, :loan_id, :user_id, SYSUTCDATETIME(), :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
             :total_enum, :enum_pass, :enum_format_variance, :enum_fail, :enum_no_list,
             :numeric_format_flagged, :total_macro, :macro_valid, :macro_invalid,
             :final_valid, :final_invalid, :final_blank

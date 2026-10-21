@@ -81,8 +81,8 @@ def create_audit_log(log_level: str, action: str, username: str, email: str, iss
         with engine.begin() as connection:
             connection.execute(
                 text("""
-                    INSERT INTO audit_logs (log_level, action, username, email, issue)
-                    VALUES (:log_level, :action, :username, :email, :issue)
+                    INSERT INTO audit_logs (timestamp, log_level, action, username, email, issue)
+                    VALUES (SYSUTCDATETIME(), :log_level, :action, :username, :email, :issue)
                 """),
                 {
                     "log_level": log_level,
@@ -162,10 +162,10 @@ def save_user_column_preferences(user_id: int, table_key: str, selected_columns:
                 USING (SELECT :uid AS user_id, :key AS table_key) AS source
                 ON (target.user_id = source.user_id AND target.table_key = source.table_key)
                 WHEN MATCHED THEN
-                    UPDATE SET selected_columns = :cols, updated_at = CURRENT_TIMESTAMP
+                    UPDATE SET selected_columns = :cols, updated_at = SYSUTCDATETIME()
                 WHEN NOT MATCHED THEN
                     INSERT (user_id, table_key, selected_columns, updated_at)
-                    VALUES (:uid, :key, :cols, CURRENT_TIMESTAMP);
+                    VALUES (:uid, :key, :cols, SYSUTCDATETIME());
                 """),
                 {"uid": user_id, "key": table_key, "cols": cols_json}
             )
@@ -217,10 +217,10 @@ def set_system_setting(setting_key: str, setting_value: str):
                 USING (SELECT :key AS setting_key) AS source
                 ON (target.setting_key = source.setting_key)
                 WHEN MATCHED THEN
-                    UPDATE SET setting_value = :val, updated_at = CURRENT_TIMESTAMP
+                    UPDATE SET setting_value = :val, updated_at = SYSUTCDATETIME()
                 WHEN NOT MATCHED THEN
                     INSERT (setting_key, setting_value, updated_at)
-                    VALUES (:key, :val, CURRENT_TIMESTAMP);
+                    VALUES (:key, :val, SYSUTCDATETIME());
                 """),
                 {"key": setting_key, "val": str(setting_value)}
             )
