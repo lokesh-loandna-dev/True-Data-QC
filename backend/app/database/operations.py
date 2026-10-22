@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime, timedelta
 from sqlalchemy import text
 from app.database.connection import engine
 
@@ -242,4 +243,100 @@ def bump_data_dict_version() -> str:
     new_version = str(int(time.time() * 1000))
     set_system_setting("data_dictionary_version", new_version)
     return new_version
+
+def save_password_reset_otp(email: str, otp_code: str, expiry_minutes: int = 10) -> bool:
+    """
+    Invalidates any previous pending OTPs for the email and creates a new OTP record.
+    """
+    if not engine:
+        raise Exception("Database engine not initialized")
+    clean_email = email.strip().lower()
+    expires_at = datetime.utcnow() + timedelta(minutes=expiry_minutes)
+    
+    with engine.begin() as connection:
+        # Invalidate previous unconsumed OTPs
+        connection.execute(
+            text("UPDATE password_reset_otps SET used = 1 WHERE email = :email AND used = 0"),
+            {"email": clean_email}
+        )
+        # Insert fresh OTP
+        connection.execute(
+            text("""
+                INSERT INTO password_reset_otps (email, otp_code, expires_at, verified, used, attempts, created_at)
+                VALUES (:email, :otp_code, :expires_at, 0, 0, 0, SYSUTCDATETIME())
+            """),
+            {"email": clean_email, "otp_code": otp_code, "expires_at": expires_at}
+        )
+        return True
+
+def verify_password_reset_otp(email: str, otp_code: str) -> dict:
+    """
+    Verifies an OTP entered for password reset.
+    Returns a dict with 'valid': bool and 'reason': str.
+    """
+    if not engine:
+        raise Exception("Database engine not initialized")
+    clean_email = email.strip().lower()
+    clean_otp = otp_code.strip()
+
+    with engine.connect() as connection:
+        result = connection.execute(
+            text("""
+                SELECT TOP 1 id, otp_code, expires_at, verified, used, attempts
+                FROM password_reset_otps
+                WHERE email = :email AND used = 0
+                ORDER BY id DESC
+            """),
+            {"email": clean_email}
+        ).fetchone()
+
+        if not result:
+            return {"valid": False, "reason": "No active OTP request found. Please request a new OTP."}
+
+        record = dict(result._mapping)
+        otp_id = record["id"]
+        attempts = record.get("attempts", 0)
+
+        # Check max attempts
+        if attempts >= 5:
+            return {"valid": False, "reason": "Too many failed attempts. Please request a new OTP."}
+
+        # Check expiration
+        expires_at = record["expires_at"]
+        if expires_at and expires_at < datetime.utcnow():
+            return {"valid": False, "reason": "OTP has expired. Please request a new OTP."}
+
+        # Check code match
+        if record["otp_code"] != clean_otp:
+            # Increment attempts
+            with engine.begin() as update_conn:
+                update_conn.execute(
+                    text("UPDATE password_reset_otps SET attempts = attempts + 1 WHERE id = :id"),
+                    {"id": otp_id}
+                )
+            remaining = 5 - (attempts + 1)
+            remaining_msg = f" ({remaining} attempts remaining)" if remaining > 0 else " (Maximum attempts reached)"
+            return {"valid": False, "reason": f"Invalid verification code.{remaining_msg}"}
+
+        # Code is correct: mark verified
+        with engine.begin() as update_conn:
+            update_conn.execute(
+                text("UPDATE password_reset_otps SET verified = 1 WHERE id = :id"),
+                {"id": otp_id}
+            )
+        return {"valid": True, "reason": "OTP verified successfully"}
+
+def consume_password_reset_otp(email: str) -> bool:
+    """
+    Marks verified OTPs as used once password reset is completed.
+    """
+    if not engine:
+        return False
+    clean_email = email.strip().lower()
+    with engine.begin() as connection:
+        connection.execute(
+            text("UPDATE password_reset_otps SET used = 1 WHERE email = :email"),
+            {"email": clean_email}
+        )
+        return True
 

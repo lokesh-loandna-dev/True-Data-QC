@@ -333,3 +333,19 @@ BEGIN
     );
 END;
 
+-- 14. Password Reset OTPs Table
+IF OBJECT_ID('dbo.password_reset_otps', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.password_reset_otps (
+        id                  INT IDENTITY(1,1) PRIMARY KEY,
+        email               VARCHAR(255) NOT NULL,
+        otp_code            VARCHAR(10) NOT NULL,
+        expires_at          DATETIME NOT NULL,
+        verified            BIT NOT NULL DEFAULT 0,
+        used                BIT NOT NULL DEFAULT 0,
+        attempts            INT NOT NULL DEFAULT 0,
+        created_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IX_password_reset_otps_email ON dbo.password_reset_otps(email);
+END;
+

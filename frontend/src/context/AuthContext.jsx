@@ -62,6 +62,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendOtp = async (email) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.sendOtp(email);
+      return response;
+    } catch (err) {
+      const errMsg = err.message || 'Failed to send verification code';
+      setError(errMsg);
+      throw new Error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async (email, otp) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.verifyOtp(email, otp);
+      return response;
+    } catch (err) {
+      const errMsg = err.message || 'Verification code failed';
+      setError(errMsg);
+      throw new Error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPasswordWithOtp = async (email, resetToken, password, confirmPassword) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.resetPasswordWithOtp(email, resetToken, password, confirmPassword);
+      return response;
+    } catch (err) {
+      const errMsg = err.message || 'Password reset failed';
+      setError(errMsg);
+      throw new Error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const forgotPassword = async (email, password, confirmPassword) => {
     setLoading(true);
     setError(null);
@@ -89,6 +134,9 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     register,
+    sendOtp,
+    verifyOtp,
+    resetPasswordWithOtp,
     forgotPassword,
     logout,
     isAuthenticated: !!user

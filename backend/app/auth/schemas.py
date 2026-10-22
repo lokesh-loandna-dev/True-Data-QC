@@ -16,4 +16,18 @@ class ForgotPasswordRequest(BaseModel):
     email: str
     password: str
     confirm_password: str
+    reset_token: str | None = None
+
+class SendOtpRequest(BaseModel):
+    email: str
+
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    reset_token: str
+    password: str
+    confirm_password: str
 

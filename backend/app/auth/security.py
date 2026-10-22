@@ -75,3 +75,26 @@ def get_current_user_id(authorization: str = Header(None)):
         issue = f"Failed to parse authorization header: {str(e)}"
         log_event("WARNING", "AUTH_HEADER_PARSE_ERROR", issue)
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+def generate_reset_token(email: str, expires_minutes: int = 15) -> str:
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=expires_minutes)
+    payload = {
+        "sub": email.lower(),
+        "email": email.lower(),
+        "purpose": "password_reset",
+        "iat": now,
+        "exp": expire
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_reset_token(token: str, expected_email: str) -> bool:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "password_reset":
+            return False
+        token_email = payload.get("email") or payload.get("sub")
+        return bool(token_email and token_email.lower() == expected_email.lower())
+    except Exception as e:
+        log_event("WARNING", "RESET_TOKEN_INVALID", f"Invalid reset token: {str(e)}")
+        return False

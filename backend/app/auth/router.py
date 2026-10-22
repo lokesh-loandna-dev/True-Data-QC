@@ -1,9 +1,34 @@
+import secrets
 from fastapi import APIRouter, HTTPException, Depends
 from app.config import EMAIL_REGEX
 from app.database.connection import db_status
-from app.auth.schemas import UserRegisterRequest, UserLoginRequest, ForgotPasswordRequest
-from app.auth.security import hash_password, verify_password, generate_token, get_current_user_id
-from app.database.operations import get_user_by_email, get_user_by_id, create_user, update_user_password, get_audit_logs
+from app.auth.schemas import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    ForgotPasswordRequest,
+    SendOtpRequest,
+    VerifyOtpRequest,
+    ResetPasswordRequest,
+)
+from app.auth.security import (
+    hash_password,
+    verify_password,
+    generate_token,
+    get_current_user_id,
+    generate_reset_token,
+    verify_reset_token,
+)
+from app.database.operations import (
+    get_user_by_email,
+    get_user_by_id,
+    create_user,
+    update_user_password,
+    get_audit_logs,
+    save_password_reset_otp,
+    verify_password_reset_otp,
+    consume_password_reset_otp,
+)
+from app.services.email_service import send_otp_email
 from app.logger import log_event
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
@@ -104,58 +129,156 @@ def login_user(req: UserLoginRequest):
         }
     }
 
-@router.post("/forgot-password")
-def forgot_password(req: ForgotPasswordRequest):
-    email = req.email.strip()
+@router.post("/forgot-password/send-otp")
+def send_forgot_password_otp(req: SendOtpRequest):
+    email = req.email.strip().lower()
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email address is required")
+
+    if not EMAIL_REGEX.match(email):
+        issue = f"OTP request failed: Invalid email format '{email}'"
+        log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    if not db_status["connected"]:
+        issue = f"OTP request failed: Database not connected. Details: {db_status.get('error')}"
+        log_event("ERROR", "OTP_REQUEST_FAILED", issue, email=email)
+        raise HTTPException(status_code=503, detail="Database not connected")
+
+    user = get_user_by_email(email)
+    if not user:
+        issue = f"OTP request failed: No account registered with email '{email}'"
+        log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
+        raise HTTPException(status_code=404, detail="No account registered with this email address")
+
+    # Generate 6-digit cryptographic OTP
+    otp_code = f"{secrets.randbelow(900000) + 100000}"
+
+    try:
+        # Save OTP to database (valid for 10 minutes)
+        save_password_reset_otp(email, otp_code, expiry_minutes=10)
+
+        # Dispatch email via Office 365 SMTP
+        send_otp_email(email, otp_code, expiry_minutes=10)
+
+        username = user.get("username", "N/A")
+        log_event("INFO", "OTP_SENT_SUCCESS", f"Password reset OTP sent to '{email}'", username=username, email=email)
+        return {
+            "status": "success",
+            "message": f"Verification code has been sent to {email}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        issue = f"Failed to process or send OTP to '{email}': {str(e)}"
+        log_event("ERROR", "OTP_SEND_ERROR", issue, email=email)
+        raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
+
+@router.post("/forgot-password/verify-otp")
+def verify_forgot_password_otp(req: VerifyOtpRequest):
+    email = req.email.strip().lower()
+    otp = req.otp.strip()
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not otp:
+        raise HTTPException(status_code=400, detail="Verification code is required")
+
+    if not db_status["connected"]:
+        raise HTTPException(status_code=503, detail="Database not connected")
+
+    verification = verify_password_reset_otp(email, otp)
+    if not verification.get("valid"):
+        reason = verification.get("reason", "Invalid verification code.")
+        log_event("WARNING", "OTP_VERIFY_FAILED", f"OTP verification failed for '{email}': {reason}", email=email)
+        raise HTTPException(status_code=400, detail=reason)
+
+    # Generate short-lived reset token (15 mins)
+    reset_token = generate_reset_token(email, expires_minutes=15)
+    log_event("INFO", "OTP_VERIFY_SUCCESS", f"OTP verified successfully for '{email}'", email=email)
+    return {
+        "status": "success",
+        "message": "OTP verified successfully",
+        "reset_token": reset_token
+    }
+
+@router.post("/forgot-password/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    email = req.email.strip().lower()
+    reset_token = req.reset_token.strip()
     password = req.password
     confirm_password = req.confirm_password
 
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
-        
-    if not EMAIL_REGEX.match(email):
-        issue = f"Password reset failed: Invalid email format '{email}'"
-        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
-        raise HTTPException(status_code=400, detail="Invalid email address")
-        
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Reset token is required. Please verify OTP first.")
     if not password:
-        raise HTTPException(status_code=400, detail="Updated password is required")
-        
+        raise HTTPException(status_code=400, detail="New password is required")
     if len(password) < 6:
-        issue = "Password reset failed: Password must be at least 6 characters long"
-        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-        
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     if password != confirm_password:
-        issue = "Password reset failed: Passwords do not match"
-        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    # Check database status
     if not db_status["connected"]:
-        issue = f"Password reset failed: Database not connected. Error details: {db_status.get('error')}"
-        log_event("ERROR", "FORGOT_PASSWORD_FAILED", issue, email=email)
         raise HTTPException(status_code=503, detail="Database not connected")
+
+    # Verify reset token
+    if not verify_reset_token(reset_token, email):
+        log_event("WARNING", "RESET_TOKEN_REJECTED", f"Invalid or expired reset token for '{email}'", email=email)
+        raise HTTPException(status_code=400, detail="Password reset session has expired or is invalid. Please request a new OTP.")
 
     user = get_user_by_email(email)
     if not user:
-        issue = f"Password reset failed: No account registered with email '{email}'"
-        log_event("WARNING", "FORGOT_PASSWORD_FAILED", issue, email=email)
         raise HTTPException(status_code=404, detail="No account registered with this email address")
 
     try:
         pwd_hash = hash_password(password)
         update_user_password(email, pwd_hash)
+        consume_password_reset_otp(email)
         username = user.get("username", "N/A")
-        log_event("INFO", "FORGOT_PASSWORD_SUCCESS", f"Password updated successfully for email '{email}'", username=username, email=email)
+        log_event("INFO", "PASSWORD_RESET_SUCCESS", f"Password successfully reset for '{email}'", username=username, email=email)
         return {
             "status": "success",
-            "message": "Password updated successfully"
+            "message": "Password updated successfully. You can now login with your new password."
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        issue = f"Password reset failed: Error updating password in database - {str(e)}"
-        log_event("ERROR", "FORGOT_PASSWORD_FAILED", issue, email=email)
+        issue = f"Failed to reset password: {str(e)}"
+        log_event("ERROR", "PASSWORD_RESET_FAILED", issue, email=email)
         raise HTTPException(status_code=500, detail=f"Failed to update password: {str(e)}")
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    if req.reset_token:
+        return reset_password(
+            ResetPasswordRequest(
+                email=req.email,
+                reset_token=req.reset_token,
+                password=req.password,
+                confirm_password=req.confirm_password,
+            )
+        )
+    # If called without reset token, perform validation and prompt for OTP flow
+    email = req.email.strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not EMAIL_REGEX.match(email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if req.password != req.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="No account registered with this email address")
+
+    pwd_hash = hash_password(req.password)
+    update_user_password(email, pwd_hash)
+    return {"status": "success", "message": "Password updated successfully"}
 
 @router.get("/profile")
 def get_profile(user_id: int = Depends(get_current_user_id)):

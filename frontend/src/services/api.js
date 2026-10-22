@@ -102,6 +102,10 @@ export const api = new ApiClient();
 export const authApi = {
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   register: (username, email, password) => api.post('/api/auth/register', { username, email, password }),
+  sendOtp: (email) => api.post('/api/auth/forgot-password/send-otp', { email }),
+  verifyOtp: (email, otp) => api.post('/api/auth/forgot-password/verify-otp', { email, otp }),
+  resetPasswordWithOtp: (email, reset_token, password, confirm_password) =>
+    api.post('/api/auth/forgot-password/reset-password', { email, reset_token, password, confirm_password }),
   forgotPassword: (email, password, confirm_password) =>
     api.post('/api/auth/forgot-password', { email, password, confirm_password }),
   getProfile: () => api.get('/api/auth/profile'),
