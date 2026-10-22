@@ -712,6 +712,7 @@ const DashboardPage = () => {
       {
         header: 'Total Fields',
         accessor: 'total_fields',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         render: (pkg) => (
@@ -723,6 +724,7 @@ const DashboardPage = () => {
       {
         header: 'Final Valid',
         accessor: 'final_valid',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         render: (pkg) => (
@@ -734,6 +736,7 @@ const DashboardPage = () => {
       {
         header: 'Final Invalid',
         accessor: 'final_invalid',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         render: (pkg) => (
@@ -745,6 +748,7 @@ const DashboardPage = () => {
       {
         header: 'Review Required',
         accessor: 'review_required',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[120px]',
@@ -757,6 +761,7 @@ const DashboardPage = () => {
       {
         header: 'Yet to Take Action',
         accessor: 'yet_to_take_action',
+        filterType: 'number',
         headerTooltip: 'Calculates only Invalid and Review Required',
         sortable: true,
         align: 'center',
@@ -773,6 +778,7 @@ const DashboardPage = () => {
       {
         header: 'Corrected',
         accessor: 'action_corrected',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[100px]',
@@ -788,6 +794,7 @@ const DashboardPage = () => {
       {
         header: 'Incorrect Status',
         accessor: 'action_incorrect_status',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[125px]',
@@ -803,6 +810,7 @@ const DashboardPage = () => {
       {
         header: 'Not Applicable',
         accessor: 'action_not_applicable',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[120px]',
@@ -818,6 +826,7 @@ const DashboardPage = () => {
       {
         header: 'Need Review',
         accessor: 'action_need_review',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[110px]',
@@ -833,6 +842,7 @@ const DashboardPage = () => {
       {
         header: 'Review Completed',
         accessor: 'action_review_completed',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[140px]',
@@ -848,6 +858,7 @@ const DashboardPage = () => {
       {
         header: 'Out of Scope',
         accessor: 'action_out_of_scope',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[110px]',
@@ -863,6 +874,7 @@ const DashboardPage = () => {
       {
         header: 'Others',
         accessor: 'action_others',
+        filterType: 'number',
         sortable: true,
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[90px]',

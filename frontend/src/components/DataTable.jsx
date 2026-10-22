@@ -3,8 +3,29 @@ import { createPortal } from 'react-dom';
 import { TableSkeleton } from './SkeletonLoader';
 import Tooltip from './Tooltip';
 
-// Small modal popover for column filtering when clicking the filter icon
-// Small modal popover for column filtering with multi-select checkboxes
+const NUMERIC_OPERATORS = [
+  { value: '=', label: '= (Equals)' },
+  { value: '!=', label: '≠ (Not Equal)' },
+  { value: '>', label: '> (Greater Than)' },
+  { value: '>=', label: '≥ (Greater or Equal)' },
+  { value: '<', label: '< (Less Than)' },
+  { value: '<=', label: '≤ (Less or Equal)' },
+  { value: 'between', label: '⇄ (Between Min & Max)' },
+];
+
+export const isNumericFilterActive = (val) => {
+  return Boolean(
+    val &&
+    typeof val === 'object' &&
+    !Array.isArray(val) &&
+    val.type === 'number' &&
+    val.value !== '' &&
+    val.value !== undefined &&
+    val.value !== null
+  );
+};
+
+// Small modal popover for column filtering (supports both condition-based numeric filtering and multi-select values)
 const ColumnFilterModal = ({
   col,
   columnKey,
@@ -21,19 +42,65 @@ const ColumnFilterModal = ({
   const modalRef = useRef(null);
   const [coords, setCoords] = useState(null);
 
-  // Normalize currentValue to array
+  // Determine if column is numeric
+  const isExplicitNumeric = col.filterType === 'number' || col.dataType === 'number' || col.isNumeric === true;
+  const isDetectedNumeric = useMemo(() => {
+    if (isExplicitNumeric) return true;
+    if (col.filterType === 'text') return false;
+    if (!options || options.length === 0) return false;
+    return options.every(opt => {
+      if (opt === '' || opt === null || opt === undefined) return true;
+      const s = String(opt).trim();
+      if (s === '') return true;
+      return !isNaN(Number(s));
+    });
+  }, [isExplicitNumeric, col.filterType, options]);
+
+  const isNumericCol = isExplicitNumeric || isDetectedNumeric;
+
+  // Mode: 'condition' or 'values'
+  const [filterMode, setFilterMode] = useState(() => {
+    if (isNumericFilterActive(currentValue)) return 'condition';
+    if (Array.isArray(currentValue) && currentValue.length > 0) return 'values';
+    return isExplicitNumeric ? 'condition' : 'values';
+  });
+
+  // Numeric condition local state
+  const [numOperator, setNumOperator] = useState('>=');
+  const [numValue, setNumValue] = useState('');
+  const [numValue2, setNumValue2] = useState('');
+
+  // Normalize currentValue to array for 'values' mode
   const selectedValues = useMemo(() => {
     if (Array.isArray(currentValue)) return currentValue;
     if (typeof currentValue === 'string' && currentValue.trim() !== '') return [currentValue];
     return [];
   }, [currentValue]);
 
-  // Reset local search on modal close
+  // Sync state whenever modal opens or currentValue changes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (isNumericFilterActive(currentValue)) {
+        setFilterMode('condition');
+        setNumOperator(currentValue.operator || '>=');
+        setNumValue(currentValue.value !== undefined && currentValue.value !== null ? String(currentValue.value) : '');
+        setNumValue2(currentValue.value2 !== undefined && currentValue.value2 !== null ? String(currentValue.value2) : '');
+      } else if (Array.isArray(currentValue) && currentValue.length > 0) {
+        setFilterMode('values');
+        setNumOperator('>=');
+        setNumValue('');
+        setNumValue2('');
+      } else {
+        if (isExplicitNumeric) {
+          setFilterMode('condition');
+        }
+        setNumOperator('>=');
+        setNumValue('');
+        setNumValue2('');
+      }
       setModalSearch('');
     }
-  }, [isOpen]);
+  }, [isOpen, currentValue, isExplicitNumeric]);
 
   // Calculate and update fixed position synchronously before browser paint
   useLayoutEffect(() => {
@@ -45,7 +112,7 @@ const ColumnFilterModal = ({
     const updatePosition = () => {
       if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
-      const modalWidth = 256; // 64 in tailwind (16rem) = 256px
+      const modalWidth = isNumericCol ? 280 : 256;
       let left = isLastColumn ? rect.right - modalWidth : rect.left;
       
       if (left + modalWidth > window.innerWidth - 12) {
@@ -68,7 +135,7 @@ const ColumnFilterModal = ({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [isOpen, triggerRef, isLastColumn]);
+  }, [isOpen, triggerRef, isLastColumn, isNumericCol]);
 
   // Handle click outside to close popover modal
   useEffect(() => {
@@ -96,6 +163,29 @@ const ColumnFilterModal = ({
   if (!isOpen || !coords) return null;
 
   const headerText = typeof col.header === 'string' ? col.header : 'Field';
+
+  // Apply numeric condition
+  const handleApplyNumeric = (op = numOperator, val1 = numValue, val2 = numValue2) => {
+    if (val1 === '' || val1 === null || val1 === undefined) {
+      onClear();
+      onClose();
+      return;
+    }
+    onChange({
+      type: 'number',
+      operator: op,
+      value: String(val1).trim(),
+      value2: op === 'between' && val2 !== '' && val2 !== null ? String(val2).trim() : null,
+    });
+    onClose();
+  };
+
+  const handleQuickPreset = (op, val) => {
+    setNumOperator(op);
+    setNumValue(String(val));
+    setNumValue2('');
+    handleApplyNumeric(op, String(val), '');
+  };
 
   // Toggle single option checkbox
   const handleToggleOption = (optString) => {
@@ -127,6 +217,16 @@ const ColumnFilterModal = ({
     }
   };
 
+  const handleClearAll = () => {
+    onClear();
+    setNumValue('');
+    setNumValue2('');
+    setModalSearch('');
+    onClose();
+  };
+
+  const isNumericActive = isNumericFilterActive(currentValue);
+
   return createPortal(
     <div
       ref={modalRef}
@@ -136,18 +236,22 @@ const ColumnFilterModal = ({
         left: `${coords.left}px`,
         zIndex: 99999,
       }}
-      className="w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-700 animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden"
+      className={`${isNumericCol ? 'w-72' : 'w-64'} bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-700 animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Modal Header */}
       <div className="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-[#24A1DD]/10 text-[#24A1DD] flex items-center justify-center">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
+            {isNumericCol ? (
+              <span className="font-mono text-xs font-bold leading-none">#</span>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            )}
           </div>
-          <span className="font-semibold text-slate-800 text-xs truncate max-w-[140px]" title={`Filter ${headerText}`}>
+          <span className="font-semibold text-slate-800 text-xs truncate max-w-[150px]" title={`Filter ${headerText}`}>
             Filter {headerText}
           </span>
         </div>
@@ -160,102 +264,270 @@ const ColumnFilterModal = ({
         </button>
       </div>
 
-      {/* Search Input Box */}
-      <div className="p-2.5 bg-slate-50/50 border-b border-slate-100">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={modalSearch}
-            onChange={(e) => setModalSearch(e.target.value)}
-            placeholder={`Search ${headerText}...`}
-            className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] bg-white text-slate-800 transition-all"
-            autoFocus
-          />
-          <svg
-            className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          {modalSearch && (
-            <button
-              type="button"
-              onClick={() => setModalSearch('')}
-              className="absolute right-2 text-slate-400 hover:text-slate-600 text-[10px] font-bold p-0.5"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Options List */}
-      <div className="max-h-52 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
-        {/* Select All Row */}
-        {filteredOptions.length > 0 && (
-          <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100/70 rounded-lg cursor-pointer text-xs font-semibold text-slate-800 border-b border-slate-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={isAllFilteredSelected}
-              onChange={handleToggleSelectAll}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
-            />
-            <span className="truncate">Select All ({filteredOptions.length})</span>
-          </label>
-        )}
-
-        {filteredOptions.length === 0 ? (
-          <div className="px-3 py-4 text-center text-xs text-slate-400">
-            No matching options
-          </div>
-        ) : (
-          filteredOptions.map((opt, idx) => {
-            const optString = String(opt);
-            const isChecked = selectedValues.some(v => String(v) === optString);
-            return (
-              <label
-                key={idx}
-                className={`flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs transition-colors ${
-                  isChecked ? 'bg-[#24A1DD]/5 font-medium text-[#24A1DD]' : 'text-slate-600'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleToggleOption(optString)}
-                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
-                />
-                <span className="truncate">{optString}</span>
-              </label>
-            );
-          })
-        )}
-      </div>
-
-      {/* Footer Info */}
-      <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-        <span>
-          {selectedValues.length > 0 ? (
-            <strong className="text-[#24A1DD] font-semibold">{selectedValues.length} selected</strong>
-          ) : (
-            `${filteredOptions.length} of ${options.length} options`
-          )}
-        </span>
-        {selectedValues.length > 0 && (
+      {/* Tabs if column is numeric */}
+      {isNumericCol && (
+        <div className="flex border-b border-slate-200 bg-slate-100/70 p-1 gap-1 text-xs font-semibold">
           <button
             type="button"
-            onClick={() => {
-              onClear();
-              setModalSearch('');
-            }}
-            className="text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+            onClick={() => setFilterMode('condition')}
+            className={`flex-1 py-1 px-2 rounded-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+              filterMode === 'condition'
+                ? 'bg-white text-[#24A1DD] shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
           >
-            Clear Filter
+            <span className="font-mono text-xs font-bold">≥</span>
+            <span>Condition</span>
+            {isNumericActive && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD]" />
+            )}
           </button>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => setFilterMode('values')}
+            className={`flex-1 py-1 px-2 rounded-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+              filterMode === 'values'
+                ? 'bg-white text-[#24A1DD] shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
+          >
+            <svg className="w-3 h-3 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+            <span>Values</span>
+            {selectedValues.length > 0 && (
+              <span className="bg-[#24A1DD] text-white text-[10px] px-1 rounded-full font-bold leading-none">
+                {selectedValues.length}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Mode 1: Numeric Condition */}
+      {isNumericCol && filterMode === 'condition' ? (
+        <div className="p-3 space-y-2.5">
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              Comparison Operator
+            </label>
+            <select
+              value={numOperator}
+              onChange={(e) => setNumOperator(e.target.value)}
+              className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] transition-all cursor-pointer"
+            >
+              {NUMERIC_OPERATORS.map((op) => (
+                <option key={op.value} value={op.value}>
+                  {op.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              {numOperator === 'between' ? 'Range Values' : 'Target Value'}
+            </label>
+            {numOperator === 'between' ? (
+              <div className="grid grid-cols-2 gap-1.5 items-center">
+                <input
+                  type="number"
+                  value={numValue}
+                  onChange={(e) => setNumValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
+                  placeholder="Min"
+                  className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                  autoFocus
+                />
+                <input
+                  type="number"
+                  value={numValue2}
+                  onChange={(e) => setNumValue2(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
+                  placeholder="Max"
+                  className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                />
+              </div>
+            ) : (
+              <input
+                type="number"
+                value={numValue}
+                onChange={(e) => setNumValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
+                placeholder="Enter number..."
+                className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                autoFocus
+              />
+            )}
+          </div>
+
+          {/* Quick Shortcuts */}
+          <div>
+            <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Quick Shortcuts
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('>', 0)}
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+              >
+                &gt; 0
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('=', 0)}
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+              >
+                = 0
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('>=', 1)}
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+              >
+                ≥ 1
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('>=', 5)}
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+              >
+                ≥ 5
+              </button>
+            </div>
+          </div>
+
+          {/* Footer for condition mode */}
+          <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+            {isNumericActive ? (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-xs text-rose-600 hover:text-rose-700 font-semibold cursor-pointer py-1"
+              >
+                Clear
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyNumeric()}
+                disabled={numValue === ''}
+                className="px-3 py-1 bg-[#24A1DD] hover:bg-[#1e88bb] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Mode 2: Values Multi-select List */
+        <>
+          {/* Search Input Box */}
+          <div className="p-2.5 bg-slate-50/50 border-b border-slate-100">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={modalSearch}
+                onChange={(e) => setModalSearch(e.target.value)}
+                placeholder={`Search ${headerText}...`}
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] bg-white text-slate-800 transition-all"
+                autoFocus
+              />
+              <svg
+                className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {modalSearch && (
+                <button
+                  type="button"
+                  onClick={() => setModalSearch('')}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 text-[10px] font-bold p-0.5"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Options List */}
+          <div className="max-h-52 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+            {/* Select All Row */}
+            {filteredOptions.length > 0 && (
+              <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100/70 rounded-lg cursor-pointer text-xs font-semibold text-slate-800 border-b border-slate-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isAllFilteredSelected}
+                  onChange={handleToggleSelectAll}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+                />
+                <span className="truncate">Select All ({filteredOptions.length})</span>
+              </label>
+            )}
+
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-400">
+                No matching options
+              </div>
+            ) : (
+              filteredOptions.map((opt, idx) => {
+                const optString = String(opt);
+                const isChecked = selectedValues.some(v => String(v) === optString);
+                return (
+                  <label
+                    key={idx}
+                    className={`flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs transition-colors ${
+                      isChecked ? 'bg-[#24A1DD]/5 font-medium text-[#24A1DD]' : 'text-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggleOption(optString)}
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+                    />
+                    <span className="truncate">{optString}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer Info */}
+          <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+            <span>
+              {selectedValues.length > 0 ? (
+                <strong className="text-[#24A1DD] font-semibold">{selectedValues.length} selected</strong>
+              ) : (
+                `${filteredOptions.length} of ${options.length} options`
+              )}
+            </span>
+            {(selectedValues.length > 0 || isNumericActive) && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>,
     document.body
   );
@@ -420,6 +692,45 @@ export const DataTable = ({
       const filterVal = columnFilters[key];
       if (!filterVal) continue;
 
+      // Numeric condition filter check
+      if (isNumericFilterActive(filterVal)) {
+        const val = getColumnValue(item, col);
+        if (val === null || val === undefined || val === '') return false;
+
+        const numVal = typeof val === 'number' ? val : Number(String(val).replace(/,/g, '').trim());
+        if (isNaN(numVal)) return false;
+
+        const targetVal = Number(filterVal.value);
+        if (isNaN(targetVal)) return false;
+
+        const op = filterVal.operator || '=';
+        if (op === '=') {
+          if (numVal !== targetVal) return false;
+        } else if (op === '!=') {
+          if (numVal === targetVal) return false;
+        } else if (op === '>') {
+          if (numVal <= targetVal) return false;
+        } else if (op === '>=') {
+          if (numVal < targetVal) return false;
+        } else if (op === '<') {
+          if (numVal >= targetVal) return false;
+        } else if (op === '<=') {
+          if (numVal > targetVal) return false;
+        } else if (op === 'between') {
+          const targetVal2 = filterVal.value2 !== '' && filterVal.value2 !== null && filterVal.value2 !== undefined
+            ? Number(filterVal.value2)
+            : null;
+          if (targetVal2 !== null && !isNaN(targetVal2)) {
+            const min = Math.min(targetVal, targetVal2);
+            const max = Math.max(targetVal, targetVal2);
+            if (numVal < min || numVal > max) return false;
+          } else {
+            if (numVal < targetVal) return false;
+          }
+        }
+        continue;
+      }
+
       if (Array.isArray(filterVal)) {
         if (filterVal.length === 0) continue;
         const val = getColumnValue(item, col);
@@ -483,7 +794,7 @@ export const DataTable = ({
             set.add(String(v).trim());
           }
         });
-      } else if (currentValue && String(currentValue).trim() !== '') {
+      } else if (currentValue && !isNumericFilterActive(currentValue) && String(currentValue).trim() !== '') {
         set.add(String(currentValue).trim());
       }
 
@@ -575,8 +886,10 @@ export const DataTable = ({
 
   const activeColumnCount = useMemo(() => {
     return Object.values(columnFilters).filter(val => {
+      if (!val) return false;
       if (Array.isArray(val)) return val.length > 0;
-      return val && String(val).trim() !== '';
+      if (isNumericFilterActive(val)) return true;
+      return String(val).trim() !== '';
     }).length;
   }, [columnFilters]);
 
@@ -708,12 +1021,34 @@ export const DataTable = ({
                   const filterable = isColumnFilterable(col);
                   const currentValue = columnFilters[key] || [];
                   const options = uniqueValuesMap[key] || [];
+
+                  const isNumericFilter = isNumericFilterActive(currentValue);
                   const hasFilter = Array.isArray(currentValue)
                     ? currentValue.length > 0
-                    : Boolean(currentValue && String(currentValue).trim() !== '');
-                  const filterCount = Array.isArray(currentValue)
-                    ? currentValue.length
-                    : currentValue ? 1 : 0;
+                    : isNumericFilter
+                      ? true
+                      : Boolean(currentValue && String(currentValue).trim() !== '');
+
+                  const getFilterBadge = () => {
+                    if (Array.isArray(currentValue)) {
+                      return currentValue.length > 0 ? currentValue.length : null;
+                    }
+                    if (isNumericFilter) {
+                      const op = currentValue.operator || '=';
+                      const symMap = { '=': '=', '!=': '≠', '>': '>', '>=': '≥', '<': '<', '<=': '≤' };
+                      const sym = symMap[op] || op;
+                      if (op === 'between' && currentValue.value2) {
+                        return `${currentValue.value}-${currentValue.value2}`;
+                      }
+                      return `${sym}${currentValue.value}`;
+                    }
+                    if (currentValue && String(currentValue).trim() !== '') {
+                      return 1;
+                    }
+                    return null;
+                  };
+
+                  const badgeContent = getFilterBadge();
 
                   return (
                     <th 
@@ -767,18 +1102,20 @@ export const DataTable = ({
                               }`}
                               title={
                                 hasFilter
-                                  ? Array.isArray(currentValue)
-                                    ? `Filtered (${currentValue.length} selected)`
-                                    : `Filtered by "${currentValue}"`
+                                  ? isNumericFilter
+                                    ? `Filtered by ${typeof col.header === 'string' ? col.header : 'column'} (${currentValue.operator} ${currentValue.value}${currentValue.operator === 'between' ? ` to ${currentValue.value2}` : ''})`
+                                    : Array.isArray(currentValue)
+                                      ? `Filtered (${currentValue.length} selected)`
+                                      : `Filtered by "${currentValue}"`
                                   : `Filter by ${typeof col.header === 'string' ? col.header : (col.headerTitle || col.accessor || 'column')}`
                               }
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                               </svg>
-                              {hasFilter && filterCount > 0 && (
-                                <span className="text-[10px] font-bold bg-white text-[#24A1DD] px-1 rounded-full leading-none min-w-[14px] text-center">
-                                  {filterCount}
+                              {hasFilter && badgeContent !== null && (
+                                <span className="text-[10px] font-bold bg-white text-[#24A1DD] px-1 rounded-full leading-none min-w-[14px] text-center font-mono">
+                                  {badgeContent}
                                 </span>
                               )}
                             </button>
