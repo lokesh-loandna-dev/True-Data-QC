@@ -98,7 +98,16 @@ const PackageDetailedRowView = ({
               <span className="font-mono text-xs font-bold text-amber-600">{pkg.review_required ?? 0}</span>
             </div>
             <div className="bg-amber-50 py-1 px-0.5 rounded border border-amber-200/80 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-amber-800 font-semibold leading-tight">Pending Action</span>
+              <div className="flex items-center justify-center gap-0.5">
+                <span className="block text-[10px] text-amber-800 font-semibold leading-tight">Pending Action</span>
+                <Tooltip text="Calculates only Invalid and Review Required" position="top">
+                  <span className="text-amber-600/70 hover:text-amber-800 cursor-help inline-flex items-center">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                </Tooltip>
+              </div>
               <span className={`font-mono text-xs font-bold ${(pkg.yet_to_take_action ?? 0) > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
                 {pkg.yet_to_take_action ?? 0}
               </span>
@@ -748,9 +757,10 @@ const DashboardPage = () => {
       {
         header: 'Yet to Take Action',
         accessor: 'yet_to_take_action',
+        headerTooltip: 'Calculates only Invalid and Review Required',
         sortable: true,
         align: 'center',
-        headerClassName: 'whitespace-nowrap min-w-[140px]',
+        headerClassName: 'whitespace-nowrap min-w-[160px]',
         render: (pkg) => {
           const val = pkg.yet_to_take_action ?? 0;
           return (

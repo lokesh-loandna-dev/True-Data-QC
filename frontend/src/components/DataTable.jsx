@@ -729,6 +729,19 @@ export const DataTable = ({
                           <span className="truncate">
                             {typeof col.header === 'function' ? col.header() : col.header}
                           </span>
+                          {(col.headerTooltip || col.tooltip) && (
+                            <Tooltip text={col.headerTooltip || col.tooltip} position="top">
+                              <span
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center justify-center text-slate-400 hover:text-[#24A1DD] transition-colors cursor-help p-0.5"
+                                aria-label="Information"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </span>
+                            </Tooltip>
+                          )}
                           {col.sortable && (
                             <div className="flex flex-col text-[10px] leading-none opacity-50 ml-0.5 flex-shrink-0">
                               <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-[#24A1DD] opacity-100 font-bold' : ''}>▲</span>
@@ -757,7 +770,7 @@ export const DataTable = ({
                                   ? Array.isArray(currentValue)
                                     ? `Filtered (${currentValue.length} selected)`
                                     : `Filtered by "${currentValue}"`
-                                  : `Filter by ${col.header}`
+                                  : `Filter by ${typeof col.header === 'string' ? col.header : (col.headerTitle || col.accessor || 'column')}`
                               }
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
