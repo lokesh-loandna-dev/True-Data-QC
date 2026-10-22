@@ -274,6 +274,7 @@ export const DataTable = ({
   loading = false,
   error = null,
   customHeader = null,
+  searchActions = null,
   className = "",
   density = "normal",
   maxHeight = "calc(100vh - 220px)",
@@ -628,20 +629,20 @@ export const DataTable = ({
   return (
     <div className={`w-full flex flex-col min-h-0 ${className}`}>
       {/* Search, Filter Controls & Header Row */}
-      {(searchable || columnFiltersEnabled || customHeader) && (
-        <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${density === 'compact' ? 'mb-2.5' : 'mb-4'} flex-shrink-0`}>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      {(searchable || columnFiltersEnabled || customHeader || searchActions) && (
+        <div className={`flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-3 ${density === 'compact' ? 'mb-2.5' : 'mb-4'} flex-shrink-0`}>
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
             {searchable && (
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-full sm:w-60 md:w-64 shrink-0">
                 <input
                   type="text"
                   placeholder="Search all columns..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-9 pr-8 ${density === 'compact' ? 'py-1.5 text-xs' : 'py-2 text-sm'} border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#24A1DD] focus:border-transparent transition-all`}
+                  className={`w-full pl-9 pr-8 ${density === 'compact' ? 'h-8 text-xs' : 'h-9 text-xs'} bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs focus:outline-none focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 transition-all`}
                 />
                 <svg
-                  className={`w-4 h-4 text-slate-400 absolute left-2.5 ${density === 'compact' ? 'top-2.5' : 'top-3'}`}
+                  className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -651,7 +652,7 @@ export const DataTable = ({
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-0.5"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-0.5 cursor-pointer"
                     title="Clear search"
                   >
                     ✕
@@ -660,22 +661,24 @@ export const DataTable = ({
               </div>
             )}
 
+            {searchActions}
+
             {totalActiveFilters > 0 && (
               <button
                 type="button"
                 onClick={handleClearAllFilters}
-                className={`inline-flex items-center gap-1 ${density === 'compact' ? 'px-2 py-1.5 text-xs' : 'px-2.5 py-2 text-xs'} text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors font-medium cursor-pointer border border-rose-200`}
+                className={`inline-flex items-center gap-1.5 ${density === 'compact' ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-xs'} text-rose-600 hover:text-rose-700 bg-rose-50/70 hover:bg-rose-50 rounded-lg transition-colors font-medium cursor-pointer border border-rose-200/80 shadow-2xs whitespace-nowrap shrink-0`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Clear Filters ({totalActiveFilters})
+                <span>Clear Filters ({totalActiveFilters})</span>
               </button>
             )}
           </div>
 
           {customHeader && (
-            <div>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start xl:justify-end shrink-0">
               {typeof customHeader === 'function'
                 ? customHeader({ data, filteredData, sortedData })
                 : customHeader}
@@ -723,7 +726,9 @@ export const DataTable = ({
                           className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-slate-800' : ''}`}
                           onClick={() => col.sortable && col.accessor ? handleSort(col.accessor) : null}
                         >
-                          <span className="truncate">{col.header}</span>
+                          <span className="truncate">
+                            {typeof col.header === 'function' ? col.header() : col.header}
+                          </span>
                           {col.sortable && (
                             <div className="flex flex-col text-[10px] leading-none opacity-50 ml-0.5 flex-shrink-0">
                               <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-[#24A1DD] opacity-100 font-bold' : ''}>▲</span>

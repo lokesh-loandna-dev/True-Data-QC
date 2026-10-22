@@ -5,7 +5,7 @@ import { loanService } from '../services/loanService';
 import { DataTable } from '../components/DataTable';
 import Tooltip from '../components/Tooltip';
 import { notify } from '../utils/toast';
-import { exportPackagesToExcel, exportToExcel } from '../utils/excelExport';
+import { exportPackagesToExcel, exportToExcel, exportBulkPackagesResultToExcel } from '../utils/excelExport';
 
 const PackageAuditModal = lazy(() => import('../components/PackageAuditModal'));
 
@@ -28,17 +28,17 @@ const PackageDetailedRowView = ({
   containerWidth
 }) => {
   const parsedDate = parseUtcDate(pkg.uploaded_at);
-  const formattedDate = parsedDate && !isNaN(parsedDate.getTime()) 
+  const formattedDate = parsedDate && !isNaN(parsedDate.getTime())
     ? parsedDate.toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
     : '-';
 
   return (
     <div className="bg-slate-50/95 border-y border-slate-200/90 transition-all overflow-hidden">
       {/* Sticky container stays anchored left and matches exact visible table width */}
-      <div 
+      <div
         className="sticky left-0 px-3.5 py-2 sm:px-4 sm:py-2.5 space-y-2 box-border"
         style={containerWidth ? { width: `${containerWidth}px` } : { width: '100%' }}
       >
@@ -171,6 +171,10 @@ const DashboardPage = () => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
   const [rowExportLoadingId, setRowExportLoadingId] = useState(null);
+
+  // Package Selection State for Bulk Download
+  const [selectedPackageIds, setSelectedPackageIds] = useState(new Set());
+  const [bulkDownloadLoading, setBulkDownloadLoading] = useState(false);
 
   // Expandable Row State
   const [expandedRowKeys, setExpandedRowKeys] = useState([]);
@@ -447,21 +451,190 @@ const DashboardPage = () => {
     }
   }, [packages, dateFilteredPackages, fromDate, toDate]);
 
+  // Selected packages from current dateFilteredPackages
+  const selectedPackages = useMemo(() => {
+    return dateFilteredPackages.filter(pkg => selectedPackageIds.has(pkg.id));
+  }, [dateFilteredPackages, selectedPackageIds]);
+
+  // Total rows of selected packages
+  const selectedTotalRows = useMemo(() => {
+    return selectedPackages.reduce((sum, pkg) => sum + (Number(pkg.total_fields) || 0), 0);
+  }, [selectedPackages]);
+
+  // Master checkbox states for current visible packages
+  const isAllVisibleSelected = useMemo(() => {
+    if (dateFilteredPackages.length === 0) return false;
+    return dateFilteredPackages.every(pkg => selectedPackageIds.has(pkg.id));
+  }, [dateFilteredPackages, selectedPackageIds]);
+
+  const isSomeVisibleSelected = useMemo(() => {
+    if (dateFilteredPackages.length === 0) return false;
+    const count = dateFilteredPackages.filter(pkg => selectedPackageIds.has(pkg.id)).length;
+    return count > 0 && count < dateFilteredPackages.length;
+  }, [dateFilteredPackages, selectedPackageIds]);
+
+  const handleToggleSelectAll = useCallback(() => {
+    setSelectedPackageIds(prev => {
+      const allSelected = dateFilteredPackages.every(pkg => prev.has(pkg.id));
+      const next = new Set(prev);
+      if (allSelected) {
+        dateFilteredPackages.forEach(pkg => next.delete(pkg.id));
+      } else {
+        dateFilteredPackages.forEach(pkg => next.add(pkg.id));
+      }
+      return next;
+    });
+  }, [dateFilteredPackages]);
+
+  const handleToggleSelectRow = useCallback((pkgId) => {
+    setSelectedPackageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pkgId)) {
+        next.delete(pkgId);
+      } else {
+        next.add(pkgId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Perform bulk download with sequential package record appending & Excel row limit validation
+  const handleBulkDownload = useCallback(async () => {
+    if (selectedPackages.length <= 1) {
+      notify.warning('Please select more than one package for bulk download.');
+      return;
+    }
+
+    const EXCEL_MAX_ROWS = 1048576;
+    if (selectedTotalRows > EXCEL_MAX_ROWS - 1) {
+      const msg = `You exceed the maximum limit of Excel (${EXCEL_MAX_ROWS.toLocaleString()} rows). The selected packages total ${selectedTotalRows.toLocaleString()} rows. Please unselect some packages and try again.`;
+      notify.error(msg, { duration: 6000 });
+      return;
+    }
+
+    setBulkDownloadLoading(true);
+    const toastId = notify.loading?.(`Fetching records for ${selectedPackages.length} packages (${selectedTotalRows.toLocaleString()} rows)...`);
+
+    try {
+      const packagesData = [];
+      for (const pkg of selectedPackages) {
+        const response = await loanService.getPackageDetails(pkg.id);
+        if (response.status === 'success' && response.records) {
+          packagesData.push({
+            pkg: response.package || pkg,
+            records: response.records
+          });
+        } else {
+          throw new Error(`Failed to load records for "${pkg.filename}".`);
+        }
+      }
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      exportBulkPackagesResultToExcel({
+        packagesData,
+        filename: `Bulk_Audit_Export_${selectedPackages.length}_Packages_${dateStr}`
+      });
+
+      notify.success(`Exported ${selectedTotalRows.toLocaleString()} records across ${selectedPackages.length} packages successfully!`);
+    } catch (err) {
+      console.error('Failed to perform bulk download:', err);
+      notify.error(err.message || 'Failed to download selected packages in bulk.');
+    } finally {
+      if (toastId && notify.dismiss) {
+        notify.dismiss(toastId);
+      }
+      setBulkDownloadLoading(false);
+    }
+  }, [selectedPackages, selectedTotalRows]);
+
+  // Bulk download action rendered next to Search All Columns input
+  const bulkDownloadAction = useMemo(() => {
+    if (selectedPackages.length <= 1) return null;
+
+    return (
+      <div className="inline-flex items-center h-9 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs transition-all duration-200 animate-in fade-in zoom-in-95 pl-1.5 pr-1 gap-1.5 select-none shrink-0">
+        {/* Main Action Button */}
+        <button
+          type="button"
+          onClick={handleBulkDownload}
+          disabled={bulkDownloadLoading}
+          className="inline-flex items-center gap-2 px-2 h-7 rounded-md text-xs font-semibold text-slate-800 hover:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100/70 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer whitespace-nowrap group"
+          title={`Download combined Result Sheet for ${selectedPackages.length} packages (${selectedTotalRows.toLocaleString()} total rows)`}
+        >
+          {bulkDownloadLoading ? (
+            <svg className="animate-spin w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )}
+          <span>Bulk Download</span>
+
+          {/* Subtle Data Badge */}
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono text-[11px] font-bold tracking-tight">
+            {selectedPackages.length} pkgs · {selectedTotalRows.toLocaleString()} rows
+          </span>
+        </button>
+
+        {/* Vertical Divider */}
+        <div className="h-4 w-px bg-slate-200"></div>
+
+        {/* Clear Selection Icon Button */}
+        <Tooltip text="Clear selection" position="top">
+          <button
+            type="button"
+            onClick={() => setSelectedPackageIds(new Set())}
+            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+            aria-label="Clear package selection"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </Tooltip>
+      </div>
+    );
+  }, [selectedPackages, selectedTotalRows, bulkDownloadLoading, handleBulkDownload]);
+
   // Main Dashboard Saved Packages Table Columns
   const packageColumns = useMemo(() => {
     const cols = [
       {
-        header: 'S.No.',
+        header: () => (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              ref={(el) => {
+                if (el) el.indeterminate = isSomeVisibleSelected;
+              }}
+              checked={isAllVisibleSelected}
+              onChange={handleToggleSelectAll}
+              className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+              title={isAllVisibleSelected ? "Deselect all visible packages" : "Select all visible packages"}
+            />
+            <span className="font-semibold text-slate-700 select-none">S.No.</span>
+          </div>
+        ),
         accessor: 'sno',
         sortable: false,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        render: (_, index, globalIndexOffset = 0, isExpanded = false) => (
+        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        render: (pkg, index, globalIndexOffset = 0, isExpanded = false) => (
           <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedPackageIds.has(pkg.id)}
+              onChange={() => handleToggleSelectRow(pkg.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+              title={`Select ${pkg.filename} (${pkg.total_fields || 0} rows)`}
+            />
             <span
-              className={`p-1 rounded-md text-slate-400 group-hover:text-[#24A1DD] transition-all duration-200 ${
-                isExpanded ? 'rotate-90 text-[#24A1DD] bg-[#24A1DD]/10' : ''
-              }`}
+              className={`p-1 rounded-md text-slate-400 group-hover:text-[#24A1DD] transition-all duration-200 ${isExpanded ? 'rotate-90 text-[#24A1DD] bg-[#24A1DD]/10' : ''
+                }`}
               title={isExpanded ? 'Click to collapse row details' : 'Click to view row details'}
             >
               <svg className="w-3.5 h-3.5 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -763,7 +936,18 @@ const DashboardPage = () => {
     );
 
     return cols;
-  }, [isAdmin, rowExportLoadingId, handleViewDetails, handleExportRowPackage, handleDeletePackage]);
+  }, [
+    isAdmin,
+    rowExportLoadingId,
+    handleViewDetails,
+    handleExportRowPackage,
+    handleDeletePackage,
+    selectedPackageIds,
+    isAllVisibleSelected,
+    isSomeVisibleSelected,
+    handleToggleSelectAll,
+    handleToggleSelectRow
+  ]);
 
   const packageHeaderActions = useCallback(({ filteredData }) => {
     const exportData = filteredData !== undefined ? filteredData : dateFilteredPackages;
@@ -771,123 +955,121 @@ const DashboardPage = () => {
     const count = exportData?.length || 0;
 
     return (
-      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-        {/* From Date Field */}
-        <div className="flex items-center gap-1.5">
-          <label htmlFor="dashboard-from-date" className="text-xs font-medium text-slate-600 select-none">
-            From:
-          </label>
-          <input
-            id="dashboard-from-date"
-            type="date"
-            value={fromDate}
-            onChange={handleFromDateChange}
-            max={toDate || undefined}
-            className="h-[38px] px-2.5 text-xs font-creato text-slate-700 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
-            title="From Date"
-          />
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
+        {/* Date Range Picker Container */}
+        <div className="inline-flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs h-9 px-2 gap-1.5 transition-colors shrink-0">
+          <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div className="flex items-center text-xs text-slate-700">
+            <input
+              id="dashboard-from-date"
+              type="date"
+              value={fromDate}
+              onChange={handleFromDateChange}
+              max={toDate || undefined}
+              className="bg-transparent border-0 p-0 text-xs font-mono text-slate-700 focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              title="From Date"
+            />
+            <span className="text-slate-300 mx-1 select-none font-medium">→</span>
+            <input
+              id="dashboard-to-date"
+              type="date"
+              value={toDate}
+              onChange={handleToDateChange}
+              min={fromDate || undefined}
+              className="bg-transparent border-0 p-0 text-xs font-mono text-slate-700 focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              title="To Date"
+            />
+          </div>
+
+          <div className="h-4 w-px bg-slate-200 mx-0.5"></div>
+
+          {/* Quick Presets Dropdown */}
+          <select
+            value={selectedPreset}
+            onChange={(e) => handlePresetSelect(e.target.value)}
+            className="bg-transparent border-0 py-0 pl-1 pr-5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-0 cursor-pointer"
+            aria-label="Date range quick presets"
+          >
+            <option value="">All</option>
+            {selectedPreset === 'custom' && <option value="custom" disabled hidden>Custom</option>}
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="last7">Last 7 Days</option>
+            <option value="last30">Last 30 Days</option>
+            <option value="thisMonth">This Month</option>
+          </select>
+
+          {/* Clear Filter Button */}
+          {(fromDate || toDate) && (
+            <Tooltip text="Clear date filter" position="bottom">
+              <button
+                type="button"
+                onClick={handleClearDateFilter}
+                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                aria-label="Clear date filter"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </Tooltip>
+          )}
         </div>
 
-        {/* To Date Field */}
-        <div className="flex items-center gap-1.5">
-          <label htmlFor="dashboard-to-date" className="text-xs font-medium text-slate-600 select-none">
-            To:
-          </label>
-          <input
-            id="dashboard-to-date"
-            type="date"
-            value={toDate}
-            onChange={handleToDateChange}
-            min={fromDate || undefined}
-            className="h-[38px] px-2.5 text-xs font-creato text-slate-700 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
-            title="To Date"
-          />
-        </div>
-
-        {/* Quick Presets Dropdown */}
-        <select
-          value={selectedPreset}
-          onChange={(e) => handlePresetSelect(e.target.value)}
-          className="h-[38px] px-2.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 rounded-xl shadow-2xs transition-all cursor-pointer outline-none"
-          aria-label="Date range quick presets"
-        >
-          <option value="">All</option>
-          {selectedPreset === 'custom' && <option value="custom" disabled hidden>Custom</option>}
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="last7">Last 7 Days</option>
-          <option value="last30">Last 30 Days</option>
-          <option value="thisMonth">This Month</option>
-        </select>
-
-        {/* Clear Filter Button */}
-        {(fromDate || toDate) && (
-          <Tooltip text="Clear date filter" position="bottom">
+        {/* Action Utilities Group */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Export Button */}
+          <Tooltip text={isFiltered ? `Export ${count} filtered package(s) to Excel` : 'Export packages to Excel'} position="bottom">
             <button
               type="button"
-              onClick={handleClearDateFilter}
-              className="h-[38px] px-2.5 inline-flex items-center gap-1 border border-rose-200 bg-rose-50/60 hover:bg-rose-50 text-rose-600 hover:text-rose-700 font-semibold rounded-xl text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-              aria-label="Clear date filter"
+              onClick={() => handleExportPackages(exportData)}
+              disabled={loading || count === 0}
+              className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
+              aria-label="Export to Excel"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>Clear</span>
+              {isFiltered && (
+                <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono text-[10px] font-bold">
+                  {count}
+                </span>
+              )}
             </button>
           </Tooltip>
-        )}
 
-        {/* Divider */}
-        <div className="h-5 w-px bg-slate-200 hidden sm:block"></div>
+          {isAdmin && packages.length > 0 && (
+            <Tooltip text="Delete All Packages" position="bottom">
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={loading}
+                className="w-9 h-9 inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 font-medium rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                aria-label="Delete All Packages"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </Tooltip>
+          )}
 
-        {/* Export Button */}
-        <Tooltip text={isFiltered ? `Export ${count} filtered package(s) to Excel` : 'Export packages to Excel'} position="bottom">
-          <button
-            type="button"
-            onClick={() => handleExportPackages(exportData)}
-            disabled={loading || count === 0}
-            className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-            aria-label="Export to Excel"
-          >
-            <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {isFiltered && (
-              <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-bold">
-                {count}
-              </span>
-            )}
-          </button>
-        </Tooltip>
-
-        {isAdmin && packages.length > 0 && (
-          <Tooltip text="Delete All Packages" position="bottom">
+          <Tooltip text="Refresh Packages" position="bottom">
             <button
               type="button"
-              onClick={handleDeleteAll}
+              onClick={fetchPackages}
               disabled={loading}
-              className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-              aria-label="Delete All Packages"
+              className="w-9 h-9 inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 text-slate-600 hover:text-slate-900 font-medium rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              aria-label="Refresh Packages"
             >
-              <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg className={`w-3.5 h-3.5 text-current ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
             </button>
           </Tooltip>
-        )}
-        <Tooltip text="Refresh Packages" position="bottom">
-          <button
-            type="button"
-            onClick={fetchPackages}
-            disabled={loading}
-            className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 text-slate-600 hover:text-slate-900 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-            aria-label="Refresh Packages"
-          >
-            <svg className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-current ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-          </button>
-        </Tooltip>
+        </div>
       </div>
     );
   }, [
@@ -932,6 +1114,7 @@ const DashboardPage = () => {
             loading={loading}
             error={error}
             searchable={true}
+            searchActions={bulkDownloadAction}
             pagination={true}
             itemsPerPageOptions={[5, 10, 25, 50]}
             defaultItemsPerPage={10}

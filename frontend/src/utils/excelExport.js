@@ -420,5 +420,108 @@ export const exportPackagesToExcel = ({
 
 export const exportDashboardPackagesToExcel = exportPackagesToExcel;
 
+/**
+ * Utility to export combined Result Sheet for multiple packages appended sequentially.
+ * Only generates 'Result Sheet' (no Summary Sheet).
+ *
+ * @param {Object} params
+ * @param {Array} params.packagesData - Array of { pkg, records } objects
+ * @param {string} [params.filename] - Base name for the exported file
+ */
+export const exportBulkPackagesResultToExcel = ({
+  packagesData = [],
+  filename = 'Bulk_Loan_Packages_Audit_Report'
+}) => {
+  const safeData = Array.isArray(packagesData) ? packagesData : [];
+  const combinedResultRows = [];
+
+  safeData.forEach(({ pkg, records }) => {
+    const pkgFilename = pkg?.filename || 'Unknown';
+    const safeRecords = Array.isArray(records) ? records : [];
+
+    let effectiveLoanId = pkg?.loan_id || '';
+    if (!effectiveLoanId && safeRecords.length > 0) {
+      effectiveLoanId = extractLoanId(safeRecords, null) || '';
+    }
+    if (!effectiveLoanId && pkgFilename) {
+      const m = String(pkgFilename).match(/(?:loan\s*id|loanid)[^\d]*(\d+)/i) || String(pkgFilename).match(/\b(\d{7,12})\b/);
+      if (m) effectiveLoanId = m[1];
+    }
+
+    const effectiveUsername = pkg?.uploaded_by || '';
+    const effectiveEmail = pkg?.uploaded_email || '';
+
+    safeRecords.forEach(r => {
+      const rowObj = {};
+      rowObj['File Name'] = pkgFilename;
+
+      if (r.raw_data && typeof r.raw_data === 'object') {
+        Object.entries(r.raw_data).forEach(([k, v]) => {
+          rowObj[k] = v ?? '';
+        });
+      }
+
+      // Ensure standard columns are populated
+      if (!('Data Field' in rowObj)) rowObj['Data Field'] = r.data_field || '';
+      if (!('Data Label' in rowObj)) rowObj['Data Label'] = r.data_label || '';
+      if (!('True Data' in rowObj)) rowObj['True Data'] = r.true_data || '';
+
+      // Remove duplicate raw loan id keys
+      delete rowObj['Loan ID'];
+      delete rowObj['loan_id'];
+
+      const rowLoanId = r.pkg_loan_id ?? (r.loan_id != null && String(r.loan_id).trim() !== '' ? String(r.loan_id).trim() : null) ?? (r.raw_data && (r.raw_data['Loan ID'] || r.raw_data['loan_id'] || r.raw_data['Loan Id'])) ?? effectiveLoanId ?? '';
+      const rowUsername = r.pkg_username ?? r.uploaded_by ?? r.username ?? effectiveUsername ?? '';
+      const rowEmail = r.pkg_email ?? r.uploaded_email ?? r.email ?? effectiveEmail ?? '';
+
+      rowObj['Loan Id'] = rowLoanId;
+      rowObj['Username'] = rowUsername;
+      rowObj['Email'] = rowEmail;
+
+      // Add validation and audit outcome columns
+      rowObj['Dict Match'] = r.dictionary_match_status || '';
+      rowObj['Type Check'] = r.data_type_validation || '';
+      rowObj['Type Remarks'] = r.data_type_remarks || '';
+      rowObj['Numeric Format'] = r.numeric_format_flag || '';
+      rowObj['Enum Check'] = r.enum_validation || '';
+      rowObj['Enum Remarks'] = r.enum_remarks || '';
+      rowObj['Macro Check'] = r.macro_validation_result || '';
+      rowObj['Combined Result'] = r.result || '';
+      rowObj['Condition Check'] = r.condition_validation || '';
+      rowObj['Condition Remarks'] = r.condition_remarks || '';
+      rowObj['Final Result'] = r.final_result || r.result || '';
+      rowObj['Final Remarks'] = r.final_remarks || '';
+      rowObj['Action'] = r.action || '';
+      rowObj['User Remark'] = r.remark || '';
+
+      combinedResultRows.push(rowObj);
+    });
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const wsResults = XLSX.utils.json_to_sheet(
+    combinedResultRows.length > 0 ? combinedResultRows : [{ 'File Name': 'No records available' }]
+  );
+
+  if (combinedResultRows.length > 0) {
+    const cols = Object.keys(combinedResultRows[0]).map(key => {
+      const maxLen = Math.max(
+        key.length,
+        ...combinedResultRows.slice(0, 1000).map(row => String(row[key] ?? '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen + 3, 12), 60) };
+    });
+    wsResults['!cols'] = cols;
+  }
+
+  XLSX.utils.book_append_sheet(workbook, wsResults, 'Result Sheet');
+
+  const cleanName = filename ? String(filename).replace(/\.[^/.]+$/, '') : 'Bulk_Loan_Packages_Audit_Report';
+  const finalFilename = `${cleanName}.xlsx`;
+
+  XLSX.writeFile(workbook, finalFilename);
+};
+
 export default exportToExcel;
+
 
