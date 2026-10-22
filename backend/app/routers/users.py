@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.schemas import UserRoleUpdateRequest, UserColumnPreferencesRequest
+from app.schemas import UserRoleUpdateRequest, UserStatusUpdateRequest, UserColumnPreferencesRequest
 from app.security import get_current_user_id
 from app.database.operations import (
-    get_all_users, update_user_role, get_user_by_id,
+    get_all_users, update_user_role, update_user_status, get_user_by_id,
     get_user_column_preferences, save_user_column_preferences, delete_user_column_preferences
 )
+from app.logger import log_event
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -27,6 +28,24 @@ def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict 
     
     update_user_role(user_id, req.role)
     return {"status": "success", "message": "Role updated successfully"}
+
+@router.put("/{user_id}/status")
+def change_user_status(user_id: int, req: UserStatusUpdateRequest, admin_user: dict = Depends(require_admin)):
+    target_user = get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_status = req.status.strip().lower()
+    if new_status not in ["active", "inactive"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Allowed values: 'active', 'inactive'")
+    
+    # Safeguard: prevent admin from deactivating their own account
+    if admin_user.get("id") == user_id and new_status != "active":
+        raise HTTPException(status_code=400, detail="Administrators cannot deactivate their own account")
+    
+    update_user_status(user_id, new_status)
+    log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}'")
+    return {"status": "success", "message": f"User status updated to {new_status}"}
 
 # ============================================================================
 # Column Preferences Endpoints (Any authenticated user for their own account)

@@ -16,6 +16,7 @@ BEGIN
         email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'user',
+        status VARCHAR(50) NOT NULL DEFAULT 'inactive',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 END
@@ -24,6 +25,11 @@ BEGIN
     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('users') AND name = 'role')
     BEGIN
         ALTER TABLE users ADD role VARCHAR(50) NOT NULL DEFAULT 'user';
+    END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('users') AND name = 'status')
+    BEGIN
+        ALTER TABLE users ADD status VARCHAR(50) NOT NULL DEFAULT 'inactive';
+        EXEC('UPDATE users SET status = ''active'' WHERE status = ''inactive''');
     END
     -- Drop the UNIQUE constraint on username if it still exists (usernames are not required to be unique)
     DECLARE @uq_username NVARCHAR(200) = NULL;

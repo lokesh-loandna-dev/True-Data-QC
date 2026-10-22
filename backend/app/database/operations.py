@@ -9,7 +9,7 @@ def get_user_by_email(email: str):
         return None
     with engine.connect() as connection:
         result = connection.execute(
-            text("SELECT id, username, email, password_hash, role FROM users WHERE email = :email"),
+            text("SELECT id, username, email, password_hash, role, COALESCE(status, 'active') AS status FROM users WHERE email = :email"),
             {"email": email.lower()}
         ).fetchone()
         return dict(result._mapping) if result else None
@@ -19,7 +19,7 @@ def get_user_by_username(username: str):
         return None
     with engine.connect() as connection:
         result = connection.execute(
-            text("SELECT id, username, email, password_hash, role FROM users WHERE username = :username"),
+            text("SELECT id, username, email, password_hash, role, COALESCE(status, 'active') AS status FROM users WHERE username = :username"),
             {"username": username}
         ).fetchone()
         return dict(result._mapping) if result else None
@@ -29,28 +29,28 @@ def get_user_by_id(user_id: int):
         return None
     with engine.connect() as connection:
         result = connection.execute(
-            text("SELECT id, username, email, role FROM users WHERE id = :id"),
+            text("SELECT id, username, email, role, COALESCE(status, 'active') AS status FROM users WHERE id = :id"),
             {"id": user_id}
         ).fetchone()
         return dict(result._mapping) if result else None
 
-def create_user(username: str, email: str, password_hash: str, role: str = "user"):
+def create_user(username: str, email: str, password_hash: str, role: str = "user", status: str = "inactive"):
     if not engine:
         raise Exception("Database engine not initialized")
     with engine.begin() as connection:
         result = connection.execute(
-            text("INSERT INTO users (username, email, password_hash, role) OUTPUT INSERTED.id VALUES (:username, :email, :password_hash, :role)"),
-            {"username": username, "email": email.lower(), "password_hash": password_hash, "role": role}
+            text("INSERT INTO users (username, email, password_hash, role, status) OUTPUT INSERTED.id VALUES (:username, :email, :password_hash, :role, :status)"),
+            {"username": username, "email": email.lower(), "password_hash": password_hash, "role": role, "status": status}
         )
         inserted_id = result.fetchone()[0]
-        return {"id": inserted_id, "username": username, "email": email.lower(), "role": role}
+        return {"id": inserted_id, "username": username, "email": email.lower(), "role": role, "status": status}
 
 def get_all_users():
     if not engine:
         return []
     with engine.connect() as connection:
         result = connection.execute(
-            text("SELECT id, username, email, role FROM users")
+            text("SELECT id, username, email, role, COALESCE(status, 'active') AS status, created_at FROM users ORDER BY created_at DESC, id DESC")
         ).fetchall()
         return [dict(row._mapping) for row in result]
 
@@ -61,6 +61,16 @@ def update_user_role(user_id: int, role: str):
         connection.execute(
             text("UPDATE users SET role = :role WHERE id = :id"),
             {"role": role, "id": user_id}
+        )
+        return True
+
+def update_user_status(user_id: int, status: str):
+    if not engine:
+        raise Exception("Database engine not initialized")
+    with engine.begin() as connection:
+        connection.execute(
+            text("UPDATE users SET status = :status WHERE id = :id"),
+            {"status": status, "id": user_id}
         )
         return True
 

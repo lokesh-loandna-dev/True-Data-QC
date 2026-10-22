@@ -295,7 +295,8 @@ export const exportUsersToExcel = ({
       'S.No': idx + 1,
       'Username': u.username ?? '',
       'Email': u.email ?? '',
-      'Role': u.role ? (u.role.charAt(0).toUpperCase() + u.role.slice(1)) : ''
+      'Role': u.role ? (u.role.charAt(0).toUpperCase() + u.role.slice(1)) : '',
+      'Status': u.status === 'active' ? 'Active' : 'Pending Approval'
     };
     if (u.created_at) {
       row['Created At'] = u.created_at;

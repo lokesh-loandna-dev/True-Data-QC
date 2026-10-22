@@ -32,4 +32,19 @@ export const useUserStore = create((set, get) => ({
       throw error;
     }
   },
+
+  updateStatus: async (userId, newStatus) => {
+    set({ error: null });
+    try {
+      await userService.updateUserStatus(userId, newStatus);
+      set((state) => ({
+        users: state.users.map((user) =>
+          user.id === userId ? { ...user, status: newStatus } : user
+        ),
+      }));
+    } catch (error) {
+      set({ error: error.message || 'Failed to update user status' });
+      throw error;
+    }
+  },
 }));

@@ -76,14 +76,18 @@ def register_user(req: UserRegisterRequest):
     # Create user
     try:
         pwd_hash = hash_password(password)
-        created = create_user(username, email, pwd_hash)
-        token = generate_token(created["id"])
-        log_event("INFO", "REGISTER_SUCCESS", "User registered successfully", username=username, email=email)
+        created = create_user(username, email, pwd_hash, role="user", status="inactive")
+        log_event("INFO", "REGISTER_SUCCESS", "User registered successfully, pending admin approval", username=username, email=email)
         return {
             "status": "success",
-            "message": "User registered successfully",
-            "token": token,
-            "user": created
+            "message": "Registration submitted successfully. Your account is pending admin approval and will be activated once reviewed.",
+            "user": {
+                "id": created["id"],
+                "username": created["username"],
+                "email": created["email"],
+                "role": created["role"],
+                "status": created["status"]
+            }
         }
     except Exception as e:
         issue = f"Registration failed: Error inserting user into database - {str(e)}"
@@ -115,6 +119,16 @@ def login_user(req: UserLoginRequest):
         log_event("WARNING", "LOGIN_FAILED", issue, username=username, email=email)
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    # Check account status - must be active
+    user_status = user.get("status", "active")
+    if user_status != "active":
+        issue = f"Login rejected: User '{username}' with email '{email}' account status is '{user_status}'"
+        log_event("WARNING", "LOGIN_INACTIVE", issue, username=username, email=email)
+        raise HTTPException(
+            status_code=403,
+            detail="Your account is pending admin approval. You will be able to log in once an administrator approves your account."
+        )
+
     token = generate_token(user["id"])
     log_event("INFO", "LOGIN_SUCCESS", "User logged in successfully", username=username, email=email)
     return {
@@ -125,7 +139,8 @@ def login_user(req: UserLoginRequest):
             "id": user["id"],
             "username": user["username"],
             "email": user["email"],
-            "role": user["role"]
+            "role": user["role"],
+            "status": user_status
         }
     }
 
@@ -151,6 +166,14 @@ def send_forgot_password_otp(req: SendOtpRequest):
         issue = f"OTP request failed: No account registered with email '{email}'"
         log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
         raise HTTPException(status_code=404, detail="No account registered with this email address")
+
+    if user.get("status", "active") != "active":
+        issue = f"OTP request failed: Account '{email}' is inactive/pending approval"
+        log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
+        raise HTTPException(
+            status_code=403,
+            detail="Your account is pending admin approval. Password reset is not available."
+        )
 
     # Generate 6-digit cryptographic OTP
     otp_code = f"{secrets.randbelow(900000) + 100000}"

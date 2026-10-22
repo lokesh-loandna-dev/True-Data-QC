@@ -39,6 +39,21 @@ def init_db():
                     connection.commit()
                 except Exception as migration_err:
                     print(f"Warning: review_required column migration check skipped: {migration_err}")
+
+                try:
+                    connection.execute(text("""
+                        IF EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
+                        BEGIN
+                            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('users') AND name = 'status')
+                            BEGIN
+                                ALTER TABLE users ADD status VARCHAR(50) NOT NULL DEFAULT 'inactive';
+                                EXEC('UPDATE users SET status = ''active'' WHERE status = ''inactive''');
+                            END
+                        END
+                    """))
+                    connection.commit()
+                except Exception as user_migration_err:
+                    print(f"Warning: users status column migration check skipped: {user_migration_err}")
                 connection.commit()
             db_status["connected"] = True
             db_status["error"] = None

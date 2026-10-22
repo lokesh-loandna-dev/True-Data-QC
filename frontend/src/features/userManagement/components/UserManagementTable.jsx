@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useUserStore } from '../store/useUserStore';
+import { useAuth } from '../../../hooks/useAuth';
 import { DataTable } from '../../../components/DataTable';
 import Tooltip from '../../../components/Tooltip';
 import { notify } from '../../../utils/toast';
@@ -8,9 +9,11 @@ import { exportUsersToExcel } from '../../../utils/excelExport';
 const ROLES = ['admin', 'user'];
 
 export const UserManagementTable = () => {
-  const { users, loading, error, fetchUsers, updateRole } = useUserStore();
+  const { users, loading, error, fetchUsers, updateRole, updateStatus } = useUserStore();
+  const { user: currentUser } = useAuth();
   const [editingId, setEditingId] = useState(null);
   const [selectedRole, setSelectedRole] = useState('');
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [updateError, setUpdateError] = useState('');
 
   useEffect(() => {
@@ -34,6 +37,34 @@ export const UserManagementTable = () => {
       notify.error(errMsg);
     }
   }, [updateRole, selectedRole]);
+
+  const handleStatusToggle = useCallback(async (targetUser) => {
+    const isCurrentlyActive = targetUser.status === 'active';
+    const nextStatus = isCurrentlyActive ? 'inactive' : 'active';
+    const actionLabel = isCurrentlyActive ? 'deactivate' : 'approve and activate';
+
+    if (currentUser?.id === targetUser.id && isCurrentlyActive) {
+      notify.warning('You cannot deactivate your own administrative account.');
+      return;
+    }
+
+    setStatusUpdatingId(targetUser.id);
+    setUpdateError('');
+    try {
+      await updateStatus(targetUser.id, nextStatus);
+      notify.success(
+        nextStatus === 'active'
+          ? `User "${targetUser.username}" approved and activated successfully.`
+          : `User "${targetUser.username}" deactivated.`
+      );
+    } catch (err) {
+      const errMsg = err.message || `Failed to ${actionLabel} user`;
+      setUpdateError(errMsg);
+      notify.error(errMsg);
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }, [currentUser, updateStatus]);
 
   const handleExport = useCallback((dataToExport) => {
     try {
@@ -142,13 +173,37 @@ export const UserManagementTable = () => {
           admin: 'text-purple-800 font-semibold',
           manager: 'text-blue-800 font-semibold',
           viewer: 'text-amber-800 font-semibold',
-          default: 'text-green-800 font-semibold'
+          default: 'text-slate-800 font-semibold'
         };
         const colorClass = roleColors[u.role] || roleColors.default;
 
         return (
           <span className={`inline-flex items-center text-xs ${colorClass}`}>
             {u.role}
+          </span>
+        );
+      }
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      render: (u) => {
+        const isActive = u.status === 'active';
+        return (
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-tight whitespace-nowrap transition-colors ${
+              isActive
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                : 'bg-amber-50 text-amber-700 border border-amber-200/80'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isActive ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+              }`}
+            />
+            {isActive ? 'Active' : 'Pending Approval'}
           </span>
         );
       }
@@ -188,23 +243,77 @@ export const UserManagementTable = () => {
             </div>
           );
         }
+
+        const isPending = u.status !== 'active';
+        const isSelf = currentUser?.id === u.id;
+        const isUpdating = statusUpdatingId === u.id;
+
         return (
-          <Tooltip text="Edit Role" position="top">
-            <button
-              type="button"
-              onClick={() => handleEditClick(u)}
-              className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
-              aria-label="Edit Role"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-          </Tooltip>
+          <div className="flex items-center justify-end gap-1.5">
+            {isPending ? (
+              <Tooltip text="Approve & Activate Account" position="top">
+                <button
+                  type="button"
+                  onClick={() => handleStatusToggle(u)}
+                  disabled={isUpdating}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border border-emerald-200 hover:border-emerald-300 font-semibold rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none disabled:opacity-50"
+                  aria-label="Approve User"
+                >
+                  {isUpdating ? (
+                    <svg className="w-3.5 h-3.5 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  <span>Approve</span>
+                </button>
+              </Tooltip>
+            ) : (
+              !isSelf && (
+                <Tooltip text="Deactivate Account" position="top">
+                  <button
+                    type="button"
+                    onClick={() => handleStatusToggle(u)}
+                    disabled={isUpdating}
+                    className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-200 text-slate-400 hover:text-amber-700 rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                    aria-label="Deactivate User"
+                  >
+                    {isUpdating ? (
+                      <svg className="w-3.5 h-3.5 animate-spin text-amber-600" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                    )}
+                  </button>
+                </Tooltip>
+              )
+            )}
+
+            <Tooltip text="Edit Role" position="top">
+              <button
+                type="button"
+                onClick={() => handleEditClick(u)}
+                className="inline-flex items-center justify-center p-1.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-lg text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                aria-label="Edit Role"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+            </Tooltip>
+          </div>
         );
       }
     }
-  ], [editingId, selectedRole, handleEditClick, handleSave]);
+  ], [editingId, selectedRole, statusUpdatingId, currentUser, handleEditClick, handleSave, handleStatusToggle]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">

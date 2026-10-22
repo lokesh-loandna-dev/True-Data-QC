@@ -4,6 +4,7 @@ from app.auth.schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     UserRoleUpdateRequest,
+    UserStatusUpdateRequest,
 )
 
 class UserColumnPreferencesRequest(BaseModel):
@@ -14,6 +15,7 @@ __all__ = [
     "UserRegisterRequest",
     "UserLoginRequest",
     "UserRoleUpdateRequest",
+    "UserStatusUpdateRequest",
     "UserColumnPreferencesRequest",
 ]
 

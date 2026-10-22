@@ -15,6 +15,9 @@ const RegisterPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
 
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+
   const { register, error: authError } = useAuth();
   const navigate = useNavigate();
 
@@ -59,11 +62,9 @@ const RegisterPage = () => {
     setLocalLoading(true);
     try {
       await register(username.trim(), email.trim(), password);
-      notify.success('Registration successful! Redirecting to login...');
-      setSuccessMessage('Registration successful! Redirecting to login page...');
-      setTimeout(() => {
-        navigate('/login', { state: { email: email.trim() } });
-      }, 1500);
+      setRegisteredEmail(email.trim());
+      setIsSubmitted(true);
+      notify.success('Registration submitted! Account pending administrator approval.');
     } catch (err) {
       console.error('Registration submit error:', err);
     } finally {
@@ -72,6 +73,64 @@ const RegisterPage = () => {
   };
 
   const displayError = validationError || authError;
+
+  if (isSubmitted) {
+    return (
+      <AuthLayout title="Registration Submitted" subtitle="Account pending administrator approval">
+        <div className="w-full flex flex-col items-center text-center py-2">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 mb-5 shadow-2xs">
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          <h3 className="text-base font-semibold text-slate-900 mb-2">
+            Verification in Progress
+          </h3>
+
+          <p className="text-sm text-slate-600 mb-4 leading-relaxed max-w-sm">
+            Your registration for <span className="font-semibold text-slate-800">{registeredEmail}</span> has been received. 
+            All new user accounts are set to <span className="font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 text-xs">Inactive</span> by default.
+          </p>
+
+          <div className="w-full p-4 mb-6 rounded-xl bg-slate-50 border border-slate-200/80 text-left text-xs text-slate-600 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD] mt-1.5 flex-shrink-0" />
+              <span>An administrator will review and activate your account.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD] mt-1.5 flex-shrink-0" />
+              <span>Once approved, you will be able to sign in with your email and password.</span>
+            </div>
+          </div>
+
+          <div className="w-full space-y-2.5">
+            <CustomButton
+              type="button"
+              variant="primary"
+              onClick={() => navigate('/login', { state: { email: registeredEmail } })}
+              className="w-full font-medium"
+            >
+              Return to Login
+            </CustomButton>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSubmitted(false);
+                setUsername('');
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+              }}
+              className="w-full text-xs text-slate-500 hover:text-slate-800 py-1.5 transition-colors cursor-pointer"
+            >
+              Register another account
+            </button>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout title="Create Account" subtitle="Register to start managing credentials">

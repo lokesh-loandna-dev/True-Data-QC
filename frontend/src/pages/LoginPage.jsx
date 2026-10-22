@@ -79,9 +79,21 @@ const LoginPage = () => {
     <AuthLayout title="Welcome Back" subtitle="Log in to access your dashboard">
       <form onSubmit={handleSubmit} className="w-full" noValidate>
         {displayError && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
-            {displayError}
-          </div>
+          displayError.toLowerCase().includes('approval') ? (
+            <div className="bg-amber-50 border border-amber-200/80 text-amber-800 px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
+              <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className="font-semibold text-amber-900 mb-0.5">Account Pending Approval</p>
+                <p className="text-amber-700 leading-relaxed">{displayError}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
+              {displayError}
+            </div>
+          )
         )}
 
         <CustomInput
