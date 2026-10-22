@@ -390,7 +390,7 @@ Registration Details:
 - Registered Email: {recipient_email}
 - Status: Not Approved
 
-If you believe this decision was made in error or if your departmental responsibilities require platform access, please contact your system administrator or IT helpdesk.
+This decision has been logged for internal security and audit compliance.
 
 Best regards,
 True Data QC Team
@@ -497,20 +497,6 @@ True Data QC Team
                     <span style="display: inline-block; padding: 4px 12px; background-color: #dc2626; color: #ffffff; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; border-radius: 4px;">
                       NOT APPROVED
                     </span>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Actionable Help Box -->
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f8fafc" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0f172a; border-radius: 4px; margin-bottom: 24px;">
-                <tr>
-                  <td style="padding: 14px 18px;">
-                    <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
-                      Do your work responsibilities require access?
-                    </div>
-                    <div style="font-size: 13px; line-height: 1.5; color: #334155;">
-                      If you believe this decision was made in error, or if your job duties require access to True Data QC datasets, please contact your department manager or submit a ticket to the internal IT service desk for authorization.
-                    </div>
                   </td>
                 </tr>
               </table>
