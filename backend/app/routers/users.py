@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.schemas import UserRoleUpdateRequest, UserStatusUpdateRequest, UserColumnPreferencesRequest
 from app.security import get_current_user_id
 from app.database.operations import (
     get_all_users, update_user_role, update_user_status, get_user_by_id,
     get_user_column_preferences, save_user_column_preferences, delete_user_column_preferences
 )
+from app.services.email_service import send_account_approved_email, send_account_rejected_email
 from app.logger import log_event
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -30,7 +31,12 @@ def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict 
     return {"status": "success", "message": "Role updated successfully"}
 
 @router.put("/{user_id}/status")
-def change_user_status(user_id: int, req: UserStatusUpdateRequest, admin_user: dict = Depends(require_admin)):
+def change_user_status(
+    user_id: int,
+    req: UserStatusUpdateRequest,
+    background_tasks: BackgroundTasks,
+    admin_user: dict = Depends(require_admin)
+):
     target_user = get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -43,8 +49,20 @@ def change_user_status(user_id: int, req: UserStatusUpdateRequest, admin_user: d
     if admin_user.get("id") == user_id and new_status != "active":
         raise HTTPException(status_code=400, detail="Administrators cannot deactivate or reject their own account")
     
+    old_status = (target_user.get("status") or "active").strip().lower()
+
     update_user_status(user_id, new_status)
     log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}'")
+
+    # Send notification emails for status transitions
+    user_email = target_user.get("email")
+    username = target_user.get("username", "User")
+    if user_email:
+        if new_status == "active" and old_status != "active":
+            background_tasks.add_task(send_account_approved_email, user_email, username)
+        elif new_status == "rejected" and old_status != "rejected":
+            background_tasks.add_task(send_account_rejected_email, user_email, username)
+
     return {"status": "success", "message": f"User status updated to {new_status}"}
 
 # ============================================================================
