@@ -13,6 +13,12 @@ const STEPS = {
   SUCCESS: 4,
 };
 
+const STEP_ITEMS = [
+  { id: STEPS.EMAIL, label: 'Email' },
+  { id: STEPS.OTP, label: 'Verify OTP' },
+  { id: STEPS.PASSWORD, label: 'New Password' },
+];
+
 const ForgotPasswordPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -221,23 +227,85 @@ const ForgotPasswordPage = () => {
   return (
     <AuthLayout title={header.title} subtitle={header.subtitle}>
       <div className="w-full">
-        {/* Step Indicator Progress Bar */}
+        {/* Professional Stepper Navigation */}
         {step !== STEPS.SUCCESS && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
-              <span className={step >= STEPS.EMAIL ? 'text-blue-600 font-semibold' : ''}>1. Email</span>
-              <span className={step >= STEPS.OTP ? 'text-blue-600 font-semibold' : ''}>2. Verify OTP</span>
-              <span className={step >= STEPS.PASSWORD ? 'text-blue-600 font-semibold' : ''}>3. New Password</span>
-            </div>
-            <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+          <nav aria-label="Password reset progress" className="mb-7">
+            <div className="relative">
+              {/* Connecting Line Track */}
               <div
-                className="bg-blue-600 h-full transition-all duration-300"
-                style={{
-                  width: step === STEPS.EMAIL ? '33.3%' : step === STEPS.OTP ? '66.6%' : '100%',
-                }}
-              />
+                className="absolute top-4 left-[16.67%] right-[16.67%] h-0.5 bg-gray-200 -translate-y-1/2 z-0"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full bg-[#24A1DD] transition-[width] duration-300 ease-in-out"
+                  style={{
+                    width: step === STEPS.EMAIL ? '0%' : step === STEPS.OTP ? '50%' : '100%',
+                  }}
+                />
+              </div>
+
+              {/* Steps Grid */}
+              <ol className="relative z-10 grid grid-cols-3 w-full">
+                {STEP_ITEMS.map((item) => {
+                  const isCompleted = step > item.id;
+                  const isCurrent = step === item.id;
+                  const isClickable = isCompleted && !loading;
+
+                  return (
+                    <li key={item.id} className="flex flex-col items-center">
+                      <button
+                        type="button"
+                        disabled={!isClickable}
+                        onClick={() => {
+                          if (isClickable) {
+                            setErrorMsg('');
+                            setStep(item.id);
+                          }
+                        }}
+                        aria-current={isCurrent ? 'step' : undefined}
+                        className={`flex flex-col items-center group focus:outline-none ${
+                          isClickable ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                        title={isClickable ? `Return to ${item.label}` : undefined}
+                      >
+                        {/* Step Circle Indicator */}
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 ${
+                            isCompleted
+                              ? 'bg-[#24A1DD] text-white shadow-xs group-hover:bg-[#1e95ce] group-hover:scale-105'
+                              : isCurrent
+                              ? 'bg-white border-2 border-[#24A1DD] text-[#24A1DD] ring-4 ring-[#24A1DD]/15 font-bold shadow-xs'
+                              : 'bg-white border border-gray-300 text-gray-400'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <svg className="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <span>{item.id}</span>
+                          )}
+                        </div>
+
+                        {/* Step Label */}
+                        <span
+                          className={`mt-2 text-xs transition-colors duration-200 select-none ${
+                            isCurrent
+                              ? 'font-semibold text-gray-900'
+                              : isCompleted
+                              ? 'font-medium text-gray-700 group-hover:text-[#24A1DD]'
+                              : 'font-normal text-gray-400'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
-          </div>
+          </nav>
         )}
 
         {/* Global Error Alert */}
@@ -327,7 +395,7 @@ const ForgotPasswordPage = () => {
                   setOtp(val);
                   setErrorMsg('');
                 }}
-                className="block w-full h-12 text-center text-2xl tracking-[0.5em] font-mono font-bold text-gray-800 rounded-lg border border-gray-300 focus:border-[#24A1DD] focus:ring-1 focus:ring-[#24A1DD]/25 focus:outline-none transition-all"
+                className="block w-full h-12 text-center text-2xl tracking-[0.4em] tabular-nums font-semibold text-gray-800 rounded-lg border border-gray-300 focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 focus:outline-none transition-[border-color,box-shadow] duration-150"
               />
               <p className="mt-1.5 text-xs text-gray-500 text-center">
                 Check your inbox and spam folder. Code expires in 10 minutes.
@@ -414,20 +482,28 @@ const ForgotPasswordPage = () => {
             />
 
             {/* Password Validation Checklist */}
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-5 text-xs text-gray-600 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className={password.length >= 6 ? 'text-green-600 font-bold' : 'text-gray-400'}>
-                  {password.length >= 6 ? '✓' : '•'}
-                </span>
-                <span className={password.length >= 6 ? 'text-green-700' : ''}>
+            <div className="bg-gray-50 border border-gray-200/80 rounded-lg p-3 mb-5 text-xs text-gray-600 space-y-1.5">
+              <div className="flex items-center gap-2">
+                {password.length >= 6 ? (
+                  <svg className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1 flex-shrink-0" />
+                )}
+                <span className={password.length >= 6 ? 'text-emerald-700 font-medium' : 'text-gray-500'}>
                   At least 6 characters long
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className={confirmPassword && password === confirmPassword ? 'text-green-600 font-bold' : 'text-gray-400'}>
-                  {confirmPassword && password === confirmPassword ? '✓' : '•'}
-                </span>
-                <span className={confirmPassword && password === confirmPassword ? 'text-green-700' : ''}>
+              <div className="flex items-center gap-2">
+                {confirmPassword && password === confirmPassword ? (
+                  <svg className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300 ml-1 mr-1 flex-shrink-0" />
+                )}
+                <span className={confirmPassword && password === confirmPassword ? 'text-emerald-700 font-medium' : 'text-gray-500'}>
                   Passwords must match
                 </span>
               </div>
@@ -449,7 +525,7 @@ const ForgotPasswordPage = () => {
         {/* STEP 4: Success Message & Redirect */}
         {step === STEPS.SUCCESS && (
           <div className="text-center py-4">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
