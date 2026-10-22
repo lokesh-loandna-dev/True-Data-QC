@@ -36,12 +36,12 @@ def change_user_status(user_id: int, req: UserStatusUpdateRequest, admin_user: d
         raise HTTPException(status_code=404, detail="User not found")
     
     new_status = req.status.strip().lower()
-    if new_status not in ["active", "inactive"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Allowed values: 'active', 'inactive'")
+    if new_status not in ["active", "inactive", "rejected"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Allowed values: 'active', 'inactive', 'rejected'")
     
-    # Safeguard: prevent admin from deactivating their own account
+    # Safeguard: prevent admin from deactivating or rejecting their own account
     if admin_user.get("id") == user_id and new_status != "active":
-        raise HTTPException(status_code=400, detail="Administrators cannot deactivate their own account")
+        raise HTTPException(status_code=400, detail="Administrators cannot deactivate or reject their own account")
     
     update_user_status(user_id, new_status)
     log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}'")

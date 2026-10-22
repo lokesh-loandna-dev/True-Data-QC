@@ -121,7 +121,14 @@ def login_user(req: UserLoginRequest):
 
     # Check account status - must be active
     user_status = user.get("status", "active")
-    if user_status != "active":
+    if user_status == "rejected":
+        issue = f"Login rejected: User '{username}' with email '{email}' account registration has been rejected"
+        log_event("WARNING", "LOGIN_REJECTED", issue, username=username, email=email)
+        raise HTTPException(
+            status_code=403,
+            detail="Your account registration has been rejected. Please contact an administrator."
+        )
+    elif user_status != "active":
         issue = f"Login rejected: User '{username}' with email '{email}' account status is '{user_status}'"
         log_event("WARNING", "LOGIN_INACTIVE", issue, username=username, email=email)
         raise HTTPException(
@@ -167,7 +174,15 @@ def send_forgot_password_otp(req: SendOtpRequest):
         log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
         raise HTTPException(status_code=404, detail="No account registered with this email address")
 
-    if user.get("status", "active") != "active":
+    user_status = user.get("status", "active")
+    if user_status == "rejected":
+        issue = f"OTP request failed: Account '{email}' registration has been rejected"
+        log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
+        raise HTTPException(
+            status_code=403,
+            detail="Your account registration has been rejected. Password reset is not available."
+        )
+    elif user_status != "active":
         issue = f"OTP request failed: Account '{email}' is inactive/pending approval"
         log_event("WARNING", "OTP_REQUEST_FAILED", issue, email=email)
         raise HTTPException(

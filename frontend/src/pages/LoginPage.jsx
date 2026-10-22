@@ -89,6 +89,16 @@ const LoginPage = () => {
                 <p className="text-amber-700 leading-relaxed">{displayError}</p>
               </div>
             </div>
+          ) : displayError.toLowerCase().includes('reject') ? (
+            <div className="bg-rose-50 border border-rose-200/80 text-rose-800 px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
+              <svg className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-semibold text-rose-900 mb-0.5">Registration Rejected</p>
+                <p className="text-rose-700 leading-relaxed">{displayError}</p>
+              </div>
+            </div>
           ) : (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
               {displayError}
