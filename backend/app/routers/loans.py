@@ -513,7 +513,8 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 COALESCE(act.action_need_review, 0) as action_need_review,
                 COALESCE(act.action_review_completed, 0) as action_review_completed,
                 COALESCE(act.action_out_of_scope, 0) as action_out_of_scope,
-                COALESCE(act.action_others, 0) as action_others
+                COALESCE(act.action_others, 0) as action_others,
+                COALESCE(act.yet_to_take_action, 0) as yet_to_take_action
             FROM loan_packages lp
             LEFT JOIN users u ON lp.user_id = u.id
             LEFT JOIN (
@@ -534,7 +535,12 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                     SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'need review' THEN 1 ELSE 0 END) as action_need_review,
                     SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'review completed' THEN 1 ELSE 0 END) as action_review_completed,
                     SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'out of scope' THEN 1 ELSE 0 END) as action_out_of_scope,
-                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'others' THEN 1 ELSE 0 END) as action_others
+                    SUM(CASE WHEN LOWER(LTRIM(RTRIM(action))) = 'others' THEN 1 ELSE 0 END) as action_others,
+                    SUM(CASE 
+                        WHEN LOWER(LTRIM(RTRIM(final_result))) IN ('invalid', 'review required')
+                         AND (action IS NULL OR LTRIM(RTRIM(action)) = '' OR LOWER(LTRIM(RTRIM(action))) IN ('select', '-- select --', 'none'))
+                        THEN 1 ELSE 0 
+                    END) as yet_to_take_action
                 FROM loan_package_records
                 GROUP BY package_id
             ) act ON lp.id = act.package_id

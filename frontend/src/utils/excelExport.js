@@ -362,6 +362,7 @@ export const exportPackagesToExcel = ({
     row['Final Valid'] = pkg.final_valid ?? 0;
     row['Final Invalid'] = pkg.final_invalid ?? 0;
     row['Review Required'] = pkg.review_required ?? 0;
+    row['Yet to Take Action'] = pkg.yet_to_take_action ?? 0;
     row['Corrected'] = pkg.action_corrected ?? 0;
     row['Incorrect Status'] = pkg.action_incorrect_status ?? 0;
     row['Not Applicable'] = pkg.action_not_applicable ?? 0;
@@ -387,6 +388,7 @@ export const exportPackagesToExcel = ({
           'Final Valid': '',
           'Final Invalid': '',
           'Review Required': '',
+          'Yet to Take Action': '',
           'Corrected': '',
           'Incorrect Status': '',
           'Not Applicable': '',

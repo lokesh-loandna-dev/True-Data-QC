@@ -77,10 +77,10 @@ const PackageDetailedRowView = ({
           </div>
         </div>
 
-        {/* Unified Single Strip: Validation (4 items) + Divider + Action Breakdown (7 items) */}
+        {/* Unified Single Strip: Validation & Pending (5 items) + Divider + Action Breakdown (7 items) */}
         <div className="bg-white rounded-lg border border-slate-200/90 shadow-2xs p-1.5 flex flex-col md:flex-row items-stretch gap-1.5">
-          {/* Validation Metrics Group (4 items - 36%) */}
-          <div className="w-full md:w-[36%] grid grid-cols-4 gap-1.5 text-center">
+          {/* Validation & Pending Group (5 items - 42%) */}
+          <div className="w-full md:w-[42%] grid grid-cols-5 gap-1.5 text-center">
             <div className="bg-slate-50 py-1 px-1 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
               <span className="block text-[10px] text-slate-600 font-medium leading-tight">Total Fields</span>
               <span className="font-mono text-xs font-bold text-slate-800">{pkg.total_fields ?? 0}</span>
@@ -97,13 +97,19 @@ const PackageDetailedRowView = ({
               <span className="block text-[10px] text-amber-700 font-medium leading-tight">Review Required</span>
               <span className="font-mono text-xs font-bold text-amber-600">{pkg.review_required ?? 0}</span>
             </div>
+            <div className="bg-amber-50 py-1 px-0.5 rounded border border-amber-200/80 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-amber-800 font-semibold leading-tight">Pending Action</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.yet_to_take_action ?? 0) > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                {pkg.yet_to_take_action ?? 0}
+              </span>
+            </div>
           </div>
 
           {/* Divider */}
           <div className="hidden md:block w-px bg-slate-200 self-stretch my-0.5"></div>
 
-          {/* Action Status Breakdown Group (7 items - 64%) */}
-          <div className="w-full md:w-[64%] grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center">
+          {/* Action Status Breakdown Group (7 items - 58%) */}
+          <div className="w-full md:w-[58%] grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center">
             <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
               <span className="block text-[10px] text-slate-600 font-medium leading-tight">Corrected</span>
               <span className={`font-mono text-xs font-bold ${(pkg.action_corrected ?? 0) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -565,6 +571,21 @@ const DashboardPage = () => {
             {pkg.review_required ?? 0}
           </span>
         ),
+      },
+      {
+        header: 'Yet to Take Action',
+        accessor: 'yet_to_take_action',
+        sortable: true,
+        align: 'center',
+        headerClassName: 'whitespace-nowrap min-w-[140px]',
+        render: (pkg) => {
+          const val = pkg.yet_to_take_action ?? 0;
+          return (
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+              {val}
+            </span>
+          );
+        },
       },
       {
         header: 'Corrected',

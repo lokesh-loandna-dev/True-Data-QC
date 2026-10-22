@@ -28,7 +28,7 @@ from app.routers.loans import (
 
 # Default configuration
 DEFAULT_SAMPLES_DIR = r"C:\Users\lsaravanan\Downloads\samples"
-DEFAULT_USER_EMAIL = "user@loandna.com"
+DEFAULT_USER_EMAIL = "lsaravanan@loandna.com"
 
 
 def natural_sort_key(s):
