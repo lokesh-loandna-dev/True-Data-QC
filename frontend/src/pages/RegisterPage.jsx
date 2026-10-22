@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
@@ -12,7 +12,6 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -76,33 +75,18 @@ const RegisterPage = () => {
 
   if (isSubmitted) {
     return (
-      <AuthLayout title="Registration Submitted" subtitle="Account pending administrator approval">
+      <AuthLayout title="Registration Received">
         <div className="w-full flex flex-col items-center text-center py-2">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 mb-5 shadow-2xs">
+          {/* Status Icon */}
+          <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-[#24A1DD] mb-4">
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
             </svg>
           </div>
 
-          <h3 className="text-base font-semibold text-slate-900 mb-2">
-            Verification in Progress
-          </h3>
-
-          <p className="text-sm text-slate-600 mb-4 leading-relaxed max-w-sm">
-            Your registration for <span className="font-semibold text-slate-800">{registeredEmail}</span> has been received. 
-            All new user accounts are set to <span className="font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 text-xs">Inactive</span> by default.
+          <p className="text-sm text-slate-600 leading-relaxed mb-6 max-w-sm">
+            Your request has been logged and is awaiting administrator approval.
           </p>
-
-          <div className="w-full p-4 mb-6 rounded-xl bg-slate-50 border border-slate-200/80 text-left text-xs text-slate-600 space-y-2">
-            <div className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD] mt-1.5 flex-shrink-0" />
-              <span>An administrator will review and activate your account.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD] mt-1.5 flex-shrink-0" />
-              <span>Once approved, you will be able to sign in with your email and password.</span>
-            </div>
-          </div>
 
           <div className="w-full space-y-2.5">
             <CustomButton
@@ -111,7 +95,7 @@ const RegisterPage = () => {
               onClick={() => navigate('/login', { state: { email: registeredEmail } })}
               className="w-full font-medium"
             >
-              Return to Login
+              Return to Sign In
             </CustomButton>
             <button
               type="button"
@@ -139,13 +123,6 @@ const RegisterPage = () => {
         {displayError && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
             {displayError}
-          </div>
-        )}
-
-        {/* Success Display */}
-        {successMessage && (
-          <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium">
-            {successMessage}
           </div>
         )}
 
