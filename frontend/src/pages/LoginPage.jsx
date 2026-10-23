@@ -68,9 +68,9 @@ const LoginPage = () => {
     }
   };
 
-  const handleMicrosoftLogin = () => {
-    const backendUrl = window._env_?.VITE_API_URL || window._env_?.VITE_BACKEND_URL || '';
-    window.location.href = `${backendUrl}/api/auth/ValidateAzureAD`;
+  const handleMicrosoftLogin = (e) => {
+    if (e) e.preventDefault();
+    notify.info('Microsoft SSO Not Yet Available');
   };
 
   const displayError = validationError || authError;
