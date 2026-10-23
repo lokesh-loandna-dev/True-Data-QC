@@ -1062,7 +1062,9 @@ export const DataTable = ({
                           onClick={() => col.sortable && col.accessor ? handleSort(col.accessor) : null}
                         >
                           <span className="truncate">
-                            {typeof col.header === 'function' ? col.header() : col.header}
+                            {typeof col.header === 'function'
+                              ? col.header({ data, filteredData, sortedData, paginatedData })
+                              : col.header}
                           </span>
                           {(col.headerTooltip || col.tooltip) && (
                             <Tooltip text={col.headerTooltip || col.tooltip} position="top">

@@ -470,30 +470,20 @@ const DashboardPage = () => {
     return selectedPackages.reduce((sum, pkg) => sum + (Number(pkg.total_fields) || 0), 0);
   }, [selectedPackages]);
 
-  // Master checkbox states for current visible packages
-  const isAllVisibleSelected = useMemo(() => {
-    if (dateFilteredPackages.length === 0) return false;
-    return dateFilteredPackages.every(pkg => selectedPackageIds.has(pkg.id));
-  }, [dateFilteredPackages, selectedPackageIds]);
-
-  const isSomeVisibleSelected = useMemo(() => {
-    if (dateFilteredPackages.length === 0) return false;
-    const count = dateFilteredPackages.filter(pkg => selectedPackageIds.has(pkg.id)).length;
-    return count > 0 && count < dateFilteredPackages.length;
-  }, [dateFilteredPackages, selectedPackageIds]);
-
-  const handleToggleSelectAll = useCallback(() => {
+  // Toggle selection for visible / filtered packages
+  const handleToggleSelectFiltered = useCallback((visibleList) => {
+    if (!visibleList || visibleList.length === 0) return;
     setSelectedPackageIds(prev => {
-      const allSelected = dateFilteredPackages.every(pkg => prev.has(pkg.id));
+      const allSelected = visibleList.every(pkg => prev.has(pkg.id));
       const next = new Set(prev);
       if (allSelected) {
-        dateFilteredPackages.forEach(pkg => next.delete(pkg.id));
+        visibleList.forEach(pkg => next.delete(pkg.id));
       } else {
-        dateFilteredPackages.forEach(pkg => next.add(pkg.id));
+        visibleList.forEach(pkg => next.add(pkg.id));
       }
       return next;
     });
-  }, [dateFilteredPackages]);
+  }, []);
 
   const handleToggleSelectRow = useCallback((pkgId) => {
     setSelectedPackageIds(prev => {
@@ -612,21 +602,27 @@ const DashboardPage = () => {
   const packageColumns = useMemo(() => {
     const cols = [
       {
-        header: () => (
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              ref={(el) => {
-                if (el) el.indeterminate = isSomeVisibleSelected;
-              }}
-              checked={isAllVisibleSelected}
-              onChange={handleToggleSelectAll}
-              className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
-              title={isAllVisibleSelected ? "Deselect all visible packages" : "Select all visible packages"}
-            />
-            <span className="font-semibold text-slate-700 select-none">S.No.</span>
-          </div>
-        ),
+        header: ({ filteredData } = {}) => {
+          const visibleList = filteredData !== undefined ? filteredData : dateFilteredPackages;
+          const isAllSelected = visibleList.length > 0 && visibleList.every(pkg => selectedPackageIds.has(pkg.id));
+          const isSomeSelected = !isAllSelected && visibleList.some(pkg => selectedPackageIds.has(pkg.id));
+
+          return (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                ref={(el) => {
+                  if (el) el.indeterminate = isSomeSelected;
+                }}
+                checked={isAllSelected}
+                onChange={() => handleToggleSelectFiltered(visibleList)}
+                className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+                title={isAllSelected ? "Deselect all visible packages" : "Select all visible packages"}
+              />
+              <span className="font-semibold text-slate-700 select-none">S.No.</span>
+            </div>
+          );
+        },
         accessor: 'sno',
         sortable: false,
         headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
@@ -965,9 +961,8 @@ const DashboardPage = () => {
     handleExportRowPackage,
     handleDeletePackage,
     selectedPackageIds,
-    isAllVisibleSelected,
-    isSomeVisibleSelected,
-    handleToggleSelectAll,
+    dateFilteredPackages,
+    handleToggleSelectFiltered,
     handleToggleSelectRow
   ]);
 
