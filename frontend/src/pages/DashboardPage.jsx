@@ -497,42 +497,31 @@ const DashboardPage = () => {
     });
   }, []);
 
-  // Perform bulk download with sequential package record appending & Excel row limit validation
+  // Perform bulk download via high-speed server-side streaming Excel export
   const handleBulkDownload = useCallback(async () => {
     if (selectedPackages.length <= 1) {
       notify.warning('Please select more than one package for bulk download.');
       return;
     }
 
-    const EXCEL_MAX_ROWS = 1048576;
-    if (selectedTotalRows > EXCEL_MAX_ROWS - 1) {
-      const msg = `You exceed the maximum limit of Excel (${EXCEL_MAX_ROWS.toLocaleString()} rows). The selected packages total ${selectedTotalRows.toLocaleString()} rows. Please unselect some packages and try again.`;
-      notify.error(msg, { duration: 6000 });
-      return;
-    }
-
     setBulkDownloadLoading(true);
-    const toastId = notify.loading?.(`Fetching records for ${selectedPackages.length} packages (${selectedTotalRows.toLocaleString()} rows)...`);
+    const toastId = notify.loading?.(`Generating Excel for ${selectedPackages.length} packages (${selectedTotalRows.toLocaleString()} rows)...`);
 
     try {
-      const packagesData = [];
-      for (const pkg of selectedPackages) {
-        const response = await loanService.getPackageDetails(pkg.id);
-        if (response.status === 'success' && response.records) {
-          packagesData.push({
-            pkg: response.package || pkg,
-            records: response.records
-          });
-        } else {
-          throw new Error(`Failed to load records for "${pkg.filename}".`);
-        }
-      }
+      const packageIds = selectedPackages.map(p => p.id);
+      const blob = await loanService.exportBulkPackagesExcel(packageIds);
 
       const dateStr = new Date().toISOString().split('T')[0];
-      exportBulkPackagesResultToExcel({
-        packagesData,
-        filename: `Bulk_Audit_Export_${selectedPackages.length}_Packages_${dateStr}`
-      });
+      const filename = `Bulk_Audit_Export_${selectedPackages.length}_Packages_${dateStr}.xlsx`;
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
 
       notify.success(`Exported ${selectedTotalRows.toLocaleString()} records across ${selectedPackages.length} packages successfully!`);
     } catch (err) {

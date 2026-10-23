@@ -35,5 +35,12 @@ export const loanService = {
   clearAllPackages: async () => {
     return api.delete('/api/loans/clear-all');
   },
+
+  exportBulkPackagesExcel: async (packageIds) => {
+    return api.downloadBlob('/api/loans/bulk-export', {
+      method: 'POST',
+      body: { package_ids: packageIds }
+    });
+  },
 };
 

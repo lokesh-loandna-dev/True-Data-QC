@@ -1,8 +1,11 @@
 import io
 import json
 import random
+import re
 import time
+from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from app.auth import get_current_user_id
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -562,6 +565,236 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
         return {"status": "success", "packages": packages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class BulkExportRequest(BaseModel):
+    package_ids: List[int]
+
+@router.post("/bulk-export")
+def bulk_export_packages(
+    req: BulkExportRequest,
+    user_id: int = Depends(get_current_user_id)
+):
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    if not req.package_ids:
+        raise HTTPException(status_code=400, detail="Please select at least one package to export.")
+
+    clean_ids = [int(pid) for pid in req.package_ids if pid is not None]
+    if not clean_ids:
+        raise HTTPException(status_code=400, detail="Invalid package IDs provided.")
+
+    id_clause = ",".join(str(pid) for pid in clean_ids)
+
+    try:
+        with engine.connect() as conn:
+            user_row = conn.execute(
+                text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+            ).fetchone()
+            if not user_row:
+                raise HTTPException(status_code=404, detail="User not found")
+            role = user_row[0]
+
+            auth_filter = f"WHERE lp.id IN ({id_clause})"
+            if role != "admin":
+                auth_filter += f" AND lp.user_id = {int(user_id)}"
+
+            packages_rows = conn.execute(text(f"""
+                SELECT lp.id, lp.filename, lp.loan_id, lp.user_id,
+                       u.username AS uploaded_by, u.email AS uploaded_email
+                FROM loan_packages lp
+                LEFT JOIN users u ON lp.user_id = u.id
+                {auth_filter}
+                ORDER BY lp.id DESC
+            """)).mappings().all()
+
+            if not packages_rows:
+                raise HTTPException(status_code=404, detail="No authorized packages found for export.")
+
+            packages_dict = {p["id"]: dict(p) for p in packages_rows}
+            valid_ids_clause = ",".join(str(p["id"]) for p in packages_rows)
+
+            records_rows = conn.execute(text(f"""
+                SELECT * FROM loan_package_records
+                WHERE package_id IN ({valid_ids_clause})
+                ORDER BY package_id DESC, id ASC
+            """)).mappings().all()
+
+        # Extract dynamic raw_data columns and parse records
+        dynamic_cols_set = set()
+        dynamic_cols_order = []
+        parsed_records = []
+
+        standard_fixed_cols = {
+            "File Name", "Data Field", "Data Label", "True Data",
+            "Loan ID", "loan_id", "Loan Id", "Username", "Email",
+            "Dict Match", "Type Check", "Type Remarks", "Numeric Format",
+            "Enum Check", "Enum Remarks", "Macro Check", "Combined Result",
+            "Condition Check", "Condition Remarks", "Final Result", "Final Remarks",
+            "Action", "User Remark"
+        }
+
+        for r in records_rows:
+            rec = dict(r)
+            pkg = packages_dict.get(rec.get("package_id")) or {}
+            pkg_filename = pkg.get("filename") or "Unknown"
+
+            raw_dict = {}
+            raw_str = rec.get("raw_data")
+            if raw_str:
+                try:
+                    raw_dict = json.loads(raw_str) if isinstance(raw_str, str) else raw_dict
+                except Exception:
+                    raw_dict = {}
+
+            if isinstance(raw_dict, dict):
+                for k in raw_dict.keys():
+                    if k not in standard_fixed_cols and k not in dynamic_cols_set:
+                        dynamic_cols_set.add(k)
+                        dynamic_cols_order.append(k)
+
+            parsed_records.append((rec, pkg, pkg_filename, raw_dict))
+
+        # Assemble final ordered headers:
+        # 1. 'File Name'
+        # 2. Dynamic raw_data columns
+        # 3. Standard data columns ('Data Field', 'Data Label', 'True Data')
+        # 4. Package Info columns ('Loan Id', 'Username', 'Email')
+        # 5. Audit & Validation outcome columns
+        final_headers = ["File Name"]
+        for c in dynamic_cols_order:
+            if c not in final_headers:
+                final_headers.append(c)
+
+        for std_col in ["Data Field", "Data Label", "True Data", "Loan Id", "Username", "Email"]:
+            if std_col not in final_headers:
+                final_headers.append(std_col)
+
+        audit_cols = [
+            "Dict Match", "Type Check", "Type Remarks", "Numeric Format",
+            "Enum Check", "Enum Remarks", "Macro Check", "Combined Result",
+            "Condition Check", "Condition Remarks", "Final Result", "Final Remarks",
+            "Action", "User Remark"
+        ]
+        for ac in audit_cols:
+            if ac not in final_headers:
+                final_headers.append(ac)
+
+        # Build workbook with openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Result Sheet"
+
+        # Write header row
+        ws.append(final_headers)
+
+        # Style header row
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        header_font = Font(name="Calibri", size=11, bold=True, color="1E293B")
+        header_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+        thin_border = Border(
+            left=Side(style="thin", color="CBD5E1"),
+            right=Side(style="thin", color="CBD5E1"),
+            top=Side(style="thin", color="CBD5E1"),
+            bottom=Side(style="thin", color="94A3B8")
+        )
+
+        for col_idx in range(1, len(final_headers) + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)
+
+        # Populate rows
+        for rec, pkg, pkg_filename, raw_dict in parsed_records:
+            effective_loan_id = pkg.get("loan_id") or ""
+            if not effective_loan_id and pkg_filename:
+                m = re.search(r"(?:loan\s*id|loanid)[^\d]*(\d+)", pkg_filename, re.I) or re.search(r"\b(\d{7,12})\b", pkg_filename)
+                if m:
+                    effective_loan_id = m.group(1)
+
+            row_obj = {"File Name": pkg_filename}
+            if isinstance(raw_dict, dict):
+                for k, v in raw_dict.items():
+                    row_obj[k] = v if v is not None else ""
+
+            if "Data Field" not in row_obj or not row_obj["Data Field"]:
+                row_obj["Data Field"] = rec.get("data_field") or ""
+            if "Data Label" not in row_obj or not row_obj["Data Label"]:
+                row_obj["Data Label"] = rec.get("data_label") or ""
+            if "True Data" not in row_obj or not row_obj["True Data"]:
+                row_obj["True Data"] = rec.get("true_data") or ""
+
+            # Remove duplicate loan id keys
+            row_obj.pop("Loan ID", None)
+            row_obj.pop("loan_id", None)
+
+            # Resolve loan id, username, email
+            row_loan_id = (
+                rec.get("pkg_loan_id")
+                or (str(rec.get("loan_id")).strip() if rec.get("loan_id") is not None and str(rec.get("loan_id")).strip() != "" else None)
+                or (raw_dict.get("Loan ID") or raw_dict.get("loan_id") or raw_dict.get("Loan Id"))
+                or effective_loan_id
+                or ""
+            )
+            row_username = rec.get("pkg_username") or rec.get("uploaded_by") or rec.get("username") or pkg.get("uploaded_by") or ""
+            row_email = rec.get("pkg_email") or rec.get("uploaded_email") or rec.get("email") or pkg.get("uploaded_email") or ""
+
+            row_obj["Loan Id"] = str(row_loan_id) if row_loan_id is not None else ""
+            row_obj["Username"] = str(row_username) if row_username is not None else ""
+            row_obj["Email"] = str(row_email) if row_email is not None else ""
+
+            row_obj["Dict Match"] = rec.get("dictionary_match_status") or ""
+            row_obj["Type Check"] = rec.get("data_type_validation") or ""
+            row_obj["Type Remarks"] = rec.get("data_type_remarks") or ""
+            row_obj["Numeric Format"] = rec.get("numeric_format_flag") or ""
+            row_obj["Enum Check"] = rec.get("enum_validation") or ""
+            row_obj["Enum Remarks"] = rec.get("enum_remarks") or ""
+            row_obj["Macro Check"] = rec.get("macro_validation_result") or ""
+            row_obj["Combined Result"] = rec.get("result") or ""
+            row_obj["Condition Check"] = rec.get("condition_validation") or ""
+            row_obj["Condition Remarks"] = rec.get("condition_remarks") or ""
+            row_obj["Final Result"] = rec.get("final_result") or rec.get("result") or ""
+            row_obj["Final Remarks"] = rec.get("final_remarks") or ""
+            row_obj["Action"] = rec.get("action") or ""
+            row_obj["User Remark"] = rec.get("remark") or ""
+
+            ws.append([row_obj.get(h, "") for h in final_headers])
+
+        # Auto-fit column widths (sampling up to 200 rows for fast execution)
+        sample_limit = min(len(parsed_records) + 2, 202)
+        for col_idx, h in enumerate(final_headers, 1):
+            max_len = len(str(h))
+            col_letter = openpyxl.utils.get_column_letter(col_idx)
+            for row_idx in range(2, sample_limit):
+                val = ws.cell(row=row_idx, column=col_idx).value
+                if val:
+                    val_len = len(str(val))
+                    if val_len > max_len:
+                        max_len = val_len
+            ws.column_dimensions[col_letter].width = max(min(max_len + 3, 60), 12)
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        date_str = datetime.utcnow().strftime("%Y-%m-%d")
+        download_filename = f"Bulk_Audit_Export_{len(packages_rows)}_Packages_{date_str}.xlsx"
+
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{download_filename}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bulk export failed: {str(e)}")
 
 @router.get("/{package_id}")
 def get_package_details(package_id: int, user_id: int = Depends(get_current_user_id)):

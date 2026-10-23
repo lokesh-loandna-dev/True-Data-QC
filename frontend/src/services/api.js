@@ -94,6 +94,50 @@ class ApiClient {
   upload(endpoint, formData, options = {}) {
     return this.request(endpoint, { ...options, method: 'POST', body: formData });
   }
+
+  async downloadBlob(endpoint, options = {}) {
+    const apiBaseUrl = window._env_?.VITE_API_URL || window._env_?.VITE_BACKEND_URL || '';
+    const url = `${apiBaseUrl}${endpoint}`;
+    
+    const isFormData = options.body instanceof FormData;
+    const token = this.getToken();
+    const headers = {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
+
+    let body = options.body;
+    if (body && !isFormData && typeof body === 'object') {
+      body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      method: options.method || 'POST',
+      headers,
+      body,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        this.clearToken();
+      }
+      let errorMsg = `HTTP error! status: ${response.status}`;
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.detail || errJson.message || errorMsg;
+      } catch {
+        try {
+          const txt = await response.text();
+          if (txt) errorMsg = txt;
+        } catch (_) {}
+      }
+      throw new Error(errorMsg);
+    }
+
+    return await response.blob();
+  }
 }
 
 export const api = new ApiClient();
