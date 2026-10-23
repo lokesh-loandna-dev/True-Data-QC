@@ -14,6 +14,7 @@ class UserRoleUpdateRequest(BaseModel):
 
 class UserStatusUpdateRequest(BaseModel):
     status: str
+    role: str | None = None
 
 class ForgotPasswordRequest(BaseModel):
     email: str

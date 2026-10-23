@@ -6,7 +6,11 @@ import Tooltip from '../../../components/Tooltip';
 import { notify } from '../../../utils/toast';
 import { exportUsersToExcel } from '../../../utils/excelExport';
 
-const ROLES = ['admin', 'user'];
+const ROLES = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'Junior underwriter', label: 'Junior Underwriter' },
+  { value: 'Pre Underwrite', label: 'Pre Underwriter' },
+];
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Pending Approval' },
@@ -23,6 +27,10 @@ export const UserManagementTable = () => {
   const [statusUpdatingAction, setStatusUpdatingAction] = useState('');
   const [updateError, setUpdateError] = useState('');
 
+  // Approval Modal State
+  const [approvingUser, setApprovingUser] = useState(null);
+  const [approvingRole, setApprovingRole] = useState('');
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -34,11 +42,49 @@ export const UserManagementTable = () => {
     setUpdateError('');
   }, []);
 
+  const handleInitiateApprove = useCallback((user) => {
+    setApprovingUser(user);
+    const hasValidRole = user.role && user.role !== '--selected--';
+    setApprovingRole(hasValidRole ? user.role : '');
+    setUpdateError('');
+  }, []);
+
+  const handleConfirmApprove = useCallback(async () => {
+    if (!approvingUser) return;
+    if (!approvingRole || approvingRole === '--selected--') {
+      notify.warning('Please select a valid role (Admin, Junior Underwriter, or Pre Underwriter) to approve this user.');
+      return;
+    }
+
+    setStatusUpdatingId(approvingUser.id);
+    setStatusUpdatingAction('active');
+    setUpdateError('');
+    try {
+      await updateStatus(approvingUser.id, 'active', approvingRole);
+      const roleLabel = ROLES.find((r) => r.value === approvingRole)?.label || approvingRole;
+      notify.success(`User "${approvingUser.username}" approved as ${roleLabel} successfully.`);
+      setApprovingUser(null);
+      setApprovingRole('');
+    } catch (err) {
+      const errMsg = err.message || 'Failed to approve user';
+      setUpdateError(errMsg);
+      notify.error(errMsg);
+    } finally {
+      setStatusUpdatingId(null);
+      setStatusUpdatingAction('');
+    }
+  }, [approvingUser, approvingRole, updateStatus]);
+
   const handleSave = useCallback(async (userId) => {
     try {
       const user = users.find((u) => u.id === userId);
       let roleUpdated = false;
       let statusUpdated = false;
+
+      if (selectedStatus === 'active' && (!selectedRole || selectedRole === '--selected--')) {
+        notify.warning('Please select a valid role (Admin, Junior Underwriter, or Pre Underwriter) before activating this account.');
+        return;
+      }
 
       if (user && user.role !== selectedRole) {
         await updateRole(userId, selectedRole);
@@ -185,32 +231,63 @@ export const UserManagementTable = () => {
       sortable: true,
       render: (u) => {
         if (editingId === u.id) {
+          const isCurrentSelected = selectedRole === '--selected--' || !selectedRole;
           return (
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#24A1DD] focus:border-transparent transition-all"
+              className="w-44 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#24A1DD] focus:border-transparent transition-all"
             >
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
+              {isCurrentSelected && (
+                <option value="--selected--" disabled>
+                  -- Select Role --
+                </option>
+              )}
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
                 </option>
               ))}
             </select>
           );
         }
-        
-        const roleColors = {
-          admin: 'text-purple-800 font-semibold',
-          manager: 'text-blue-800 font-semibold',
-          viewer: 'text-amber-800 font-semibold',
-          default: 'text-slate-800 font-semibold'
-        };
-        const colorClass = roleColors[u.role] || roleColors.default;
 
+        const getRoleBadge = (role) => {
+          const r = (role || '').toLowerCase();
+          if (r === 'admin') {
+            return {
+              style: 'bg-purple-50 text-purple-700 border-purple-200/80',
+              label: 'Admin',
+            };
+          }
+          if (r.includes('junior')) {
+            return {
+              style: 'bg-blue-50 text-blue-700 border-blue-200/80',
+              label: 'Junior Underwriter',
+            };
+          }
+          if (r.includes('pre')) {
+            return {
+              style: 'bg-teal-50 text-teal-700 border-teal-200/80',
+              label: 'Pre Underwriter',
+            };
+          }
+          if (r === '--selected--' || !r) {
+            return {
+              style: 'bg-amber-50 text-amber-700 border-amber-200/80 italic',
+              label: '--selected--',
+            };
+          }
+          return {
+            style: 'bg-slate-100 text-slate-700 border-slate-200',
+            label: role,
+          };
+        };
+
+        const badge = getRoleBadge(u.role);
         return (
-          <span className={`inline-flex items-center text-xs ${colorClass}`}>
-            {u.role}
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.style}`}>
+            {badge.label}
           </span>
         );
       }
@@ -313,7 +390,7 @@ export const UserManagementTable = () => {
                 <Tooltip text="Approve & Activate Account" position="top">
                   <button
                     type="button"
-                    onClick={() => handleStatusChange(u, 'active')}
+                    onClick={() => handleInitiateApprove(u)}
                     disabled={isUpdating}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border border-emerald-200 hover:border-emerald-300 font-semibold rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none disabled:opacity-50"
                     aria-label="Approve User"
@@ -360,7 +437,7 @@ export const UserManagementTable = () => {
               <Tooltip text="Approve & Activate Account" position="top">
                 <button
                   type="button"
-                  onClick={() => handleStatusChange(u, 'active')}
+                  onClick={() => handleInitiateApprove(u)}
                   disabled={isUpdating}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border border-emerald-200 hover:border-emerald-300 font-semibold rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none disabled:opacity-50"
                   aria-label="Approve User"
@@ -442,7 +519,7 @@ export const UserManagementTable = () => {
         );
       }
     }
-  ], [editingId, selectedRole, selectedStatus, statusUpdatingId, statusUpdatingAction, currentUser, handleEditClick, handleSave, handleStatusChange]);
+  ], [editingId, selectedRole, selectedStatus, statusUpdatingId, statusUpdatingAction, currentUser, handleEditClick, handleSave, handleStatusChange, handleInitiateApprove]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
@@ -464,6 +541,128 @@ export const UserManagementTable = () => {
         customHeader={customHeader}
         className="flex flex-col min-h-0"
       />
+
+      {/* Approve & Assign Role Modal */}
+      {approvingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div 
+            className="bg-white rounded-2xl shadow-xl border border-slate-200/90 max-w-md w-full overflow-hidden transition-all transform animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="approval-modal-title"
+          >
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 id="approval-modal-title" className="text-sm font-bold text-slate-900 tracking-tight">
+                  Approve User Account
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select an operational role to activate this user account.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (statusUpdatingId) return;
+                  setApprovingUser(null);
+                  setApprovingRole('');
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              {/* User Summary Card */}
+              <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Username</span>
+                  <span className="font-semibold text-slate-900">{approvingUser.username}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Email</span>
+                  <span className="font-mono text-slate-700">{approvingUser.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Current Role</span>
+                  <span className="text-amber-700 font-semibold italic bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/70 text-[11px]">
+                    {approvingUser.role || '--selected--'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Role Selection Dropdown */}
+              <div className="space-y-1.5">
+                <label htmlFor="approval-role-select" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Assign Role <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  id="approval-role-select"
+                  value={approvingRole}
+                  onChange={(e) => setApprovingRole(e.target.value)}
+                  disabled={statusUpdatingId === approvingUser.id}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD] focus:border-transparent transition-all cursor-pointer"
+                >
+                  <option value="" disabled>-- Select Role --</option>
+                  {ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400">
+                  Select one of Admin, Junior Underwriter, or Pre Underwriter to approve.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (statusUpdatingId) return;
+                  setApprovingUser(null);
+                  setApprovingRole('');
+                }}
+                disabled={statusUpdatingId === approvingUser.id}
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-all cursor-pointer select-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmApprove}
+                disabled={!approvingRole || approvingRole === '--selected--' || statusUpdatingId === approvingUser.id}
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-2xs transition-all cursor-pointer select-none inline-flex items-center gap-1.5"
+              >
+                {statusUpdatingId === approvingUser.id ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    <span>Approving...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Approve & Activate</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

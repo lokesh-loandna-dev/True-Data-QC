@@ -33,13 +33,20 @@ export const useUserStore = create((set, get) => ({
     }
   },
 
-  updateStatus: async (userId, newStatus) => {
+  updateStatus: async (userId, newStatus, role) => {
     set({ error: null });
     try {
-      await userService.updateUserStatus(userId, newStatus);
+      const response = await userService.updateUserStatus(userId, newStatus, role);
+      const assignedRole = response?.role || role;
       set((state) => ({
         users: state.users.map((user) =>
-          user.id === userId ? { ...user, status: newStatus } : user
+          user.id === userId
+            ? {
+                ...user,
+                status: newStatus,
+                ...(assignedRole ? { role: assignedRole } : {}),
+              }
+            : user
         ),
       }));
     } catch (error) {

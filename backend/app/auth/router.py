@@ -76,7 +76,7 @@ def register_user(req: UserRegisterRequest):
     # Create user
     try:
         pwd_hash = hash_password(password)
-        created = create_user(username, email, pwd_hash, role="user", status="inactive")
+        created = create_user(username, email, pwd_hash, role="--selected--", status="inactive")
         log_event("INFO", "REGISTER_SUCCESS", "User registered successfully, pending admin approval", username=username, email=email)
         return {
             "status": "success",

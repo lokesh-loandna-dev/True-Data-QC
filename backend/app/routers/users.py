@@ -16,6 +16,19 @@ def require_admin(user_id: int = Depends(get_current_user_id)):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user
 
+def normalize_role(role_str: str) -> str:
+    cleaned = role_str.strip()
+    lower = cleaned.lower()
+    if lower == "admin":
+        return "admin"
+    elif lower in ("junior underwriter", "junior underwrite"):
+        return "Junior underwriter"
+    elif lower in ("pre underwrite", "pre underwriter"):
+        return "Pre Underwrite"
+    elif lower == "--selected--":
+        return "--selected--"
+    return cleaned
+
 @router.get("/")
 def get_users(admin_user: dict = Depends(require_admin)):
     users = get_all_users()
@@ -27,8 +40,17 @@ def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    update_user_role(user_id, req.role)
-    return {"status": "success", "message": "Role updated successfully"}
+    role_to_set = req.role.strip()
+    allowed_roles = {"admin", "junior underwriter", "pre underwrite", "pre underwriter", "--selected--"}
+    if role_to_set.lower() not in allowed_roles:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwrite'"
+        )
+    
+    normalized = normalize_role(role_to_set)
+    update_user_role(user_id, normalized)
+    return {"status": "success", "message": "Role updated successfully", "role": normalized}
 
 @router.put("/{user_id}/status")
 def change_user_status(
@@ -51,8 +73,29 @@ def change_user_status(
     
     old_status = (target_user.get("status") or "active").strip().lower()
 
+    # If role is provided or user is being activated
+    if req.role:
+        role_to_set = req.role.strip()
+        allowed_roles = {"admin", "junior underwriter", "pre underwrite", "pre underwriter"}
+        if role_to_set.lower() not in allowed_roles:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwrite'"
+            )
+        normalized = normalize_role(role_to_set)
+        update_user_role(user_id, normalized)
+        target_user["role"] = normalized
+    elif new_status == "active":
+        # Enforce that activating a user requires an assigned role
+        current_role = (target_user.get("role") or "").strip()
+        if current_role in ["--selected--", "", "None"]:
+            raise HTTPException(
+                status_code=400,
+                detail="A valid role (admin, Junior underwriter, or Pre Underwrite) must be selected to approve this account."
+            )
+
     update_user_status(user_id, new_status)
-    log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}'")
+    log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}' (role: '{target_user.get('role')}')")
 
     # Send notification emails for status transitions
     user_email = target_user.get("email")
@@ -63,7 +106,11 @@ def change_user_status(
         elif new_status == "rejected" and old_status != "rejected":
             background_tasks.add_task(send_account_rejected_email, user_email, username)
 
-    return {"status": "success", "message": f"User status updated to {new_status}"}
+    return {
+        "status": "success",
+        "message": f"User status updated to {new_status}",
+        "role": target_user.get("role")
+    }
 
 # ============================================================================
 # Column Preferences Endpoints (Any authenticated user for their own account)

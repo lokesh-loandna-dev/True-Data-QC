@@ -34,7 +34,7 @@ def get_user_by_id(user_id: int):
         ).fetchone()
         return dict(result._mapping) if result else None
 
-def create_user(username: str, email: str, password_hash: str, role: str = "user", status: str = "inactive"):
+def create_user(username: str, email: str, password_hash: str, role: str = "--selected--", status: str = "inactive"):
     if not engine:
         raise Exception("Database engine not initialized")
     with engine.begin() as connection:

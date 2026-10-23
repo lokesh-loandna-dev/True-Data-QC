@@ -295,7 +295,14 @@ export const exportUsersToExcel = ({
       'S.No': idx + 1,
       'Username': u.username ?? '',
       'Email': u.email ?? '',
-      'Role': u.role ? (u.role.charAt(0).toUpperCase() + u.role.slice(1)) : '',
+      'Role': !u.role
+        ? ''
+        : u.role === '--selected--'
+        ? '--selected--'
+        : u.role
+            .split(' ')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' '),
       'Status': u.status === 'active' ? 'Active' : u.status === 'rejected' ? 'Rejected' : 'Pending Approval'
     };
     if (u.created_at) {

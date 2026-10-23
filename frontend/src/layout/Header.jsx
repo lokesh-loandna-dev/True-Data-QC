@@ -100,7 +100,7 @@ const Header = () => {
                 {user?.username || 'User'}
               </span>
               <span className="text-[13px] text-gray-400 capitalize font-creato">
-                {user?.role || 'User'}
+                {user?.role && user.role !== '--selected--' ? user.role : 'User'}
               </span>
             </div>
             <svg
