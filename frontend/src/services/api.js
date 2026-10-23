@@ -95,7 +95,7 @@ class ApiClient {
     return this.request(endpoint, { ...options, method: 'POST', body: formData });
   }
 
-  async downloadBlob(endpoint, options = {}) {
+  async downloadBlob(endpoint, options = {}, onProgress = null) {
     const apiBaseUrl = window._env_?.VITE_API_URL || window._env_?.VITE_BACKEND_URL || '';
     const url = `${apiBaseUrl}${endpoint}`;
     
@@ -134,6 +134,29 @@ class ApiClient {
         } catch (_) {}
       }
       throw new Error(errorMsg);
+    }
+
+    if (onProgress && response.body) {
+      const contentLengthHeader = response.headers.get('content-length');
+      const total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+      const reader = response.body.getReader();
+      const chunks = [];
+      let loaded = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        if (total > 0) {
+          const pct = Math.min(100, Math.round((loaded / total) * 100));
+          onProgress(pct, loaded, total);
+        }
+      }
+
+      return new Blob(chunks, {
+        type: response.headers.get('content-type') || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
     }
 
     return await response.blob();

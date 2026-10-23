@@ -777,6 +777,7 @@ def bulk_export_packages(
 
         output = io.BytesIO()
         wb.save(output)
+        content_bytes = output.getvalue()
         output.seek(0)
 
         date_str = datetime.utcnow().strftime("%Y-%m-%d")
@@ -787,7 +788,8 @@ def bulk_export_packages(
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={
                 "Content-Disposition": f'attachment; filename="{download_filename}"',
-                "Access-Control-Expose-Headers": "Content-Disposition"
+                "Content-Length": str(len(content_bytes)),
+                "Access-Control-Expose-Headers": "Content-Disposition, Content-Length"
             }
         )
 
