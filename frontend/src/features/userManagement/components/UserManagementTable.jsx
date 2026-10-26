@@ -9,7 +9,7 @@ import { exportUsersToExcel } from '../../../utils/excelExport';
 const ROLES = [
   { value: 'admin', label: 'Admin' },
   { value: 'Junior underwriter', label: 'Junior Underwriter' },
-  { value: 'Pre Underwrite', label: 'Pre Underwriter' },
+  { value: 'Pre Underwriter', label: 'Pre Underwriter' },
 ];
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },

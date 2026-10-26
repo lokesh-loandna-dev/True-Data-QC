@@ -24,7 +24,7 @@ def normalize_role(role_str: str) -> str:
     elif lower in ("junior underwriter", "junior underwrite"):
         return "Junior underwriter"
     elif lower in ("pre underwrite", "pre underwriter"):
-        return "Pre Underwrite"
+        return "Pre Underwriter"
     elif lower == "--selected--":
         return "--selected--"
     return cleaned
@@ -45,7 +45,7 @@ def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict 
     if role_to_set.lower() not in allowed_roles:
         raise HTTPException(
             status_code=400,
-            detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwrite'"
+            detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwriter'"
         )
     
     normalized = normalize_role(role_to_set)
@@ -80,7 +80,7 @@ def change_user_status(
         if role_to_set.lower() not in allowed_roles:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwrite'"
+                detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwriter'"
             )
         normalized = normalize_role(role_to_set)
         update_user_role(user_id, normalized)
@@ -91,7 +91,7 @@ def change_user_status(
         if current_role in ["--selected--", "", "None"]:
             raise HTTPException(
                 status_code=400,
-                detail="A valid role (admin, Junior underwriter, or Pre Underwrite) must be selected to approve this account."
+                detail="A valid role (admin, Junior underwriter, or Pre Underwriter) must be selected to approve this account."
             )
 
     update_user_status(user_id, new_status)

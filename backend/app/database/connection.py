@@ -54,6 +54,18 @@ def init_db():
                     connection.commit()
                 except Exception as user_migration_err:
                     print(f"Warning: users status column migration check skipped: {user_migration_err}")
+
+                try:
+                    connection.execute(text("""
+                        IF EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
+                        BEGIN
+                            UPDATE users SET role = 'Pre Underwriter' WHERE LOWER(role) = 'pre underwrite';
+                        END
+                    """))
+                    connection.commit()
+                except Exception as role_migration_err:
+                    print(f"Warning: users role migration check skipped: {role_migration_err}")
+
                 connection.commit()
             db_status["connected"] = True
             db_status["error"] = None

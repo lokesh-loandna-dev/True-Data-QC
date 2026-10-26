@@ -34,6 +34,15 @@ const Header = () => {
     navLinks.push({ name: 'Prohance', path: '/prohance' });
   }
 
+  const formatRole = (role) => {
+    if (!role || role === '--selected--') return 'User';
+    const lower = role.toLowerCase();
+    if (lower === 'pre underwrite' || lower === 'pre underwriter') return 'Pre Underwriter';
+    if (lower === 'junior underwrite' || lower === 'junior underwriter') return 'Junior Underwriter';
+    if (lower === 'admin') return 'Admin';
+    return role;
+  };
+
   return (
     <header className="w-full h-[60px] bg-white border-b border-[#e8e8e8] shadow-sm flex items-center px-4 sm:px-6 justify-between z-50 fixed top-0 left-0">
       {/* Left Side: Logo & Navigation */}
@@ -100,7 +109,7 @@ const Header = () => {
                 {user?.username || 'User'}
               </span>
               <span className="text-[13px] text-gray-400 capitalize font-creato">
-                {user?.role && user.role !== '--selected--' ? user.role : 'User'}
+                {formatRole(user?.role)}
               </span>
             </div>
             <svg
