@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { encodePackageId } from '../utils/routeCipher';
 import { useAuth } from '../hooks/useAuth';
 import Header from '../layout/Header';
 import { loanService } from '../services/loanService';
@@ -7,7 +9,6 @@ import Tooltip from '../components/Tooltip';
 import { notify } from '../utils/toast';
 import { exportPackagesToExcel, exportToExcel } from '../utils/excelExport';
 
-const PackageAuditModal = lazy(() => import('../components/PackageAuditModal'));
 
 /** Safely parse dates, ensuring UTC timestamps without a timezone suffix are treated as UTC */
 const parseUtcDate = (dateVal) => {
@@ -170,15 +171,10 @@ const PackageDetailedRowView = ({
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // Detailed Modal State
-  const [selectedPackageId, setSelectedPackageId] = useState(null);
-  const [packageDetails, setPackageDetails] = useState(null); // { package, summary, records }
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [detailsError, setDetailsError] = useState('');
   const [rowExportLoadingId, setRowExportLoadingId] = useState(null);
 
   // Package Selection State for Bulk Download
@@ -243,32 +239,6 @@ const DashboardPage = () => {
       active = false;
     };
   }, []);
-
-  const handleViewDetails = useCallback(async (packageId) => {
-    setSelectedPackageId(packageId);
-    setDetailsLoading(true);
-    setDetailsError('');
-    setPackageDetails(null);
-    try {
-      const response = await loanService.getPackageDetails(packageId);
-      if (response.status === 'success') {
-        setPackageDetails(response);
-      } else {
-        setDetailsError('Failed to fetch package details.');
-      }
-    } catch (err) {
-      setDetailsError(err.message || 'An error occurred while loading package details.');
-    } finally {
-      setDetailsLoading(false);
-    }
-  }, []);
-
-  const handleCloseModal = () => {
-    setSelectedPackageId(null);
-    setPackageDetails(null);
-    setDetailsError('');
-    fetchPackages();
-  };
 
   const handleDeletePackage = useCallback(async (packageId, filename) => {
     if (!window.confirm(`Are you sure you want to delete "${filename}"? This action cannot be undone.`)) {
@@ -921,7 +891,7 @@ const DashboardPage = () => {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleViewDetails(pkg.id);
+                  navigate(`/dashboard/package/${encodePackageId(pkg.id)}`);
                 }}
                 className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Audit Details"
@@ -981,7 +951,6 @@ const DashboardPage = () => {
   }, [
     isAdmin,
     rowExportLoadingId,
-    handleViewDetails,
     handleExportRowPackage,
     handleDeletePackage,
     selectedPackageIds,
@@ -1194,19 +1163,6 @@ const DashboardPage = () => {
           />
         </div>
       </main>
-
-      <Suspense fallback={null}>
-        <PackageAuditModal
-          selectedPackageId={selectedPackageId}
-          selectedPackage={packages.find(p => p.id === selectedPackageId)}
-          packageDetails={packageDetails}
-          detailsLoading={detailsLoading}
-          detailsError={detailsError}
-          onClose={handleCloseModal}
-          onRetry={() => handleViewDetails(selectedPackageId)}
-          onSaveSuccess={fetchPackages}
-        />
-      </Suspense>
     </div>
   );
 };

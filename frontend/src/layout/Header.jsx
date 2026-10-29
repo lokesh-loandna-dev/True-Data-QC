@@ -73,7 +73,7 @@ const Header = () => {
         {/* Navigation Tabs */}
         <nav className="flex flex-1 h-full items-center overflow-x-auto no-scrollbar">
           {navLinks.map((link) => {
-            const isActive = location.pathname === link.path;
+            const isActive = location.pathname === link.path || location.pathname.startsWith(link.path + '/');
             return (
               <Link
                 key={link.name}

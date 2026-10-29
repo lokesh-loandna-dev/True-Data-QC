@@ -14,6 +14,7 @@ const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
 const DataDictionaryPage = lazy(() => import('./pages/DataDictionaryPage'));
 const UploadPage = lazy(() => import('./pages/UploadPage'));
 const ProhancePage = lazy(() => import('./pages/ProhancePage'));
+const PackageAuditPage = lazy(() => import('./pages/PackageAuditPage'));
 
 const App = () => {
   return (
@@ -44,6 +45,16 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Package audit preview — encrypted ID in URL */}
+            <Route
+              path="/dashboard/package/:encryptedId"
+              element={
+                <ProtectedRoute>
+                  <PackageAuditPage />
                 </ProtectedRoute>
               }
             />
