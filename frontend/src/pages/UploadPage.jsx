@@ -49,6 +49,8 @@ const UploadPage = () => {
     'data_field',
     'data_label',
     'true_data',
+    'condition_text',
+    'condition_outcome',
     'final_result',
     'final_remarks',
     'action',
@@ -59,8 +61,25 @@ const UploadPage = () => {
   const [showManageColumnsModal, setShowManageColumnsModal] = useState(false);
   const [selectedColumnKeys, setSelectedColumnKeys] = useState(() => {
     try {
-      const saved = localStorage.getItem('validation_preview_selected_columns_v2');
-      return saved ? JSON.parse(saved) : DEFAULT_SELECTED_COLUMNS;
+      const savedV3 = localStorage.getItem('validation_preview_selected_columns_v3');
+      if (savedV3) return JSON.parse(savedV3);
+      const savedV2 = localStorage.getItem('validation_preview_selected_columns_v2');
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        if (Array.isArray(parsed)) {
+          const updated = [...parsed];
+          if (!updated.includes('condition_text')) {
+            const insertIdx = updated.indexOf('final_result');
+            if (insertIdx !== -1) {
+              updated.splice(insertIdx, 0, 'condition_text', 'condition_outcome');
+            } else {
+              updated.push('condition_text', 'condition_outcome');
+            }
+          }
+          return updated;
+        }
+      }
+      return DEFAULT_SELECTED_COLUMNS;
     } catch (e) {
       return DEFAULT_SELECTED_COLUMNS;
     }
@@ -70,13 +89,23 @@ const UploadPage = () => {
   useEffect(() => {
     userPreferencesService.getColumnPreferences('validation_preview').then((cols) => {
       if (cols && Array.isArray(cols) && cols.length > 0) {
-        setSelectedColumnKeys(cols);
+        let updated = [...cols];
+        if (!updated.includes('condition_text') && !localStorage.getItem('validation_preview_selected_columns_v3')) {
+          const insertIdx = updated.indexOf('final_result');
+          if (insertIdx !== -1) {
+            updated.splice(insertIdx, 0, 'condition_text', 'condition_outcome');
+          } else {
+            updated.push('condition_text', 'condition_outcome');
+          }
+        }
+        setSelectedColumnKeys(updated);
       }
     });
   }, []);
 
   useEffect(() => {
     if (selectedColumnKeys && selectedColumnKeys.length > 0) {
+      localStorage.setItem('validation_preview_selected_columns_v3', JSON.stringify(selectedColumnKeys));
       localStorage.setItem('validation_preview_selected_columns_v2', JSON.stringify(selectedColumnKeys));
     }
   }, [selectedColumnKeys]);
@@ -379,8 +408,34 @@ const UploadPage = () => {
 
     const cols = [];
 
+    // Exclude internal validation and duplicate keys from dynamic Excel columns
+    const excludedExcelKeys = new Set([
+      'condition_text',
+      'condition_outcome',
+      'Condition Text',
+      'Condition Outcome',
+      'condition_validation',
+      'condition_rule_type',
+      'condition_remarks',
+      'Condition Validation',
+      'Condition Rule Type',
+      'Condition Remarks',
+      'final_result',
+      'final_remarks',
+      'Final Result',
+      'Final Remarks',
+      'action',
+      'remark',
+      'Action',
+      'Remark',
+      'User Remark',
+      'raw_data'
+    ]);
+
     // 1. Ingested Excel Columns
     excelCols.forEach((colName) => {
+      if (!colName || excludedExcelKeys.has(colName)) return;
+
       let accKey = colName;
       if (colName === 'Data Field') accKey = 'data_field';
       else if (colName === 'Loan ID') accKey = 'loan_id';
@@ -531,6 +586,40 @@ const UploadPage = () => {
         category: 'Validation'
       },
       {
+        header: 'Condition Text',
+        accessor: 'condition_text',
+        sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[240px]',
+        render: (r) => (
+          <span className="text-slate-600 break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
+            {r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? ''}
+          </span>
+        ),
+        category: 'Validation'
+      },
+      {
+        header: 'Condition Outcome',
+        accessor: 'condition_outcome',
+        sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[220px]',
+        render: (r) => {
+          const val = r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '';
+          if (!val) return null;
+          return (
+            <div className="text-xs break-words whitespace-pre-wrap max-w-sm leading-relaxed space-y-1">
+              {String(val).split('\n').map((line, i) => {
+                let badgeClass = 'text-slate-600';
+                if (line.includes('PASS')) badgeClass = 'text-emerald-700 font-medium';
+                else if (line.includes('FAIL')) badgeClass = 'text-rose-700 font-medium';
+                else if (line.includes('NOT CHECKED')) badgeClass = 'text-amber-700 font-medium';
+                return <div key={i} className={badgeClass}>{line}</div>;
+              })}
+            </div>
+          );
+        },
+        category: 'Validation'
+      },
+      {
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
@@ -609,7 +698,12 @@ const UploadPage = () => {
       }
     );
 
-    return cols;
+    // Ensure no duplicate or raw condition_text/condition_outcome columns
+    return cols.filter(c => 
+      c.header !== 'condition_text' && 
+      c.header !== 'condition_outcome' &&
+      !(c.category === 'Excel Column' && (c.accessor === 'Condition Text' || c.accessor === 'Condition Outcome'))
+    );
   }, [validationData, modalLoanId, user]);
 
   const visibleValidationColumns = useMemo(() => {

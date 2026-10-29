@@ -263,29 +263,44 @@ def process_and_ingest_excel(file_path: Path, target_timestamp: datetime, user_i
     records_to_insert = []
     for idx, row_res in enumerate(results):
         raw_row = filtered_all_rows[idx]
+        has_condition_text_outcome = len(row_res) >= 15
+        cond_val = row_res[8] if len(row_res) > 8 else None
+        cond_type = row_res[9] if len(row_res) > 9 else None
+        cond_rem = row_res[10] if len(row_res) > 10 else None
+        cond_text = row_res[11] if has_condition_text_outcome else None
+        cond_outcome = row_res[12] if has_condition_text_outcome else None
+        fin_res = row_res[13] if has_condition_text_outcome else (row_res[11] if len(row_res) > 11 else row_res[7])
+        fin_rem = row_res[14] if has_condition_text_outcome else (row_res[12] if len(row_res) > 12 else "")
+
+        if raw_row and isinstance(raw_row, dict):
+            if cond_text is not None:
+                raw_row["Condition Text"] = cond_text
+            if cond_outcome is not None:
+                raw_row["Condition Outcome"] = cond_outcome
+
         records_to_insert.append({
-            "package_id": package_id,
-            "loan_id": str(loan_ids[idx]) if loan_ids[idx] is not None else (extracted_loan_id or None),
-            "data_field": str(field_names[idx]) if field_names[idx] is not None else None,
-            "data_label": str(labels[idx]) if labels[idx] is not None else None,
-            "true_data": str(values[idx]) if values[idx] is not None else None,
-            "dictionary_match_status": row_res[0],
-            "data_type_validation": row_res[1],
-            "data_type_remarks": row_res[2],
-            "numeric_format_flag": row_res[3],
-            "enum_validation": row_res[4],
-            "enum_remarks": row_res[5],
-            "macro_validation_result": row_res[6],
-            "result": row_res[7],
-            "final_result": row_res[11] if len(row_res) > 11 else row_res[7],
-            "final_remarks": row_res[12] if len(row_res) > 12 else "",
-            "condition_validation": row_res[8] if len(row_res) > 8 else None,
-            "condition_rule_type": row_res[9] if len(row_res) > 9 else None,
-            "condition_remarks": row_res[10] if len(row_res) > 10 else None,
-            "action": None,
-            "remark": None,
-            "raw_data": json.dumps(raw_row) if raw_row else None
-        })
+                "package_id": package_id,
+                "loan_id": str(loan_ids[idx]) if loan_ids[idx] is not None else None,
+                "data_field": str(field_names[idx]) if field_names[idx] is not None else None,
+                "data_label": str(labels[idx]) if labels[idx] is not None else None,
+                "true_data": str(values[idx]) if values[idx] is not None else None,
+                "dictionary_match_status": row_res[0],
+                "data_type_validation": row_res[1],
+                "data_type_remarks": row_res[2],
+                "numeric_format_flag": row_res[3],
+                "enum_validation": row_res[4],
+                "enum_remarks": row_res[5],
+                "macro_validation_result": row_res[6],
+                "result": row_res[7],
+                "final_result": fin_res,
+                "final_remarks": fin_rem,
+                "condition_validation": cond_val,
+                "condition_rule_type": cond_type,
+                "condition_remarks": cond_rem,
+                "action": None,
+                "remark": None,
+                "raw_data": json.dumps(raw_row) if raw_row else None
+            })
 
     for i in range(0, len(records_to_insert), chunk_size):
         chunk = records_to_insert[i:i + chunk_size]

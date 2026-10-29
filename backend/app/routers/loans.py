@@ -152,6 +152,8 @@ class LoanRecordInput(BaseModel):
     condition_validation: Optional[str] = None
     condition_rule_type: Optional[str] = None
     condition_remarks: Optional[str] = None
+    condition_text: Optional[str] = None
+    condition_outcome: Optional[str] = None
     final_result: Optional[str] = None
     final_remarks: Optional[str] = None
     action: Optional[str] = None
@@ -257,11 +259,28 @@ def validate_loan_file(
             condition_rules=CONDITION_RULES
         )
         stats = summarize(file.filename, results, labels, dictionary)
+        if "Review Required" not in stats and "Overall Review Required" in stats:
+            stats["Review Required"] = stats["Overall Review Required"]
 
         # Build response records list with all excel fields included
         response_records = []
         for idx, row_res in enumerate(results):
             raw_row = filtered_all_rows[idx]
+            has_condition_text_outcome = len(row_res) >= 15
+            cond_val = row_res[8] if len(row_res) > 8 else None
+            cond_type = row_res[9] if len(row_res) > 9 else None
+            cond_rem = row_res[10] if len(row_res) > 10 else None
+            cond_text = row_res[11] if has_condition_text_outcome else None
+            cond_outcome = row_res[12] if has_condition_text_outcome else None
+            fin_res = row_res[13] if has_condition_text_outcome else (row_res[11] if len(row_res) > 11 else row_res[7])
+            fin_rem = row_res[14] if has_condition_text_outcome else (row_res[12] if len(row_res) > 12 else "")
+
+            # Ensure Condition Text and Condition Outcome are in raw_row as well
+            if cond_text is not None:
+                raw_row["Condition Text"] = cond_text
+            if cond_outcome is not None:
+                raw_row["Condition Outcome"] = cond_outcome
+
             rec = {
                 "loan_id": str(loan_ids[idx]) if loan_ids[idx] is not None else None,
                 "data_field": str(field_names[idx]) if field_names[idx] is not None else None,
@@ -275,11 +294,13 @@ def validate_loan_file(
                 "enum_remarks": row_res[5],
                 "macro_validation_result": row_res[6],
                 "result": row_res[7],
-                "condition_validation": row_res[8] if len(row_res) > 8 else None,
-                "condition_rule_type": row_res[9] if len(row_res) > 9 else None,
-                "condition_remarks": row_res[10] if len(row_res) > 10 else None,
-                "final_result": row_res[11] if len(row_res) > 11 else row_res[7],
-                "final_remarks": row_res[12] if len(row_res) > 12 else "",
+                "condition_validation": cond_val,
+                "condition_rule_type": cond_type,
+                "condition_remarks": cond_rem,
+                "condition_text": cond_text,
+                "condition_outcome": cond_outcome,
+                "final_result": fin_res,
+                "final_remarks": fin_rem,
                 "action": "",
                 "remark": "",
                 "raw_data": raw_row
@@ -389,7 +410,7 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
             "final_valid": int(summary_dict.get("Final Valid", 0)),
             "final_invalid": int(summary_dict.get("Final Invalid", 0)),
             "final_blank": int(summary_dict.get("Final Blank", 0)),
-            "review_required": int(summary_dict.get("Review Required", 0))
+            "review_required": int(summary_dict.get("Review Required", 0) or summary_dict.get("Overall Review Required", 0))
         }
 
         insert_record_sql = text("""
@@ -423,6 +444,14 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                     chunk = body.records[i:i + chunk_size]
                     record_params = []
                     for r in chunk:
+                        raw_dict = dict(r.raw_data) if isinstance(r.raw_data, dict) else {}
+                        if r.condition_text is not None and "Condition Text" not in raw_dict:
+                            raw_dict["Condition Text"] = r.condition_text
+                        if r.condition_outcome is not None and "Condition Outcome" not in raw_dict:
+                            raw_dict["Condition Outcome"] = r.condition_outcome
+                        raw_dict.pop("condition_text", None)
+                        raw_dict.pop("condition_outcome", None)
+
                         record_params.append({
                             "package_id": pkg_id,
                             "loan_id": str(r.loan_id) if r.loan_id is not None else None,
@@ -444,7 +473,7 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                             "condition_remarks": str(r.condition_remarks) if r.condition_remarks is not None else None,
                             "action": str(r.action) if r.action is not None else None,
                             "remark": str(r.remark) if r.remark is not None else None,
-                            "raw_data": json.dumps(r.raw_data) if r.raw_data else None
+                            "raw_data": json.dumps(raw_dict) if raw_dict else None
                         })
                     conn.execute(insert_record_sql, record_params)
                 return pkg_id
@@ -630,7 +659,8 @@ def bulk_export_packages(
             "Loan ID", "loan_id", "Loan Id", "Username", "Email",
             "Dict Match", "Type Check", "Type Remarks", "Numeric Format",
             "Enum Check", "Enum Remarks", "Macro Check", "Combined Result",
-            "Condition Check", "Condition Remarks", "Final Result", "Final Remarks",
+            "Condition Check", "Condition Remarks", "Condition Text", "Condition Outcome",
+            "Final Result", "Final Remarks",
             "Action", "User Remark"
         }
 
@@ -673,7 +703,8 @@ def bulk_export_packages(
         audit_cols = [
             "Dict Match", "Type Check", "Type Remarks", "Numeric Format",
             "Enum Check", "Enum Remarks", "Macro Check", "Combined Result",
-            "Condition Check", "Condition Remarks", "Final Result", "Final Remarks",
+            "Condition Check", "Condition Remarks", "Condition Text", "Condition Outcome",
+            "Final Result", "Final Remarks",
             "Action", "User Remark"
         ]
         for ac in audit_cols:
@@ -755,6 +786,8 @@ def bulk_export_packages(
             row_obj["Combined Result"] = rec.get("result") or ""
             row_obj["Condition Check"] = rec.get("condition_validation") or ""
             row_obj["Condition Remarks"] = rec.get("condition_remarks") or ""
+            row_obj["Condition Text"] = rec.get("condition_text") or (raw_dict.get("Condition Text") if isinstance(raw_dict, dict) else "") or ""
+            row_obj["Condition Outcome"] = rec.get("condition_outcome") or (raw_dict.get("Condition Outcome") if isinstance(raw_dict, dict) else "") or ""
             row_obj["Final Result"] = rec.get("final_result") or rec.get("result") or ""
             row_obj["Final Remarks"] = rec.get("final_remarks") or ""
             row_obj["Action"] = rec.get("action") or ""
@@ -864,13 +897,18 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 if raw_str:
                     try:
                         raw_dict = json.loads(raw_str)
-                        rd["raw_data"] = raw_dict
                         if isinstance(raw_dict, dict):
+                            raw_dict.pop("condition_text", None)
+                            raw_dict.pop("condition_outcome", None)
+                            rd["raw_data"] = raw_dict
                             for k, v in raw_dict.items():
                                 if k not in rd:
                                     rd[k] = v
                     except Exception:
                         pass
+                raw_obj = rd.get("raw_data") if isinstance(rd.get("raw_data"), dict) else {}
+                rd["condition_text"] = rd.get("condition_text") or rd.get("Condition Text") or raw_obj.get("Condition Text") or ""
+                rd["condition_outcome"] = rd.get("condition_outcome") or rd.get("Condition Outcome") or raw_obj.get("Condition Outcome") or ""
                 records.append(rd)
 
             # Calculate condition validation counts and overall statistics from records

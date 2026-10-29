@@ -47,9 +47,9 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.7.0"
+__version__ = "5.10.0"
 
-REQUIRED_CONDITION_VERSION = "5.7.0"
+REQUIRED_CONDITION_VERSION = "5.10.0"
 
 try:
     import condition_validation as conditions
@@ -132,6 +132,10 @@ CONDITION_COLUMNS = [
     "Condition Validation",
     "Condition Rule Type",
     "Condition Remarks",
+    # The rule as the business team wrote it, plus a verdict per clause, so a
+    # "Valid - partial" row shows which clause passed and which did not.
+    "Condition Text",
+    "Condition Outcome",
 ]
 
 # Consolidated view for the UI: one verdict and one remark per field, so the
@@ -1277,6 +1281,7 @@ def consolidate_result(row):
     (match_status, type_status, type_remark, numeric_flag,
      enum_status, enum_remark, macro_result, result,
      condition_status, condition_kind, condition_remark) = row[:11]
+    # row[11] = Condition Text, row[12] = Condition Outcome (display only)
 
     failures, incomplete, checked = [], [], False
 
@@ -1401,7 +1406,8 @@ def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
         condition_results = conditions.evaluate_conditions(
             field_names, values, condition_rules)
     else:
-        blank = ("N/A - no condition rule", "", "")
+        blank = ("N/A - no condition rule", "", "",
+                 "(condition spec not supplied)", "")
         condition_results = [blank] * len(base)
 
     combined = [row + tuple(extra)
@@ -1475,7 +1481,11 @@ def write_annotated_workbook(src: Path, dest: Path, dictionary,
         cell.alignment = copy(template.alignment)
         cell.border = copy(template.border)
         letter = get_column_letter(start_col + offset)
-        if name == "Final Remarks":
+        if name == "Condition Text":
+            width = 80
+        elif name == "Condition Outcome":
+            width = 70
+        elif name == "Final Remarks":
             width = 90
         elif name == "Final Result":
             width = 18
@@ -1506,6 +1516,8 @@ def write_annotated_workbook(src: Path, dest: Path, dictionary,
             column_name = NEW_COLUMNS[col_offset]
             is_status = column_name not in ("Data Type Remarks", "Enum Remarks",
                                             "Condition Remarks",
+                                            "Condition Text",
+                                            "Condition Outcome",
                                             "Final Remarks")
             is_failure = (entry in ("FALSE", "Unmatched")
                           or str(entry).startswith("Invalid"))
@@ -1606,6 +1618,8 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
     final_blank = sum(1 for r in results if r[1] == "N/A - blank value")
 
     # Any unclassified rows that do not fall into Valid, Invalid, or Review Required
+                                                                              
+                                                          
     final_other = total - (final_valid + final_invalid + review_required)
     if final_other > 0:
         log.warning("%s: %d row(s) produced an unrecognised Final Result status; "
@@ -1635,7 +1649,6 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
         "Macro Invalid": sum(1 for r in results if r[6] not in ("", None, "Valid")),
         "Final Valid": final_valid,
         "Final Invalid": final_invalid,
-        "Review Required": review_required,
         "Final Blank": final_blank,
         "Final Unclassified": final_other if final_other > 0 else 0,
         **_condition_counts(filename, results, total),
@@ -1651,7 +1664,7 @@ FINAL_BUCKETS = ["Valid", "Invalid", "Review Required", "Not Validated"]
 
 def _final_counts(filename, results, total) -> dict:
     """Mutually exclusive counts for the consolidated verdict."""
-    verdicts = [str(r[11]) if len(r) > 11 else "" for r in results]
+    verdicts = [str(r[13]) if len(r) > 13 else "" for r in results]
     counts = {f"Overall {b}": sum(1 for v in verdicts if v == b)
               for b in FINAL_BUCKETS}
     known = sum(counts.values())
@@ -1723,7 +1736,9 @@ def print_versions() -> int:
     """Report the version of every module, so a mismatched pair is visible
     without running a validation."""
     found = getattr(conditions, "__version__", None)
-    print(f"validate_loan_files_combined_v3.py  {__version__}")
+    # Report the actual file being executed; a hardcoded name goes stale the
+    # moment the file is renamed or copied.
+    print(f"{Path(__file__).name:<26} {__version__}")
     print(f"condition_validation.py             {found or 'NOT INSTALLED'}")
     print(f"  parser version required           {REQUIRED_CONDITION_VERSION}")
     ok = found == REQUIRED_CONDITION_VERSION
@@ -1819,6 +1834,14 @@ def main(argv=None) -> int:
             log.error("Could not load condition spec: %s", exc)
             return 1
 
+    if condition_rules is None:
+        log.warning("=" * 70)
+        log.warning("RUNNING WITHOUT CONDITION VALIDATION.")
+        log.warning("--conditions was not supplied, so every row will report")
+        log.warning("'N/A - no condition rule' and no business rule will be")
+        log.warning("checked. Pass --conditions <spec.xlsx> for a full run.")
+        log.warning("=" * 70)
+
     files = collect_sample_files(args.input_dir)
     if not files:
         log.error("No sample files (%s) found in %s",
@@ -1865,6 +1888,15 @@ def main(argv=None) -> int:
             failed += 1
             log.error("%s -> FAILED: %s", path.name, exc)
             continue
+
+        if condition_rules and stats.get("Cond N/A - No Rule") == \
+                stats["Total Fields"]:
+            # A spec was loaded but matched nothing in this file: almost
+            # always a Data Field naming mismatch between spec and extract.
+            log.error("    %s: a condition spec was supplied but NOT ONE of "
+                      "the %d fields matched a rule. Check that the spec's "
+                      "'Data Field' names match this file.",
+                      path.name, stats["Total Fields"])
 
         summaries.append(stats)
         log.info(

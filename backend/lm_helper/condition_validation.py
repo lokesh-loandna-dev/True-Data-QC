@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.7.0"
+__version__ = "5.10.0"
 
 import logging
 import re
@@ -54,6 +54,8 @@ CONDITION_COLUMNS = [
     "Condition Validation",
     "Condition Rule Type",
     "Condition Remarks",
+    "Condition Text",
+    "Condition Outcome",
 ]
 
 # Values that count as an affirmative / ticked checkbox in the sample exports.
@@ -2226,6 +2228,32 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
                     f"selected.")
             return "Valid", f"{name!r} is selected and this option is not."
 
+        # Only the trigger option itself, or the category roll-up field, gets
+        # the group-wide check. An option row whose own option is absent from
+        # the rule's list is NOT constrained by it -- reporting the group's
+        # violation on that row blamed the wrong field (e.g. "Cuban" was
+        # flagged for "Other Hispanic or Latino" being selected).
+        category = owner.rsplit(" - ", 1)[0] if " - " in owner else owner
+        is_trigger = bool(owner_option) and _norm(owner_option) == _norm(
+            params["trigger_option"])
+        is_rollup = not owner_option and _norm(owner) == _norm(category) and \
+            _norm(owner) == _norm(name.rsplit(" - ", 1)[0]
+                                  if " - " in name else name)
+
+        if owner_option and not is_trigger:
+            return "N/A - condition not met", (
+                f"{name!r} is selected, but {owner_option!r} is not one of "
+                f"the options this rule lists "
+                f"({', '.join(params['forbidden'][:4])}"
+                f"{'...' if len(params['forbidden']) > 4 else ''}), so the "
+                f"rule does not constrain this field. If it should, add it to "
+                f"the rule's list in the condition spec.")
+
+        if not owner_option and not is_rollup:
+            return "N/A - condition not met", (
+                f"{name!r} is selected, but this field is not one of the "
+                f"options the rule lists, so the rule does not constrain it.")
+
         # This row is the trigger itself or the roll-up field. The meaningful
         # check is across the group: is any forbidden option selected?
         selected = []
@@ -2389,6 +2417,17 @@ def _parse_date_for_rule(value):
     return (datetime(1899, 12, 30) + timedelta(days=serial)).date(), ""
 
 
+def _clause_verdict(status: str) -> str:
+    """One word per clause, so a reviewer can scan the outcome column."""
+    if status == "Invalid":
+        return "FAIL"
+    if status.startswith("Valid"):
+        return "PASS"
+    if status == "Not Automated":
+        return "NOT CHECKED"
+    return "N/A"
+
+
 def evaluate_conditions(field_names, values, rules):
     """Return one (status, kind, remark) triple per sample row."""
     index = FieldIndex(field_names, values)
@@ -2398,16 +2437,25 @@ def evaluate_conditions(field_names, values, rules):
         key = _norm(name)
         applicable = rules.get(key)
         if not applicable:
-            output.append(("N/A - no condition rule", "", ""))
+            output.append(("N/A - no condition rule", "", "",
+                           "(no condition defined for this field)", ""))
             continue
 
         statuses, remarks = [], []
+        clause_texts, clause_outcomes = [], []
         kinds = {r.kind for r in applicable if r.kind}
-        for rule in applicable:
+        for position, rule in enumerate(applicable, start=1):
             status, remark = _evaluate_rule(rule, value, index)
             statuses.append(status)
             if remark:
                 remarks.append(f"[{status}] {remark}")
+            # Per-clause detail, so a "Valid - partial" row shows which clause
+            # passed and which could not be evaluated.
+            clause_texts.append(f"{position}. {rule.text}")
+            verdict = _clause_verdict(status)
+            clause_outcomes.append(
+                f"{position}. {verdict}"
+                + (f" - {remark}" if remark and verdict != "PASS" else ""))
 
         # Worst-case wins: Invalid > Not Automated > Valid > N/A.
         if "Invalid" in statuses:
@@ -2421,5 +2469,7 @@ def evaluate_conditions(field_names, values, rules):
             final = statuses[0]
 
         output.append((final, "/".join(sorted(kinds)),
-                       " | ".join(remarks)))
+                       " | ".join(remarks),
+                       "\n".join(clause_texts),
+                       "\n".join(clause_outcomes)))
     return output
