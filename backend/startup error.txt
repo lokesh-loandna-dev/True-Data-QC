@@ -1,0 +1,67 @@
+Starting Uvicorn server on port 8034...
+INFO:     Uvicorn running on http://0.0.0.0:8034 (Press CTRL+C to quit)
+INFO:     Started parent process [3540524]
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+Warning: Failed to load Condition_Validation spec: Condition spec is missing column 'Data Field'. Found: ['1. If "Do not wish to provide this information" field in "1003 Screen" is selected, then "American Indian or Alaska Native" or "Asian" or "Asian Indian" or "Chinese" or "Filipino" or "Japanese" or "Korean" or "Vietnamese" or "Other Asian" or "Black or African American" or "Hawaiian or Other Pacific Islander" or "Native Hawaiian" or "Guamanian or Chamorro" or "Samoan" or "Other Pacific Islander" or "White", should never be selected']
+INFO:     Started server process [3540533]
+INFO:     Waiting for application startup.
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+Testing connection to database...
+INFO:     Started server process [3540528]
+INFO:     Waiting for application startup.
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+INFO:     Application startup complete.
+Testing connection to database...
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+INFO:     Application startup complete.
+INFO:     Started server process [3540531]
+INFO:     Waiting for application startup.
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+Testing connection to database...
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+INFO:     Application startup complete.
+INFO:     Started server process [3540530]
+INFO:     Waiting for application startup.
+INFO:     Started server process [3540526]
+INFO:     Waiting for application startup.
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+Testing connection to database...
+Testing connection to database...
+INFO:     Started server process [3540532]
+INFO:     Waiting for application startup.
+INFO:     Started server process [3540527]
+INFO:     Waiting for application startup.
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+INFO:     Application startup complete.
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+Testing connection to database...
+Testing connection to database...
+INFO:     Application startup complete.
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+INFO:     Started server process [3540529]
+INFO:     Waiting for application startup.
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: SERVER_STARTUP        ] [Username: N/A         ] [Email: N/A                      ] - Issue: Starting OPS_QC Backend API on port 8034
+Testing connection to database...
+Successfully connected to the database!
+[2026-10-27 14:49:43 UTC] [INFO   ] [Action: DB_CONNECT            ] [Username: N/A         ] [Email: N/A                      ] - Issue: Successfully connected to SQL database
+INFO:     Application startup complete.

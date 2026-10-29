@@ -1,0 +1,89 @@
+{
+    "Loan Id": "45678102",
+    "LoanUuid": "8faf50b1-33a7-4bc0-9b00-ccf30c37d80c",
+    "Transaction Identifier": "Doc Intelligence",
+    "Buyer": "Test Company 2",
+    "Seller": "Test Seller 2",
+    "Loan Status": "Pre-Underwrite",
+    "Initial review completed": "false",
+    "Final review completed": "false",
+    "Created Date": "2026-10-02T11:07:36.000+00:00",
+    "True Data": {
+        "LoanSubmissionDate": "10/02/2026",
+        "LoanID": "45678102",
+        "Script": "Credit-Comp RA Review CS IC 20260416",
+        "DiligenceLoanKey": "V86R7QA979TY",
+        "B4SelfEmploymentFlag": "1-14",
+        "LoanStatus": "Pre-Underwrite",
+        "BuyerName": "Test Company 2",
+        "TransactionCategory": "Flow",
+        "SellerName": "Test Seller 2",
+        "TransactionID": "Doc Intelligence"
+    },
+    "Rating Agency Grades": {
+        "Initial": {
+            "DBRS/Morningstar": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Moodys": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "S&P": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Fitch": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Kroll": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            }
+        },
+        "Final": {
+            "DBRS/Morningstar": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Moodys": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "S&P": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Fitch": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            },
+            "Kroll": {
+                "Overall": "A",
+                "Credit": "A",
+                "Compliance": "A",
+                "Property": "A"
+            }
+        }
+    }
+}

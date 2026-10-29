@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.10.0"
+__version__ = "5.12.0"
 
 import logging
 import re
@@ -764,9 +764,39 @@ def parse_clause(rule: Rule) -> Rule:
                            "negate": negated}
             return rule
 
+    # --- 1st day of the Nth or Mth month after another date -----------------
+    # "This should be the 1st day of either the 1st or 2nd month after the
+    #  \"Note Date\" field". Each candidate is normalised to day 1, matching
+    #  the macro rule this replaces.
+    window = re.search(
+        r"(?i)1st\s+day\s+of\s+(?:either\s+)?the\s+(\d+)(?:st|nd|rd|th)?"
+        r"(?:\s*(?:or|and)\s*(\d+)(?:st|nd|rd|th)?)?\s+month"
+        r"(?:s)?\s+(?:after|from)\s+(?:the\s+)?\"([^\"]+)\"", text)
+    if window and not lower.startswith("if"):
+        offsets = [int(window.group(1))]
+        if window.group(2):
+            offsets.append(int(window.group(2)))
+        rule.family = "DATE_MONTH_WINDOW"
+        rule.params = {"offsets": offsets,
+                       "ref_field": window.group(3).strip()}
+        return rule
+
+    # --- a date computed from another date plus a term in months ------------
+    # "This should be the 1st day of the month, \"Amortization Term\" months
+    #  after the \"First Payment Date\" field"
+    summed = re.search(
+        r"(?i)1st\s+day\s+of\s+the\s+month\s*,?\s*\"([^\"]+)\"\s*"
+        r"months?\s+(?:after|from)\s+(?:the\s+)?\"([^\"]+)\"", text)
+    if summed and not lower.startswith("if"):
+        rule.family = "DATE_TERM_SUM"
+        rule.params = {"term_field": summed.group(1).strip(),
+                       "ref_field": summed.group(2).strip()}
+        return rule
+
     # --- between two other dates --------------------------------------------
     between_fields = re.search(
-        r"(?i)in\s*betwe+n\s+\"([^\"]+)\".*?\band\b\s*"
+        r"(?i)(?:in\s*betwe+n|(?:must|should)\s+be\s+betwe+n)\s+"
+        r"\"([^\"]+)\".*?\band\b\s*"
         r"(?:(\d+)\s*(day|week|month|year)s?\s*(before|after)\s*)?"
         r"(?:the\s+)?\"([^\"]+)\"", text)
     if between_fields and not lower.startswith("if"):
@@ -801,7 +831,7 @@ def parse_clause(rule: Rule) -> Rule:
     # Without this the clause fell through to a numeric bound and then to
     # NOT_EQUALS, both of which produced wrong verdicts.
     within = re.search(
-        r"(?i)(?:not|never|no)\s+be\s+more\s+than\s+(\d+)\s*"
+        r"(?i)(?:not|never|no)\s+be\s+more\s+(?:than\s+)?\"?(\d+)\"?\s*"
         r"(day|week|month|year)s?\s*(after|from|before|prior\s+to)\s*"
         r"(?:the\s*)?\"([^\"]+)\"", text)
     if within:
@@ -956,11 +986,19 @@ def parse_clause(rule: Rule) -> Rule:
             rule.params = {"minimum_count": 2}
             return rule
 
-        # "It must be a positive #" / "positive number always"
-        if re.search(r"(?i)\bpositive\s*(#|number|value)", text):
+        # "It must be a positive #" / "positive number always" /
+        # "Value Cannot be Negative" / "Value should be positive or 0".
+        # The old pattern required a word after "positive", so "positive or 0"
+        # never matched and "cannot be negative" had no matcher at all.
+        negative = re.search(r"(?i)\b(?:cannot|can\s*not|must\s+not|should"
+                             r"\s+not|never)\s+be\s+negative", text)
+        positive = re.search(r"(?i)\bpositive\b", text)
+        if negative or positive:
             rule.family = "POSITIVE_NUMBER"
-            rule.params = {"allow_zero": bool(
-                re.search(r"(?i)or\s+zero|zero\s+or", text))}
+            # "cannot be negative" and "positive or 0" both permit zero;
+            # a bare "positive #" does not.
+            rule.params = {"allow_zero": bool(negative) or bool(
+                re.search(r"(?i)or\s+zero|zero\s+or|or\s+0\b", text))}
             return rule
 
         # "This field must contain a whole number."
@@ -1861,6 +1899,75 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         return "Invalid", (f"Age {age} is below the required minimum of "
                            f"{params['years']} years (born {born:%m/%d/%Y}).")
 
+    if family == "DATE_MONTH_WINDOW":
+        if _is_blank_value(value):
+            return "N/A - blank value", ""
+        name, other = index.resolve(params["ref_field"], rule.field)
+        if name is None:
+            return "Not Automated", (
+                f"Could not locate the referenced field "
+                f"{params['ref_field']!r} in this file.")
+        if _is_blank_value(other):
+            return "N/A - condition not met", (
+                f"{name!r} is blank, so the expected date cannot be derived.")
+        this_date, why = _parse_date_for_rule(value)
+        if this_date is None:
+            return "Invalid", f"Not a valid date: {why}"
+        base, _w = _parse_date_for_rule(other)
+        if base is None:
+            return "Not Automated", (
+                f"{name!r} = {str(other)!r} is not a readable date.")
+        expected = [d for d in (_month_shift(base, n)
+                                for n in params["offsets"]) if d]
+        if this_date in expected:
+            return "Valid", (f"{this_date:%m/%d/%Y} is the 1st of an allowed "
+                             f"month after {name!r} ({base:%m/%d/%Y}).")
+        return "Invalid", (
+            f"{this_date:%m/%d/%Y} is not an allowed date; expected "
+            + " or ".join(f"{d:%m/%d/%Y}" for d in expected)
+            + f" (1st day of month {' or '.join(str(n) for n in params['offsets'])}"
+              f" after {name!r} = {base:%m/%d/%Y}).")
+
+    if family == "DATE_TERM_SUM":
+        if _is_blank_value(value):
+            return "N/A - blank value", ""
+        base_name, base_value = index.resolve(params["ref_field"], rule.field)
+        term_name, term_value = index.resolve(params["term_field"], rule.field)
+        if base_name is None or term_name is None:
+            missing = (params["ref_field"] if base_name is None
+                       else params["term_field"])
+            return "Not Automated", (
+                f"Could not locate the referenced field {missing!r} "
+                f"in this file.")
+        if _is_blank_value(base_value) or _is_blank_value(term_value):
+            return "N/A - condition not met", (
+                f"{base_name!r} or {term_name!r} is blank, so the expected "
+                f"date cannot be derived.")
+        this_date, why = _parse_date_for_rule(value)
+        if this_date is None:
+            return "Invalid", f"Not a valid date: {why}"
+        base, _w = _parse_date_for_rule(base_value)
+        if base is None:
+            return "Not Automated", (
+                f"{base_name!r} = {str(base_value)!r} is not a readable date.")
+        term = _numeric_value(term_value)
+        if term is None:
+            return "Invalid", (f"{term_name!r} = {str(term_value)!r} "
+                               f"is not numeric.")
+        # term - 1: a 360-month loan first paying Feb 2026 matures Jan 2056,
+        # because the payments are counted inclusively.
+        expected = _month_shift(base, int(round(term)) - 1)
+        if expected is None:
+            return "Invalid", (f"{term_name!r} = {term:g} puts the implied "
+                               f"date out of range.")
+        if this_date == expected:
+            return "Valid", (f"{this_date:%m/%d/%Y} matches {base_name!r} "
+                             f"({base:%m/%d/%Y}) plus {int(term)} months.")
+        return "Invalid", (
+            f"Expected {expected:%m/%d/%Y} ({base_name!r} "
+            f"{base:%m/%d/%Y} plus {int(term)} months, on the 1st), "
+            f"found {this_date:%m/%d/%Y}.")
+
     if family == "DATE_BETWEEN":
         if _is_blank_value(value):
             return "N/A - blank value", ""
@@ -2389,6 +2496,21 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         return "Valid", ""
 
     return "Not Automated", f"Unhandled rule family {family}."
+
+
+def _month_shift(value, months: int):
+    """Shift a date by whole months and return the 1st of that month.
+
+    Mirrors the macro layer's _first_day_after_months so the condition engine
+    and the VB-derived rules agree exactly.
+    """
+    from datetime import date as _date
+    month_index = value.year * 12 + (value.month - 1) + months
+    year, month = divmod(month_index, 12)
+    month += 1
+    if not _date.min.year <= year <= _date.max.year:
+        return None
+    return _date(year, month, 1)
 
 
 def _parse_date_for_rule(value):

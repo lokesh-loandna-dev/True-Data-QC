@@ -47,9 +47,9 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.10.0"
+__version__ = "5.12.0"
 
-REQUIRED_CONDITION_VERSION = "5.10.0"
+REQUIRED_CONDITION_VERSION = "5.12.0"
 
 try:
     import condition_validation as conditions
@@ -1611,9 +1611,9 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
 
     total_macro = sum(1 for r in results if r[6] not in ("", None))
     # Filter statistics directly from Final Result (column index 11), with fallback to r[7] if not consolidated
-    final_valid = sum(1 for r in results if (str(r[11]) == "Valid" if len(r) > 11 else str(r[7]) == "Valid"))
-    final_invalid = sum(1 for r in results if (str(r[11]) == "Invalid" if len(r) > 11 else str(r[7]).startswith("Invalid")))
-    review_required = sum(1 for r in results if len(r) > 11 and str(r[11]) == "Review Required")
+    final_valid = sum(1 for r in results if (str(r[13]) == "Valid" if len(r) > 11 else str(r[7]) == "Valid"))
+    final_invalid = sum(1 for r in results if (str(r[13]) == "Invalid" if len(r) > 11 else str(r[7]).startswith("Invalid")))
+    review_required = sum(1 for r in results if len(r) > 11 and str(r[13]) == "Review Required")
     # Informational count of blank field rows
     final_blank = sum(1 for r in results if r[1] == "N/A - blank value")
 
