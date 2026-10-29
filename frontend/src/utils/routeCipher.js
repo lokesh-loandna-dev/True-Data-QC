@@ -11,7 +11,8 @@
  * authorization is enforced by the JWT token on every API call.
  */
 
-const SALT = 'ops_qc_route_2026';
+// const SALT = 'ops_qc_route_2026';
+const SALT = 'truedata_qc_loandna_2026';
 
 /**
  * Encode an integer package ID into a URL-safe opaque string.
