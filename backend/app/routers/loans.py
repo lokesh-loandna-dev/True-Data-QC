@@ -590,14 +590,12 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
-    if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
-
             query = """
             SELECT 
                 lp.*, 
                 u.username as uploaded_by, 
                 u.email as uploaded_email,
+                u.role as uploader_role,
                 COALESCE(fr.fr_valid, lp.final_valid) as final_valid,
                 COALESCE(fr.fr_invalid, lp.final_invalid) as final_invalid,
                 COALESCE(fr.fr_review_required, 0) as review_required,
@@ -640,7 +638,15 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
             ) act ON lp.id = act.package_id
             """
             params = {}
-            if role != "admin":
+            if is_super_admin(role):
+                pass
+            elif is_admin_pre_underwriter(role):
+                query += " WHERE (lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('pre underwriter', 'pre underwrite'))"
+                params["user_id"] = user_id
+            elif is_admin_junior_underwriter(role):
+                query += " WHERE (lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('junior underwriter', 'junior underwrite'))"
+                params["user_id"] = user_id
+            else:
                 query += " WHERE lp.user_id = :user_id"
                 params["user_id"] = user_id
             query += " ORDER BY lp.uploaded_at DESC"
@@ -686,21 +692,28 @@ def bulk_export_packages(
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
-    if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
-
             auth_filter = f"WHERE lp.id IN ({id_clause})"
-            if role != "admin":
-                auth_filter += f" AND lp.user_id = {int(user_id)}"
+            params = {}
+            if is_super_admin(role):
+                pass
+            elif is_admin_pre_underwriter(role):
+                auth_filter += " AND (lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('pre underwriter', 'pre underwrite'))"
+                params["user_id"] = user_id
+            elif is_admin_junior_underwriter(role):
+                auth_filter += " AND (lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('junior underwriter', 'junior underwrite'))"
+                params["user_id"] = user_id
+            else:
+                auth_filter += " AND lp.user_id = :user_id"
+                params["user_id"] = user_id
 
             packages_rows = conn.execute(text(f"""
                 SELECT lp.id, lp.filename, lp.loan_id, lp.user_id,
-                       u.username AS uploaded_by, u.email AS uploaded_email
+                       u.username AS uploaded_by, u.email AS uploaded_email, u.role AS uploader_role
                 FROM loan_packages lp
                 LEFT JOIN users u ON lp.user_id = u.id
                 {auth_filter}
                 ORDER BY lp.id DESC
-            """)).mappings().all()
+            """), params).mappings().all()
 
             if not packages_rows:
                 raise HTTPException(status_code=404, detail="No authorized packages found for export.")
@@ -910,13 +923,10 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
-    if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
-
             # Get the package (with uploader info via JOIN)
             lp = conn.execute(
                 text("""
-                    SELECT lp.*, u.username AS uploaded_by, u.email AS uploaded_email
+                    SELECT lp.*, u.username AS uploaded_by, u.email AS uploaded_email, u.role AS uploader_role
                     FROM loan_packages lp
                     LEFT JOIN users u ON lp.user_id = u.id
                     WHERE lp.id = :id
@@ -928,7 +938,7 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 raise HTTPException(status_code=404, detail="Package not found")
 
             # Check authorization
-            if role != "admin" and lp["user_id"] != user_id:
+            if not is_super_admin(role) and not check_package_access(role, user_id, lp["user_id"], lp.get("uploader_role")):
                 raise HTTPException(status_code=403, detail="Not authorized to access this package")
 
             # Get the records
@@ -1158,7 +1168,7 @@ def delete_package(package_id: int, user_id: int = Depends(get_current_user_id))
         role = user_row[0]
 
     if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete packages")
 
     def _do_delete():
         with engine.begin() as conn:
@@ -1214,9 +1224,6 @@ def bulk_delete_packages(req: BulkDeletePackagesRequest, user_id: int = Depends(
     if not is_any_admin(role):
         raise HTTPException(status_code=403, detail="Only admins and super admins can bulk delete packages")
 
-    if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
-
     def _do_bulk_delete():
         with engine.begin() as conn:
             for pkg_id in req.package_ids:
@@ -1260,7 +1267,12 @@ def update_package_records(
 
     with engine.connect() as conn:
         lp = conn.execute(
-            text("SELECT user_id FROM loan_packages WHERE id = :id"),
+            text("""
+                SELECT lp.user_id, u.role as uploader_role
+                FROM loan_packages lp
+                LEFT JOIN users u ON lp.user_id = u.id
+                WHERE lp.id = :id
+            """),
             {"id": package_id}
         ).mappings().first()
         if not lp:
@@ -1268,12 +1280,12 @@ def update_package_records(
         user_row = conn.execute(
             text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
         ).fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
         role = user_row[0]
 
-    if not is_any_admin(role):
-        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
-        if role != "admin" and lp["user_id"] != user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to update this package")
+    if not is_super_admin(role) and not check_package_access(role, user_id, lp["user_id"], lp.get("uploader_role")):
+        raise HTTPException(status_code=403, detail="Not authorized to update this package")
 
     def _do_update():
         with engine.begin() as conn:

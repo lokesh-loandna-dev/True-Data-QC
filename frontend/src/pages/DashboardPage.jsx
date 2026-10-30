@@ -744,10 +744,39 @@ const DashboardPage = () => {
         accessor: 'uploaded_by',
         sortable: true,
         render: (pkg) => (
-          <span className="font-semibold text-xs text-slate-700">
-            {pkg.uploaded_by || 'System'}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-xs text-slate-700">
+              {pkg.uploaded_by || 'System'}
+            </span>
+            {pkg.uploader_role && (
+              <span className="text-[10px] text-slate-400">
+                {pkg.uploader_role}
+              </span>
+            )}
+          </div>
         ),
+      });
+    }
+
+    if (isSuperAdmin) {
+      cols.push({
+        header: 'Mode',
+        accessor: 'ingestion_mode',
+        sortable: true,
+        align: 'center',
+        render: (pkg) => {
+          const mode = (pkg.ingestion_mode || '').toLowerCase();
+          const isJunior = mode.includes('junior') || (pkg.uploader_role || '').toLowerCase().includes('junior');
+          return isJunior ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+              Junior-UW
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200/60">
+              Pre-UW
+            </span>
+          );
+        },
       });
     }
 
@@ -1020,6 +1049,7 @@ const DashboardPage = () => {
     return cols;
   }, [
     isAdmin,
+    isSuperAdmin,
     rowExportLoadingId,
     handleExportRowPackage,
     handleDeletePackage,
