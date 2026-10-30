@@ -23,7 +23,13 @@ from app.routers.loans import (
     evaluate_rows,
     summarize,
     find_header_row,
-    is_blank
+    is_blank,
+    PRE_UW_DIR,
+    JUNIOR_UW_DIR,
+    PRE_UW_RULES,
+    JUNIOR_UW_RULES,
+    cv_pre,
+    cv_junior
 )
 
 # Default configuration
@@ -163,12 +169,32 @@ def process_and_ingest_excel(file_path: Path, target_timestamp: datetime, user_i
     if not labels:
         raise ValueError(f"{filename} does not contain any valid data rows.")
 
-    # 3. Evaluate rows using Data Dictionary and Condition Rules
+    # 3. Check user role and pick folder, code and xlsx based on that
     ensure_dict_cache()
     from app.routers.loans import DATA_DICT
+
+    user_query = text("SELECT id, username, email, role FROM users WHERE id = :id")
+    target_user = conn.execute(user_query, {"id": user_id}).mappings().first()
+    user_role = str(target_user["role"] if target_user else "").strip().lower()
+    username = target_user["username"] if target_user else "N/A"
+
+    if "junior" in user_role:
+        active_folder = JUNIOR_UW_DIR
+        active_rules = JUNIOR_UW_RULES
+        active_module = cv_junior
+        role_label = "Junior Underwriter"
+    else:
+        active_folder = PRE_UW_DIR
+        active_rules = PRE_UW_RULES
+        active_module = cv_pre
+        role_label = "Pre Underwriter"
+
+    print(f"[INGESTION] Using {role_label} folder: {active_folder} for sample: {filename} (User: {username}, Role: {target_user['role'] if target_user else 'N/A'})")
+
     results = evaluate_rows(
         field_names, labels, values, DATA_DICT, loan_ids=loan_ids,
-        condition_rules=CONDITION_RULES
+        condition_rules=active_rules,
+        condition_module=active_module
     )
     stats = summarize(filename, results, labels, DATA_DICT)
 
@@ -336,6 +362,7 @@ def main():
         action="store_true",
         help="Clear existing loan packages before ingesting new sample data"
     )
+
 
     args = parser.parse_args()
 

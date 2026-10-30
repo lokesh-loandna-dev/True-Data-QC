@@ -52,15 +52,17 @@ __version__ = "5.12.0"
 REQUIRED_CONDITION_VERSION = "5.12.0"
 
 try:
-    import condition_validation as conditions
+    import condition_validation_pre_underwriter as conditions
 except ImportError:
     try:
-        from lm_helper import condition_validation as conditions
+        from pathlib import Path
+        import sys
+        _pre_dir = Path(__file__).resolve().parent / "pre-underwriter"
+        if str(_pre_dir) not in sys.path:
+            sys.path.insert(0, str(_pre_dir))
+        import condition_validation_pre_underwriter as conditions
     except ImportError:
-        try:
-            from . import condition_validation as conditions
-        except ImportError:
-            conditions = None
+        conditions = None
 
 
 def check_condition_module_version() -> bool:
@@ -1344,7 +1346,7 @@ def consolidate_result(row):
 
 def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
                   strict=False, blank_as_fail=False, strict_numeric=False,
-                  as_of=None, condition_rules=None):
+                  as_of=None, condition_rules=None, condition_module=None):
     """Return one 8-tuple matching NEW_COLUMNS for each sample row."""
     dictionary_results = []
     for label, value in zip(labels, values):
@@ -1402,8 +1404,9 @@ def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
 
     # Condition validation is strictly additive: it reads the same inputs but
     # contributes only its own three columns and never alters "Result".
-    if condition_rules and conditions is not None:
-        condition_results = conditions.evaluate_conditions(
+    cond_engine = condition_module if condition_module is not None else conditions
+    if condition_rules and cond_engine is not None:
+        condition_results = cond_engine.evaluate_conditions(
             field_names, values, condition_rules)
     else:
         blank = ("N/A - no condition rule", "", "",

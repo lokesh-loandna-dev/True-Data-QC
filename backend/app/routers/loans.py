@@ -2,21 +2,24 @@ import io
 import json
 import random
 import re
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from app.auth import get_current_user_id
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 from sqlalchemy import text
 import pandas as pd
 import openpyxl
 
-from pathlib import Path
+from app.auth import get_current_user_id
 from app.database.connection import engine
+from app.database.operations import get_user_by_id
+from app.logger import log_event
 from lm_helper.validate_loan_files_combined_v3 import evaluate_rows, summarize, find_header_row, is_blank
-from lm_helper import condition_validation as cv
 
 router = APIRouter(
     prefix="/api/loans",
@@ -37,14 +40,38 @@ def _retry_on_deadlock(fn, max_retries: int = 3):
                 continue
             raise
 
-# Load condition rules once at startup if spec exists
-CONDITION_SPEC_PATH = Path(__file__).resolve().parent.parent.parent / "lm_helper" / "Condition_Validation_v2.xlsx"
-CONDITION_RULES = None
-if CONDITION_SPEC_PATH.exists():
+# Paths for pre-underwriter and junior-underwriter folders
+LM_HELPER_DIR = Path(__file__).resolve().parent.parent.parent / "lm_helper"
+PRE_UW_DIR = LM_HELPER_DIR / "pre-underwriter"
+JUNIOR_UW_DIR = LM_HELPER_DIR / "junior-underwriter"
+
+# Ensure folders are importable
+for p in (PRE_UW_DIR, JUNIOR_UW_DIR):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+import condition_validation_pre_underwriter as cv_pre
+import condition_Validation_junior_underwriter as cv_junior
+
+PRE_SPEC_PATH = PRE_UW_DIR / "Condition_Validation_Pre_Underwriter.xlsx"
+JUNIOR_SPEC_PATH = JUNIOR_UW_DIR / "Condition_Validation_Junior_Underwriter.xlsx"
+
+# Load rules directly on startup
+PRE_UW_RULES = None
+if PRE_SPEC_PATH.exists():
     try:
-        CONDITION_RULES = cv.load_rules(CONDITION_SPEC_PATH)
+        PRE_UW_RULES = cv_pre.load_rules(PRE_SPEC_PATH)
     except Exception as e:
-        print(f"Warning: Failed to load Condition_Validation spec: {e}")
+        print(f"Warning: Failed to load Pre-Underwriter spec: {e}")
+
+JUNIOR_UW_RULES = None
+if JUNIOR_SPEC_PATH.exists():
+    try:
+        JUNIOR_UW_RULES = cv_junior.load_rules(JUNIOR_SPEC_PATH)
+    except Exception as e:
+        print(f"Warning: Failed to load Junior-Underwriter spec: {e}")
+
+CONDITION_RULES = PRE_UW_RULES
 
 # Load data dictionary once at startup — same pattern as CONDITION_RULES above.
 # Eliminates SELECT * FROM data_dictionary (~6,962 rows) on every /validate request.
@@ -177,6 +204,29 @@ def validate_loan_file(
     try:
         contents = file.file.read()
 
+        # Check user role and pick folder, code and xlsx based on that
+        user_data = get_user_by_id(user_id) or {}
+        raw_role = str(user_data.get("role") or "").strip()
+        user_role_lower = raw_role.lower()
+        username = user_data.get("username", "N/A")
+        email = user_data.get("email", "N/A")
+
+        if "junior" in user_role_lower:
+            active_folder = JUNIOR_UW_DIR
+            active_rules = JUNIOR_UW_RULES
+            active_module = cv_junior
+            role_label = "Junior Underwriter"
+        else:
+            active_folder = PRE_UW_DIR
+            active_rules = PRE_UW_RULES
+            active_module = cv_pre
+            role_label = "Pre Underwriter"
+
+        # In logs mark it when folder being used for ingestion
+        ingestion_msg = f"[INGESTION] Active Folder: {active_folder} | Mode: {role_label} | File: {file.filename} | User: {username} (Role: {raw_role})"
+        print(ingestion_msg)
+        log_event("INFO", "INGESTION_FOLDER_ACTIVE", ingestion_msg, username=username, email=email)
+
         ensure_dict_cache()
         dictionary = DATA_DICT
         if dictionary is None or len(dictionary) == 0:
@@ -253,10 +303,11 @@ def validate_loan_file(
         if not labels:
             raise HTTPException(status_code=400, detail="The Excel sheet does not contain any valid data rows.")
 
-        # Run validation
+        # Run validation with the active underwriter code & rules
         results = evaluate_rows(
             field_names, labels, values, dictionary, loan_ids=loan_ids,
-            condition_rules=CONDITION_RULES
+            condition_rules=active_rules,
+            condition_module=active_module
         )
         stats = summarize(file.filename, results, labels, dictionary)
         if "Review Required" not in stats and "Overall Review Required" in stats:
@@ -337,7 +388,8 @@ def validate_loan_file(
             "loan_id": extracted_loan_id,
             "headers": excel_headers,
             "summary": stats,
-            "records": response_records
+            "records": response_records,
+            "ingestion_folder": str(active_folder)
         }
 
     except Exception as e:

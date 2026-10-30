@@ -21,7 +21,15 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
-import condition_validation as cv
+try:
+    import condition_validation_pre_underwriter as cv
+except ImportError:
+    from pathlib import Path
+    import sys
+    _p = Path(__file__).resolve().parent / "pre-underwriter"
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+    import condition_validation_pre_underwriter as cv
 
 # Must match validate_loan_files_v5.py, so the audit and the validator can
 # never disagree about what is automatable.
