@@ -10,8 +10,15 @@ load_dotenv()
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.database.connection import init_db, engine
-from app.database.operations import get_user_by_username, create_user
+from app.database.operations import (
+    get_user_by_username,
+    get_user_by_email,
+    create_user,
+    update_user_role,
+    update_user_status,
+)
 from app.auth import hash_password
+from app.auth.security import ROLE_SUPER_ADMIN
 
 def seed_database():
     print("Initializing database connection and tables...")
@@ -27,13 +34,7 @@ def seed_database():
             "username": "admin",
             "email": "admin@loandna.com",
             "password": "123456789",
-            "role": "admin"
-        },
-        {
-            "username": "user",
-            "email": "user@loandna.com",
-            "password": "123456789",
-            "role": "user"
+            "role": ROLE_SUPER_ADMIN
         }
     ]
     
@@ -45,18 +46,25 @@ def seed_database():
         password = user_data["password"]
         role = user_data["role"]
         
-        # Check if user already exists
-        existing_user = get_user_by_username(username)
+        # Check if user already exists by email or username
+        existing_user = get_user_by_email(email) or get_user_by_username(username)
         if existing_user:
-            print(f"[-] User '{username}' already exists. Skipping.")
+            print(f"[*] User '{username}' ({email}) already exists. Ensuring role is '{role}' and status is 'active'...")
+            try:
+                update_user_role(existing_user["id"], role)
+                update_user_status(existing_user["id"], "active")
+                print(f"[+] Successfully updated user '{username}' to role '{role}' (status: active).")
+            except Exception as e:
+                print(f"[x] Error updating user '{username}': {e}")
         else:
             try:
                 pwd_hash = hash_password(password)
-                created = create_user(username=username, email=email, password_hash=pwd_hash, role=role)
+                created = create_user(username=username, email=email, password_hash=pwd_hash, role=role, status="active")
                 print(f"[+] Successfully seeded user with role '{role}':")
                 print(f"    - Username: {username}")
                 print(f"    - Email:    {email}")
                 print(f"    - Password: {password}")
+                print(f"    - Status:   active")
             except Exception as e:
                 print(f"[x] Error seeding user '{username}': {e}")
                 
