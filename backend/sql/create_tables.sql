@@ -114,6 +114,10 @@ BEGIN
     BEGIN
         ALTER TABLE loan_packages ADD review_required INT NULL DEFAULT 0;
     END
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('loan_packages') AND name = 'ingestion_mode')
+    BEGIN
+        ALTER TABLE loan_packages ADD ingestion_mode VARCHAR(50) NULL;
+    END
 END;
 
 -- 4. Loan Package Records Table

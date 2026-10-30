@@ -29,7 +29,12 @@ const Header = () => {
     { name: 'Data Dictionary', path: '/data-dictionary' },
   ];
 
-  if (user?.role === 'admin') {
+  const isSuperAdmin = (role) => {
+    const lower = (role || '').toLowerCase();
+    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
+  };
+
+  if (isSuperAdmin(user?.role)) {
     navLinks.push({ name: 'User Management', path: '/users' });
     navLinks.push({ name: 'Prohance', path: '/prohance' });
   }
@@ -37,9 +42,11 @@ const Header = () => {
   const formatRole = (role) => {
     if (!role || role === '--selected--') return 'User';
     const lower = role.toLowerCase();
-    if (lower === 'pre underwrite' || lower === 'pre underwriter') return 'Pre Underwriter';
-    if (lower === 'junior underwrite' || lower === 'junior underwriter') return 'Junior Underwriter';
-    if (lower === 'admin') return 'Admin';
+    if (lower === 'super admin' || lower === 'super_admin' || lower === 'admin') return 'Super Admin';
+    if (lower.includes('admin') && lower.includes('pre')) return 'Admin (Pre-UW)';
+    if (lower.includes('admin') && lower.includes('junior')) return 'Admin (Junior-UW)';
+    if (lower.includes('pre')) return 'Pre Underwriter';
+    if (lower.includes('junior')) return 'Junior Underwriter';
     return role;
   };
 

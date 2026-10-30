@@ -5,7 +5,7 @@ import re
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
 from sqlalchemy import text
 from app.database.connection import engine
-from app.security import get_current_user_id
+from app.security import get_current_user_id, is_any_admin
 from app.database.operations import (
     get_data_dict_version,
     bump_data_dict_version,
@@ -327,13 +327,20 @@ def delete_all_data_dictionary(user_id: int = Depends(get_current_user_id)):
     if not engine:
         raise HTTPException(status_code=500, detail="Database connection not initialized")
 
+    with engine.connect() as conn:
+        user_row = conn.execute(
+            text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        if not user_row or not is_any_admin(user_row[0]):
+            raise HTTPException(status_code=403, detail="Only admins and super admins can delete all data dictionary records")
+
     try:
         with engine.begin() as conn:
             table_exists = conn.execute(text(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'data_dictionary'"
             )).scalar()
             if table_exists:
-                conn.execute(text("TRUNCATE TABLE dbo.data_dictionary"))
+                conn.execute(text("DELETE FROM dbo.data_dictionary"))
 
         new_version = bump_data_dict_version()
         _reload_dict_meta_cache(new_version)

@@ -100,3 +100,17 @@ END
 GO
 
  
+
+
+-- ============================================================================
+-- 4. Add 'ingestion_mode' column to 'loan_packages' table (Pre-UW vs Junior-UW tracking)
+-- ============================================================================
+IF EXISTS (SELECT * FROM sysobjects WHERE name='loan_packages' AND xtype='U')
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('loan_packages') AND name = 'ingestion_mode')
+    BEGIN
+        ALTER TABLE loan_packages ADD ingestion_mode VARCHAR(50) NULL;
+        PRINT 'Column ingestion_mode added to loan_packages table.';
+    END
+END
+GO

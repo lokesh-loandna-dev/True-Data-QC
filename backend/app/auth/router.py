@@ -33,10 +33,12 @@ from app.logger import log_event
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
+from app.auth.security import is_super_admin
+
 def _require_admin(user_id: int = Depends(get_current_user_id)):
     user = get_user_by_id(user_id)
-    if not user or user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    if not user or not is_super_admin(user.get("role")):
+        raise HTTPException(status_code=403, detail="Super Admin privileges required")
     return user
 
 @router.post("/register")

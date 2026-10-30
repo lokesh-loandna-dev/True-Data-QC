@@ -18,6 +18,13 @@ import openpyxl
 from app.auth import get_current_user_id
 from app.database.connection import engine
 from app.database.operations import get_user_by_id
+from app.security import (
+    is_super_admin,
+    is_admin_pre_underwriter,
+    is_admin_junior_underwriter,
+    is_any_admin,
+    check_package_access,
+)
 from app.logger import log_event
 from lm_helper.validate_loan_files_combined_v3 import evaluate_rows, summarize, find_header_row, is_blank
 
@@ -583,6 +590,9 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
+
             query = """
             SELECT 
                 lp.*, 
@@ -675,6 +685,9 @@ def bulk_export_packages(
             if not user_row:
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
+
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
 
             auth_filter = f"WHERE lp.id IN ({id_clause})"
             if role != "admin":
@@ -897,6 +910,9 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 raise HTTPException(status_code=404, detail="User not found")
             role = user_row[0]
 
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
+
             # Get the package (with uploader info via JOIN)
             lp = conn.execute(
                 text("""
@@ -1061,13 +1077,58 @@ def delete_all_packages(user_id: int = Depends(get_current_user_id)):
             raise HTTPException(status_code=404, detail="User not found")
         role = user_row[0]
 
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages")
+
     def _do_delete_all():
         with engine.begin() as conn:
-            if role == "admin":
+            if is_super_admin(role):
                 # Acquire table-level exclusive lock on parent first — same order as INSERT
                 conn.execute(text("SELECT TOP 0 id FROM loan_packages WITH (TABLOCKX, HOLDLOCK)"))
                 conn.execute(text("DELETE FROM loan_package_records"))
                 conn.execute(text("DELETE FROM loan_packages"))
+            elif is_admin_pre_underwriter(role):
+                conn.execute(
+                    text("""
+                        DELETE FROM loan_package_records WHERE package_id IN (
+                            SELECT lp.id FROM loan_packages lp
+                            LEFT JOIN users u ON lp.user_id = u.id
+                            WHERE lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('pre underwriter', 'pre underwrite')
+                        )
+                    """),
+                    {"user_id": user_id}
+                )
+                conn.execute(
+                    text("""
+                        DELETE FROM loan_packages WHERE id IN (
+                            SELECT lp.id FROM loan_packages lp
+                            LEFT JOIN users u ON lp.user_id = u.id
+                            WHERE lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('pre underwriter', 'pre underwrite')
+                        )
+                    """),
+                    {"user_id": user_id}
+                )
+            elif is_admin_junior_underwriter(role):
+                conn.execute(
+                    text("""
+                        DELETE FROM loan_package_records WHERE package_id IN (
+                            SELECT lp.id FROM loan_packages lp
+                            LEFT JOIN users u ON lp.user_id = u.id
+                            WHERE lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('junior underwriter', 'junior underwrite')
+                        )
+                    """),
+                    {"user_id": user_id}
+                )
+                conn.execute(
+                    text("""
+                        DELETE FROM loan_packages WHERE id IN (
+                            SELECT lp.id FROM loan_packages lp
+                            LEFT JOIN users u ON lp.user_id = u.id
+                            WHERE lp.user_id = :user_id OR LOWER(LTRIM(RTRIM(u.role))) IN ('junior underwriter', 'junior underwrite')
+                        )
+                    """),
+                    {"user_id": user_id}
+                )
             else:
                 conn.execute(
                     text("DELETE FROM loan_package_records WHERE package_id IN (SELECT id FROM loan_packages WHERE user_id = :user_id)"),
@@ -1094,18 +1155,26 @@ def delete_package(package_id: int, user_id: int = Depends(get_current_user_id))
         user_row = conn.execute(
             text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
         ).fetchone()
-        role = user_row[0] if user_row else "user"
+        role = user_row[0]
+
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
 
     def _do_delete():
         with engine.begin() as conn:
             # UPDLOCK: auth check and delete are atomic — eliminates the TOCTOU gap
             lp = conn.execute(
-                text("SELECT user_id FROM loan_packages WITH (UPDLOCK) WHERE id = :id"),
+                text("""
+                    SELECT lp.user_id, u.role as uploader_role
+                    FROM loan_packages lp WITH (UPDLOCK)
+                    LEFT JOIN users u ON lp.user_id = u.id
+                    WHERE lp.id = :id
+                """),
                 {"id": package_id}
             ).mappings().first()
             if not lp:
                 raise HTTPException(status_code=404, detail="Package not found")
-            if role != "admin" and lp["user_id"] != user_id:
+            if not is_super_admin(role) and not check_package_access(role, user_id, lp["user_id"], lp.get("uploader_role")):
                 raise HTTPException(status_code=403, detail="Not authorized to delete this package")
             conn.execute(
                 text("DELETE FROM loan_package_records WHERE package_id = :package_id"),
@@ -1124,6 +1193,59 @@ def delete_package(package_id: int, user_id: int = Depends(get_current_user_id))
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "success", "message": "Package deleted successfully"}
+
+class BulkDeletePackagesRequest(BaseModel):
+    package_ids: List[int]
+
+@router.post("/bulk-delete")
+def bulk_delete_packages(req: BulkDeletePackagesRequest, user_id: int = Depends(get_current_user_id)):
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database connection not initialized")
+
+    if not req.package_ids:
+        return {"status": "success", "message": "No packages selected"}
+
+    with engine.connect() as conn:
+        user_row = conn.execute(
+            text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
+        ).fetchone()
+        role = user_row[0]
+
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can bulk delete packages")
+
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
+
+    def _do_bulk_delete():
+        with engine.begin() as conn:
+            for pkg_id in req.package_ids:
+                lp = conn.execute(
+                    text("""
+                        SELECT lp.user_id, u.role as uploader_role
+                        FROM loan_packages lp WITH (UPDLOCK)
+                        LEFT JOIN users u ON lp.user_id = u.id
+                        WHERE lp.id = :id
+                    """),
+                    {"id": pkg_id}
+                ).mappings().first()
+                if not lp:
+                    continue
+                if not is_super_admin(role) and not check_package_access(role, user_id, lp["user_id"], lp.get("uploader_role")):
+                    raise HTTPException(status_code=403, detail=f"Not authorized to delete package ID {pkg_id}")
+
+            id_list = ", ".join(str(int(pid)) for pid in req.package_ids)
+            conn.execute(text(f"DELETE FROM loan_package_records WHERE package_id IN ({id_list})"))
+            conn.execute(text(f"DELETE FROM loan_packages WHERE id IN ({id_list})"))
+
+    try:
+        _retry_on_deadlock(_do_bulk_delete)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "success", "message": f"{len(req.package_ids)} package(s) deleted successfully"}
 
 @router.put("/{package_id}/records")
 def update_package_records(
@@ -1146,7 +1268,10 @@ def update_package_records(
         user_row = conn.execute(
             text("SELECT role FROM users WHERE id = :id"), {"id": user_id}
         ).fetchone()
-        role = user_row[0] if user_row else "user"
+        role = user_row[0]
+
+    if not is_any_admin(role):
+        raise HTTPException(status_code=403, detail="Only admins and super admins can delete all packages") if user_row else "user"
         if role != "admin" and lp["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="Not authorized to update this package")
 

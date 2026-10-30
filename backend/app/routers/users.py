@@ -1,6 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.schemas import UserRoleUpdateRequest, UserStatusUpdateRequest, UserColumnPreferencesRequest
-from app.security import get_current_user_id
+from app.security import (
+    get_current_user_id,
+    is_super_admin,
+    normalize_role,
+    ALLOWED_ROLES,
+    ROLE_SUPER_ADMIN,
+    ROLE_ADMIN_PRE_UW,
+    ROLE_ADMIN_JUNIOR_UW,
+    ROLE_PRE_UW,
+    ROLE_JUNIOR_UW,
+)
 from app.database.operations import (
     get_all_users, update_user_role, update_user_status, get_user_by_id,
     get_user_column_preferences, save_user_column_preferences, delete_user_column_preferences
@@ -10,42 +20,31 @@ from app.logger import log_event
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-def require_admin(user_id: int = Depends(get_current_user_id)):
+def require_super_admin(user_id: int = Depends(get_current_user_id)):
     user = get_user_by_id(user_id)
-    if not user or user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    if not user or not is_super_admin(user.get("role")):
+        raise HTTPException(status_code=403, detail="Super Admin privileges required")
     return user
 
-def normalize_role(role_str: str) -> str:
-    cleaned = role_str.strip()
-    lower = cleaned.lower()
-    if lower == "admin":
-        return "admin"
-    elif lower in ("junior underwriter", "junior underwrite"):
-        return "Junior underwriter"
-    elif lower in ("pre underwrite", "pre underwriter"):
-        return "Pre Underwriter"
-    elif lower == "--selected--":
-        return "--selected--"
-    return cleaned
+# Backward-compatibility alias
+require_admin = require_super_admin
 
 @router.get("/")
-def get_users(admin_user: dict = Depends(require_admin)):
+def get_users(admin_user: dict = Depends(require_super_admin)):
     users = get_all_users()
     return {"status": "success", "users": users}
 
 @router.put("/{user_id}/role")
-def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict = Depends(require_admin)):
+def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict = Depends(require_super_admin)):
     target_user = get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
     
     role_to_set = req.role.strip()
-    allowed_roles = {"admin", "junior underwriter", "pre underwrite", "pre underwriter", "--selected--"}
-    if role_to_set.lower() not in allowed_roles:
+    if role_to_set.lower() not in ALLOWED_ROLES:
         raise HTTPException(
             status_code=400,
-            detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwriter'"
+            detail="Invalid role. Allowed roles: 'Super Admin', 'Admin with Pre-Underwriter', 'Admin with Junior-Underwriter', 'Pre Underwriter', 'Junior underwriter'"
         )
     
     normalized = normalize_role(role_to_set)
@@ -57,7 +56,7 @@ def change_user_status(
     user_id: int,
     req: UserStatusUpdateRequest,
     background_tasks: BackgroundTasks,
-    admin_user: dict = Depends(require_admin)
+    admin_user: dict = Depends(require_super_admin)
 ):
     target_user = get_user_by_id(user_id)
     if not target_user:
@@ -67,7 +66,7 @@ def change_user_status(
     if new_status not in ["active", "inactive", "rejected"]:
         raise HTTPException(status_code=400, detail="Invalid status. Allowed values: 'active', 'inactive', 'rejected'")
     
-    # Safeguard: prevent admin from deactivating or rejecting their own account
+    # Safeguard: prevent super admin from deactivating or rejecting their own account
     if admin_user.get("id") == user_id and new_status != "active":
         raise HTTPException(status_code=400, detail="Administrators cannot deactivate or reject their own account")
     
@@ -76,11 +75,10 @@ def change_user_status(
     # If role is provided or user is being activated
     if req.role:
         role_to_set = req.role.strip()
-        allowed_roles = {"admin", "junior underwriter", "pre underwrite", "pre underwriter"}
-        if role_to_set.lower() not in allowed_roles:
+        if role_to_set.lower() not in ALLOWED_ROLES or role_to_set.lower() == "--selected--":
             raise HTTPException(
                 status_code=400,
-                detail="Invalid role. Allowed roles: 'admin', 'Junior underwriter', 'Pre Underwriter'"
+                detail="Invalid role. Allowed roles: 'Super Admin', 'Admin with Pre-Underwriter', 'Admin with Junior-Underwriter', 'Pre Underwriter', 'Junior underwriter'"
             )
         normalized = normalize_role(role_to_set)
         update_user_role(user_id, normalized)
@@ -91,11 +89,11 @@ def change_user_status(
         if current_role in ["--selected--", "", "None"]:
             raise HTTPException(
                 status_code=400,
-                detail="A valid role (admin, Junior underwriter, or Pre Underwriter) must be selected to approve this account."
+                detail="A valid role must be selected to approve this account."
             )
 
     update_user_status(user_id, new_status)
-    log_event("INFO", "USER_STATUS_UPDATED", f"Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}' (role: '{target_user.get('role')}')")
+    log_event("INFO", "USER_STATUS_UPDATED", f"Super Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}' (role: '{target_user.get('role')}')")
 
     # Send notification emails for status transitions
     user_email = target_user.get("email")
@@ -145,4 +143,3 @@ def reset_column_preferences(table_key: str, user_id: int = Depends(get_current_
         "status": "success",
         "message": f"Preferences reset for {table_key}"
     }
-

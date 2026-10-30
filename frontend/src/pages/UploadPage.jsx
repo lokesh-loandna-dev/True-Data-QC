@@ -27,6 +27,28 @@ const UploadPage = () => {
   const [progressStatus, setProgressStatus] = useState('');
   const [progressError, setProgressError] = useState('');
 
+  // Super Admin Ingestion Mode Selection State
+  const [pendingFile, setPendingFile] = useState(null);
+  const [isModeModalOpen, setIsModeModalOpen] = useState(false);
+  const [selectedSuperAdminMode, setSelectedSuperAdminMode] = useState('pre-underwrite');
+
+  const isSuperAdmin = useMemo(() => {
+    const r = (user?.role || '').trim().toLowerCase();
+    return r === 'super admin' || r === 'super_admin' || r === 'admin';
+  }, [user]);
+
+  const defaultRoleMode = useMemo(() => {
+    const r = (user?.role || '').trim().toLowerCase();
+    if (r.includes('junior')) return 'junior-underwrite';
+    return 'pre-underwrite';
+  }, [user]);
+
+  const modeBadgeText = useMemo(() => {
+    if (isSuperAdmin) return 'Mode: Prompted per upload (Pre-UW or Junior-UW)';
+    if (defaultRoleMode === 'junior-underwrite') return 'Ingestion Mode: Junior-Underwriter';
+    return 'Ingestion Mode: Pre-Underwriter';
+  }, [isSuperAdmin, defaultRoleMode]);
+
   // Validation Results State
   const [validationData, setValidationData] = useState(null); // { filename, summary, records, packageId }
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,7 +152,13 @@ const UploadPage = () => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       if (isValidFile(droppedFile)) {
-        handleUpload(droppedFile);
+        if (isSuperAdmin) {
+          setPendingFile(droppedFile);
+          setSelectedSuperAdminMode('pre-underwrite');
+          setIsModeModalOpen(true);
+        } else {
+          handleUpload(droppedFile, defaultRoleMode);
+        }
       }
     }
   };
@@ -139,9 +167,24 @@ const UploadPage = () => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       if (isValidFile(selectedFile)) {
-        handleUpload(selectedFile);
+        if (isSuperAdmin) {
+          setPendingFile(selectedFile);
+          setSelectedSuperAdminMode('pre-underwrite');
+          setIsModeModalOpen(true);
+        } else {
+          handleUpload(selectedFile, defaultRoleMode);
+        }
       }
     }
+  };
+
+  const handleConfirmModeSelection = () => {
+    if (!pendingFile) return;
+    const fileToProcess = pendingFile;
+    const modeToProcess = selectedSuperAdminMode;
+    setIsModeModalOpen(false);
+    setPendingFile(null);
+    handleUpload(fileToProcess, modeToProcess);
   };
 
   const isValidFile = (file) => {
@@ -156,7 +199,7 @@ const UploadPage = () => {
     return true;
   };
 
-  const handleUpload = async (uploadFile) => {
+  const handleUpload = async (uploadFile, ingestionMode = null) => {
     setFile(uploadFile);
     setLoading(true);
     setError('');
@@ -191,7 +234,8 @@ const UploadPage = () => {
     }, 150);
 
     try {
-      const data = await loanService.validateFile(uploadFile);
+      const activeMode = ingestionMode || defaultRoleMode;
+      const data = await loanService.validateFile(uploadFile, activeMode);
       const recordsWithIds = (data.records || []).map((rec, idx) => ({
         ...rec,
         _id: rec.id || `rec_${idx}`,
@@ -206,7 +250,8 @@ const UploadPage = () => {
         data.filename,
         data.summary,
         recordsWithIds,
-        packageLoanId
+        packageLoanId,
+        data.ingestion_mode || activeMode
       );
 
       const packageId = saveRes.package_id;
@@ -838,6 +883,11 @@ const UploadPage = () => {
                   </p>
                 </div>
 
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-slate-50 border-slate-200 text-slate-600 shadow-2xs">
+                  <span className={`w-2 h-2 rounded-full ${isSuperAdmin ? 'bg-purple-500' : 'bg-emerald-500'} animate-pulse`}></span>
+                  <span>{modeBadgeText}</span>
+                </div>
+
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1209,6 +1259,110 @@ const UploadPage = () => {
         }}
         defaultColumnKeys={DEFAULT_SELECTED_COLUMNS}
       />
+
+      {/* Super Admin Ingestion Mode Selection Modal */}
+      {isModeModalOpen && pendingFile && (
+        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-fade-in">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50/60">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-slate-900">Select Ingestion Mode</h3>
+                <p className="text-xs text-slate-500 truncate">File: {pendingFile.name}</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-3.5">
+              <p className="text-xs text-slate-600">
+                As a <strong>Super Admin</strong>, please select the underwriter condition rules to apply for validating this package:
+              </p>
+
+              <label
+                onClick={() => setSelectedSuperAdminMode('pre-underwrite')}
+                className={`flex items-start gap-3.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                  selectedSuperAdminMode === 'pre-underwrite'
+                    ? 'border-[#24A1DD] bg-[#24A1DD]/5 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="superAdminMode"
+                  value="pre-underwrite"
+                  checked={selectedSuperAdminMode === 'pre-underwrite'}
+                  onChange={() => setSelectedSuperAdminMode('pre-underwrite')}
+                  className="mt-1 text-[#24A1DD] focus:ring-[#24A1DD]"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-800">Pre-Underwriter Mode</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200/60">
+                      Pre-UW
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Validates against Pre-Underwriter conditions and business guidelines.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                onClick={() => setSelectedSuperAdminMode('junior-underwrite')}
+                className={`flex items-start gap-3.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                  selectedSuperAdminMode === 'junior-underwrite'
+                    ? 'border-indigo-600 bg-indigo-50/20 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="superAdminMode"
+                  value="junior-underwrite"
+                  checked={selectedSuperAdminMode === 'junior-underwrite'}
+                  onChange={() => setSelectedSuperAdminMode('junior-underwrite')}
+                  className="mt-1 text-indigo-600 focus:ring-indigo-600"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-800">Junior-Underwriter Mode</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+                      Junior-UW
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Validates against Junior-Underwriter conditions and business guidelines.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModeModalOpen(false);
+                  setPendingFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                className="px-4 py-2 border border-slate-200 hover:bg-white text-slate-700 font-semibold rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmModeSelection}
+                className="px-5 py-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-xl text-xs shadow-md shadow-[#24A1DD]/20 transition-all cursor-pointer"
+              >
+                Continue with Ingestion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
     </div>

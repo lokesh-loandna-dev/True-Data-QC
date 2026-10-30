@@ -7,7 +7,15 @@ import { notify } from '../../../utils/toast';
 
 const DataDictionaryTable = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isSuperAdmin = useMemo(() => {
+    const r = (user?.role || '').trim().toLowerCase();
+    return r === 'super admin' || r === 'super_admin' || r === 'admin';
+  }, [user]);
+
+  const isAnyAdmin = useMemo(() => {
+    const r = (user?.role || '').trim().toLowerCase();
+    return isSuperAdmin || r.includes('admin');
+  }, [user, isSuperAdmin]);
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [columnsList, setColumnsList] = useState([]);
@@ -371,49 +379,49 @@ const DataDictionaryTable = () => {
           </span>
         </button>
       </Tooltip>
-      {isAdmin && (
-        <>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-          <Tooltip text="Upload Excel" position="bottom">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || deleting}
-              className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none"
-              aria-label="Upload Excel"
-            >
-              {uploading ? (
-                <svg className="animate-spin h-4 w-4 text-[#24A1DD]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-              )}
-            </button>
-          </Tooltip>
-          <Tooltip text="Delete All" position="bottom">
-            <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
-              disabled={loading || uploading || deleting || data.length === 0}
-              className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-              aria-label="Delete All"
-            >
-              <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </Tooltip>
-        </>
+      <input
+        type="file"
+        accept=".xlsx, .xls"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+      />
+      <Tooltip text="Upload Excel" position="bottom">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || deleting}
+          className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none whitespace-nowrap"
+          aria-label="Upload Excel"
+        >
+          {uploading ? (
+            <svg className="animate-spin h-3.5 w-3.5 text-[#24A1DD]" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          )}
+          <span className="hidden sm:inline">{uploading ? 'Uploading...' : 'Upload'}</span>
+        </button>
+      </Tooltip>
+      {isAnyAdmin && (
+        <Tooltip text="Delete All Data Dictionary Records" position="bottom">
+          <button
+            type="button"
+            onClick={() => setShowConfirmModal(true)}
+            disabled={loading || uploading || deleting || (totalRecords === 0 && data.length === 0)}
+            className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
+            aria-label="Delete All Data Dictionary Records"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span className="hidden sm:inline">Delete All</span>
+          </button>
+        </Tooltip>
       )}
     </div>
   );

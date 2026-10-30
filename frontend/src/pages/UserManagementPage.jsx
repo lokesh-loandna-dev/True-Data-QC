@@ -7,8 +7,13 @@ import Header from '../layout/Header';
 const UserManagementPage = () => {
   const { user } = useAuth();
 
-  // Extra layer of protection on frontend
-  if (user?.role !== 'admin') {
+  const isSuperAdmin = (role) => {
+    const lower = (role || '').toLowerCase();
+    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
+  };
+
+  // Extra layer of protection on frontend - Super Admin only
+  if (!isSuperAdmin(user?.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

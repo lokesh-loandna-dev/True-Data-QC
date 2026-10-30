@@ -1,18 +1,22 @@
 import { api } from './api';
 
 export const loanService = {
-  validateFile: async (file) => {
+  validateFile: async (file, mode = null) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (mode) {
+      formData.append('mode', mode);
+    }
     return api.upload('/api/loans/validate', formData);
   },
 
-  savePackage: async (filename, summary, records, loanId = null) => {
+  savePackage: async (filename, summary, records, loanId = null, ingestionMode = null) => {
     return api.post('/api/loans/save', {
       filename,
       summary,
       records,
       loan_id: loanId,
+      ingestion_mode: ingestionMode,
     });
   },
 
@@ -36,6 +40,10 @@ export const loanService = {
     return api.delete('/api/loans/clear-all');
   },
 
+  bulkDeletePackages: async (packageIds) => {
+    return api.post('/api/loans/bulk-delete', { package_ids: packageIds });
+  },
+
   exportBulkPackagesExcel: async (packageIds, onProgress = null) => {
     return api.downloadBlob(
       '/api/loans/bulk-export',
@@ -47,4 +55,3 @@ export const loanService = {
     );
   },
 };
-

@@ -7,9 +7,11 @@ import { notify } from '../../../utils/toast';
 import { exportUsersToExcel } from '../../../utils/excelExport';
 
 const ROLES = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'Junior underwriter', label: 'Junior Underwriter' },
+  { value: 'Super Admin', label: 'Super Admin' },
+  { value: 'Admin with Pre-Underwriter', label: 'Admin with Pre-Underwriter' },
+  { value: 'Admin with Junior-Underwriter', label: 'Admin with Junior-Underwriter' },
   { value: 'Pre Underwriter', label: 'Pre Underwriter' },
+  { value: 'Junior underwriter', label: 'Junior Underwriter' },
 ];
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -52,7 +54,7 @@ export const UserManagementTable = () => {
   const handleConfirmApprove = useCallback(async () => {
     if (!approvingUser) return;
     if (!approvingRole || approvingRole === '--selected--') {
-      notify.warning('Please select a valid role (Admin, Junior Underwriter, or Pre Underwriter) to approve this user.');
+      notify.warning('Please select a valid role to approve this user.');
       return;
     }
 
@@ -82,7 +84,7 @@ export const UserManagementTable = () => {
       let statusUpdated = false;
 
       if (selectedStatus === 'active' && (!selectedRole || selectedRole === '--selected--')) {
-        notify.warning('Please select a valid role (Admin, Junior Underwriter, or Pre Underwriter) before activating this account.');
+        notify.warning('Please select a valid role before activating this account.');
         return;
       }
 
@@ -254,10 +256,22 @@ export const UserManagementTable = () => {
 
         const getRoleBadge = (role) => {
           const r = (role || '').toLowerCase();
-          if (r === 'admin') {
+          if (r === 'super admin' || r === 'super_admin' || r === 'admin') {
             return {
               style: 'bg-purple-50 text-purple-700 border-purple-200/80',
-              label: 'Admin',
+              label: 'Super Admin',
+            };
+          }
+          if (r.includes('admin') && r.includes('pre')) {
+            return {
+              style: 'bg-sky-50 text-sky-700 border-sky-200/80',
+              label: 'Admin (Pre-UW)',
+            };
+          }
+          if (r.includes('admin') && r.includes('junior')) {
+            return {
+              style: 'bg-indigo-50 text-indigo-700 border-indigo-200/80',
+              label: 'Admin (Junior-UW)',
             };
           }
           if (r.includes('junior')) {
@@ -617,7 +631,7 @@ export const UserManagementTable = () => {
                   ))}
                 </select>
                 <p className="text-[11px] text-slate-400">
-                  Select one of Admin, Junior Underwriter, or Pre Underwriter to approve.
+                  Select one of the 5 roles to approve this user.
                 </p>
               </div>
             </div>
