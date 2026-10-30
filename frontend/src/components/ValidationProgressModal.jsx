@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * ValidationProgressModal
  * Displays a 100% progress loader bar in a modal overlay while validating loan package files.
@@ -12,6 +10,7 @@ export const ValidationProgressModal = ({
   status = 'Validating loan package...',
   error = '',
   onClose,
+  onCancel,
   title,
   steps
 }) => {
@@ -138,6 +137,19 @@ export const ValidationProgressModal = ({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* In-Flight Cancel Button */}
+        {!error && !isCompleted && onCancel && (
+          <div className="w-full pt-1">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel Validation
+            </button>
           </div>
         )}
 

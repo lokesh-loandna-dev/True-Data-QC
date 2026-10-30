@@ -1,35 +1,35 @@
 import { api } from './api';
 
 export const loanService = {
-  validateFile: async (file, mode = null) => {
+  validateFile: async (file, mode = null, options = {}) => {
     const formData = new FormData();
     formData.append('file', file);
     if (mode) {
       formData.append('mode', mode);
     }
-    return api.upload('/api/loans/validate', formData);
+    return api.upload('/api/loans/validate', formData, options);
   },
 
-  fetchAndValidateLoan: async (loanId, sellerName, mode = null) => {
+  fetchAndValidateLoan: async (loanId, sellerName, mode = null, options = {}) => {
     return api.post('/api/loans/fetch-and-validate', {
       loan_id: loanId,
       seller_name: sellerName,
       mode: mode,
-    });
+    }, options);
   },
 
-  savePackage: async (filename, summary, records, loanId = null, ingestionMode = null) => {
+  savePackage: async (filename, summary, records, loanId = null, ingestionMode = null, options = {}) => {
     return api.post('/api/loans/save', {
       filename,
       summary,
       records,
       loan_id: loanId,
       ingestion_mode: ingestionMode,
-    });
+    }, options);
   },
 
-  updatePackageRecords: async (packageId, records) => {
-    return api.put(`/api/loans/${packageId}/records`, { records });
+  updatePackageRecords: async (packageId, records, options = {}) => {
+    return api.put(`/api/loans/${packageId}/records`, { records }, options);
   },
 
   getPackages: async () => {

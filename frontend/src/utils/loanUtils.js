@@ -52,3 +52,14 @@ export const extractLoanId = (records = [], fallbackLoanId = null) => {
 
   return '';
 };
+
+/**
+ * Normalizes action string casing to prevent duplicates in dropdowns and database.
+ */
+export const normalizeAction = (action) => {
+  if (!action) return '';
+  const trimmed = String(action).trim();
+  if (trimmed.toLowerCase() === 'review completed') return 'Review Completed';
+  return trimmed;
+};
+
