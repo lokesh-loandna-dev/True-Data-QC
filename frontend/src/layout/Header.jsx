@@ -34,8 +34,22 @@ const Header = () => {
     return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
   };
 
-  if (isSuperAdmin(user?.role)) {
+  const canAccessUserManagement = (role) => {
+    const lower = (role || '').trim().toLowerCase();
+    return (
+      lower === 'super admin' ||
+      lower === 'super_admin' ||
+      lower === 'admin' ||
+      (lower.includes('admin') && lower.includes('pre')) ||
+      (lower.includes('admin') && lower.includes('junior'))
+    );
+  };
+
+  if (canAccessUserManagement(user?.role)) {
     navLinks.push({ name: 'User Management', path: '/users' });
+  }
+
+  if (isSuperAdmin(user?.role)) {
     navLinks.push({ name: 'Prohance', path: '/prohance' });
   }
 

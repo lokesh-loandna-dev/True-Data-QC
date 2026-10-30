@@ -7,13 +7,19 @@ import Header from '../layout/Header';
 const UserManagementPage = () => {
   const { user } = useAuth();
 
-  const isSuperAdmin = (role) => {
-    const lower = (role || '').toLowerCase();
-    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
+  const canAccessUserManagement = (role) => {
+    const lower = (role || '').trim().toLowerCase();
+    return (
+      lower === 'super admin' ||
+      lower === 'super_admin' ||
+      lower === 'admin' ||
+      (lower.includes('admin') && lower.includes('pre')) ||
+      (lower.includes('admin') && lower.includes('junior'))
+    );
   };
 
-  // Extra layer of protection on frontend - Super Admin only
-  if (!isSuperAdmin(user?.role)) {
+  // Extra layer of protection on frontend - Super Admin and Admins (Pre-UW / Junior-UW)
+  if (!canAccessUserManagement(user?.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -34,4 +40,3 @@ const UserManagementPage = () => {
 };
 
 export default UserManagementPage;
-

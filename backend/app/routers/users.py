@@ -3,6 +3,7 @@ from app.schemas import UserRoleUpdateRequest, UserStatusUpdateRequest, UserColu
 from app.security import (
     get_current_user_id,
     is_super_admin,
+    is_any_admin,
     normalize_role,
     ALLOWED_ROLES,
     ROLE_SUPER_ADMIN,
@@ -20,22 +21,25 @@ from app.logger import log_event
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
+def require_admin(user_id: int = Depends(get_current_user_id)):
+    user = get_user_by_id(user_id)
+    if not user or not is_any_admin(user.get("role")):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return user
+
 def require_super_admin(user_id: int = Depends(get_current_user_id)):
     user = get_user_by_id(user_id)
     if not user or not is_super_admin(user.get("role")):
         raise HTTPException(status_code=403, detail="Super Admin privileges required")
     return user
 
-# Backward-compatibility alias
-require_admin = require_super_admin
-
 @router.get("/")
-def get_users(admin_user: dict = Depends(require_super_admin)):
+def get_users(admin_user: dict = Depends(require_admin)):
     users = get_all_users()
     return {"status": "success", "users": users}
 
 @router.put("/{user_id}/role")
-def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict = Depends(require_super_admin)):
+def change_user_role(user_id: int, req: UserRoleUpdateRequest, admin_user: dict = Depends(require_admin)):
     target_user = get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -56,7 +60,7 @@ def change_user_status(
     user_id: int,
     req: UserStatusUpdateRequest,
     background_tasks: BackgroundTasks,
-    admin_user: dict = Depends(require_super_admin)
+    admin_user: dict = Depends(require_admin)
 ):
     target_user = get_user_by_id(user_id)
     if not target_user:
@@ -66,7 +70,7 @@ def change_user_status(
     if new_status not in ["active", "inactive", "rejected"]:
         raise HTTPException(status_code=400, detail="Invalid status. Allowed values: 'active', 'inactive', 'rejected'")
     
-    # Safeguard: prevent super admin from deactivating or rejecting their own account
+    # Safeguard: prevent admin from deactivating or rejecting their own account
     if admin_user.get("id") == user_id and new_status != "active":
         raise HTTPException(status_code=400, detail="Administrators cannot deactivate or reject their own account")
     
@@ -93,7 +97,8 @@ def change_user_status(
             )
 
     update_user_status(user_id, new_status)
-    log_event("INFO", "USER_STATUS_UPDATED", f"Super Admin '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}' (role: '{target_user.get('role')}')")
+    admin_role = admin_user.get("role", "Admin")
+    log_event("INFO", "USER_STATUS_UPDATED", f"{admin_role} '{admin_user.get('email')}' updated user '{target_user.get('email')}' status to '{new_status}' (role: '{target_user.get('role')}')")
 
     # Send notification emails for status transitions
     user_email = target_user.get("email")

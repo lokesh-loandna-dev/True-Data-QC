@@ -108,8 +108,25 @@ def test_package_access_matrix():
 
     print("[OK] Package access matrix passed completely!")
 
+def test_user_management_access():
+    print("Testing User Management Access...")
+    # Permitted roles
+    assert is_any_admin("Super Admin") is True
+    assert is_any_admin("Admin with Pre-Underwriter") is True
+    assert is_any_admin("Admin with Junior-Underwriter") is True
+    assert is_any_admin("admin with pre-underwriter") is True
+    assert is_any_admin("admin with junior-underwriter") is True
+
+    # Denied roles
+    assert is_any_admin("Pre Underwriter") is False
+    assert is_any_admin("Junior underwriter") is False
+    assert is_any_admin("--selected--") is False
+    assert is_any_admin(None) is False
+    print("[OK] User Management access passed!")
+
 if __name__ == "__main__":
     test_normalization()
     test_role_checkers()
     test_package_access_matrix()
+    test_user_management_access()
     print("\nALL ROLE-BASED ACCESS CONTROL TESTS PASSED SUCCESSFULLY!")
