@@ -10,6 +10,14 @@ export const loanService = {
     return api.upload('/api/loans/validate', formData);
   },
 
+  fetchAndValidateLoan: async (loanId, sellerName, mode = null) => {
+    return api.post('/api/loans/fetch-and-validate', {
+      loan_id: loanId,
+      seller_name: sellerName,
+      mode: mode,
+    });
+  },
+
   savePackage: async (filename, summary, records, loanId = null, ingestionMode = null) => {
     return api.post('/api/loans/save', {
       filename,

@@ -26,6 +26,11 @@ from app.security import (
     check_package_access,
 )
 from app.logger import log_event
+from app.services.lauramac_service import (
+    lauramac_client,
+    LauramacAuthError,
+    LauramacAPIError,
+)
 from lm_helper.validate_loan_files_combined_v3 import evaluate_rows, summarize, find_header_row, is_blank
 
 router = APIRouter(
@@ -199,6 +204,12 @@ class LoanSaveRequest(BaseModel):
     summary: Dict[str, Any]
     records: List[LoanRecordInput]
     loan_id: Optional[str] = None
+    ingestion_mode: Optional[str] = None
+
+class LoanApiFetchRequest(BaseModel):
+    loan_id: str
+    seller_name: str
+    mode: Optional[str] = None
 
 @router.post("/validate")
 def validate_loan_file(
@@ -401,6 +412,199 @@ def validate_loan_file(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/fetch-and-validate")
+def fetch_and_validate_loan_api(
+    body: LoanApiFetchRequest,
+    user_id: int = Depends(get_current_user_id)
+):
+    loan_id_input = str(body.loan_id or "").strip()
+    seller_name_input = str(body.seller_name or "").strip()
+
+    if not loan_id_input:
+        raise HTTPException(status_code=400, detail="Loan ID is required.")
+    if not seller_name_input:
+        raise HTTPException(status_code=400, detail="Seller Name is required.")
+
+    # Check user role and pick folder, code and spec based on that
+    user_data = get_user_by_id(user_id) or {}
+    raw_role = str(user_data.get("role") or "").strip()
+    user_role_lower = raw_role.lower()
+    username = user_data.get("username", "N/A")
+    email = user_data.get("email", "N/A")
+
+    req_mode = (body.mode or "").strip().lower()
+    is_admin = "admin" in user_role_lower
+
+    if is_admin and req_mode:
+        if "junior" in req_mode:
+            active_folder = JUNIOR_UW_DIR
+            active_rules = JUNIOR_UW_RULES
+            active_module = cv_junior
+            role_label = "Junior Underwriter"
+        else:
+            active_folder = PRE_UW_DIR
+            active_rules = PRE_UW_RULES
+            active_module = cv_pre
+            role_label = "Pre Underwriter"
+    elif "junior" in user_role_lower:
+        active_folder = JUNIOR_UW_DIR
+        active_rules = JUNIOR_UW_RULES
+        active_module = cv_junior
+        role_label = "Junior Underwriter"
+    else:
+        active_folder = PRE_UW_DIR
+        active_rules = PRE_UW_RULES
+        active_module = cv_pre
+        role_label = "Pre Underwriter"
+
+    clean_seller = re.sub(r'[\\/*?:"<>|]', "", seller_name_input)
+    clean_loan_id = re.sub(r'[\\/*?:"<>|]', "", loan_id_input)
+    now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"Lauramac_Loan_{clean_loan_id}_{clean_seller}_{now_str}.json"
+
+    ingestion_msg = f"[API INGESTION] Active Folder: {active_folder} | Mode: {role_label} | LoanId: {clean_loan_id} | Seller: {clean_seller} | User: {username} (Role: {raw_role})"
+    print(ingestion_msg)
+    log_event("INFO", "API_INGESTION_START", ingestion_msg, username=username, email=email)
+
+    ensure_dict_cache()
+    dictionary = DATA_DICT
+    if dictionary is None or len(dictionary) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Data dictionary is empty in the database. Please upload a valid Data Dictionary Excel file in the Data Dictionary tab first."
+        )
+
+    # 1. Fetch from Lauramac
+    try:
+        api_response = lauramac_client.fetch_loan_truedata(loan_id_input, seller_name_input)
+    except (LauramacAuthError, LauramacAPIError) as lme:
+        raise HTTPException(status_code=400, detail=str(lme))
+    except Exception as ex:
+        raise HTTPException(status_code=502, detail=f"Failed to communicate with Lauramac API: {str(ex)}")
+
+    true_data_obj = api_response.get("True Data", {})
+    if not true_data_obj or not isinstance(true_data_obj, dict):
+        raise HTTPException(
+            status_code=400,
+            detail=f"No 'True Data' object found in Lauramac response for Loan ID '{loan_id_input}' and Seller '{seller_name_input}'."
+        )
+
+    extracted_loan_id = str(api_response.get("Loan Id") or true_data_obj.get("LoanID") or loan_id_input).strip()
+
+    # Build mapping from Field Label -> Field Name
+    label_to_field_name = {}
+    if "Field Name" in dictionary.columns:
+        for lbl, fn in zip(dictionary.index, dictionary["Field Name"]):
+            if lbl and lbl not in label_to_field_name:
+                label_to_field_name[str(lbl).strip()] = str(fn).strip()
+
+    field_names = []
+    labels = []
+    values = []
+    loan_ids = []
+    raw_all_rows = []
+
+    excel_headers = ["Data Field", "Data Label", "True Data", "Loan ID"]
+
+    for label_key, val in true_data_obj.items():
+        clean_label = str(label_key).strip()
+        field_name = label_to_field_name.get(clean_label, clean_label)
+        val_str = str(val) if val is not None else ""
+
+        field_names.append(field_name)
+        labels.append(clean_label)
+        values.append(val)
+        loan_ids.append(extracted_loan_id)
+
+        raw_row = {
+            "Data Field": field_name,
+            "Data Label": clean_label,
+            "True Data": val_str,
+            "Loan ID": extracted_loan_id
+        }
+        raw_all_rows.append(raw_row)
+
+    if not labels:
+        raise HTTPException(status_code=400, detail="The Lauramac True Data payload does not contain any valid fields.")
+
+    try:
+        results = evaluate_rows(
+            field_names, labels, values, dictionary, loan_ids=loan_ids,
+            condition_rules=active_rules,
+            condition_module=active_module
+        )
+        stats = summarize(filename, results, labels, dictionary)
+        if "Review Required" not in stats and "Overall Review Required" in stats:
+            stats["Review Required"] = stats["Overall Review Required"]
+
+        response_records = []
+        for idx, row_res in enumerate(results):
+            raw_row = raw_all_rows[idx]
+            has_condition_text_outcome = len(row_res) >= 15
+            cond_val = row_res[8] if len(row_res) > 8 else None
+            cond_type = row_res[9] if len(row_res) > 9 else None
+            cond_rem = row_res[10] if len(row_res) > 10 else None
+            cond_text = row_res[11] if has_condition_text_outcome else None
+            cond_outcome = row_res[12] if has_condition_text_outcome else None
+            fin_res = row_res[13] if has_condition_text_outcome else (row_res[11] if len(row_res) > 11 else row_res[7])
+            fin_rem = row_res[14] if has_condition_text_outcome else (row_res[12] if len(row_res) > 12 else "")
+
+            if cond_text is not None:
+                raw_row["Condition Text"] = cond_text
+            if cond_outcome is not None:
+                raw_row["Condition Outcome"] = cond_outcome
+
+            rec = {
+                "loan_id": extracted_loan_id,
+                "data_field": field_names[idx],
+                "data_label": labels[idx],
+                "true_data": str(values[idx]) if values[idx] is not None else None,
+                "dictionary_match_status": row_res[0],
+                "data_type_validation": row_res[1],
+                "data_type_remarks": row_res[2],
+                "numeric_format_flag": row_res[3],
+                "enum_validation": row_res[4],
+                "enum_remarks": row_res[5],
+                "macro_validation_result": row_res[6],
+                "result": row_res[7],
+                "condition_validation": cond_val,
+                "condition_rule_type": cond_type,
+                "condition_remarks": cond_rem,
+                "condition_text": cond_text,
+                "condition_outcome": cond_outcome,
+                "final_result": fin_res,
+                "final_remarks": fin_rem,
+                "action": "",
+                "remark": "",
+                "raw_data": raw_row
+            }
+            for k, v in raw_row.items():
+                if k not in rec:
+                    rec[k] = v
+            response_records.append(rec)
+
+        log_event(
+            "INFO",
+            "API_INGESTION_SUCCESS",
+            f"Successfully validated API loan {extracted_loan_id} ({len(response_records)} records)",
+            username=username,
+            email=email
+        )
+
+        return {
+            "filename": filename,
+            "loan_id": extracted_loan_id,
+            "headers": excel_headers,
+            "summary": stats,
+            "records": response_records,
+            "ingestion_folder": str(active_folder)
+        }
+
+    except Exception as e:
+        log_event("ERROR", "API_INGESTION_ERROR", str(e), username=username, email=email)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/save")
 def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_user_id)):

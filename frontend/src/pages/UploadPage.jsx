@@ -32,6 +32,16 @@ const UploadPage = () => {
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
   const [selectedSuperAdminMode, setSelectedSuperAdminMode] = useState('pre-underwrite');
 
+  // Ingestion Source Tab: 'file' | 'api'
+  const [ingestionTab, setIngestionTab] = useState('file');
+
+  // API Ingestion Form State
+  const [apiLoanId, setApiLoanId] = useState('');
+  const [apiSellerName, setApiSellerName] = useState('');
+  const [apiMode, setApiMode] = useState('pre-underwrite');
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+
   const isSuperAdmin = useMemo(() => {
     const r = (user?.role || '').trim().toLowerCase();
     return r === 'super admin' || r === 'super_admin' || r === 'admin';
@@ -43,11 +53,11 @@ const UploadPage = () => {
     return 'pre-underwrite';
   }, [user]);
 
-  const modeBadgeText = useMemo(() => {
-    if (isSuperAdmin) return 'Mode: Prompted per upload (Pre-UW or Junior-UW)';
-    if (defaultRoleMode === 'junior-underwrite') return 'Ingestion Mode: Junior-Underwriter';
-    return 'Ingestion Mode: Pre-Underwriter';
-  }, [isSuperAdmin, defaultRoleMode]);
+  // const modeBadgeText = useMemo(() => {
+  //   if (isSuperAdmin) return 'Mode: Prompted per upload (Pre-UW or Junior-UW)';
+  //   if (defaultRoleMode === 'junior-underwrite') return 'Ingestion Mode: Junior-Underwriter';
+  //   return 'Ingestion Mode: Pre-Underwriter';
+  // }, [isSuperAdmin, defaultRoleMode]);
 
   // Validation Results State
   const [validationData, setValidationData] = useState(null); // { filename, summary, records, packageId }
@@ -295,6 +305,120 @@ const UploadPage = () => {
     }
   };
 
+  const handleApiFetch = async (e) => {
+    if (e) e.preventDefault();
+    const cleanLoanId = (apiLoanId || '').trim();
+    const cleanSellerName = (apiSellerName || '').trim();
+
+    if (!cleanLoanId) {
+      const errMsg = 'Please enter a valid Loan ID.';
+      setApiError(errMsg);
+      notify.error(errMsg);
+      return;
+    }
+    if (!cleanSellerName) {
+      const errMsg = 'Please enter a valid Seller Name.';
+      setApiError(errMsg);
+      notify.error(errMsg);
+      return;
+    }
+
+    setApiError('');
+    setError('');
+    setSuccess('');
+    setApiLoading(true);
+    setValidationData(null);
+    setIsDirty(false);
+    setModalSuccess('');
+    setModalError('');
+
+    const activeMode = isSuperAdmin ? apiMode : defaultRoleMode;
+
+    // Progress Modal
+    setIsProgressModalOpen(true);
+    setUploadProgress(10);
+    setProgressStatus('Authenticating with Lauramac LM API...');
+    setProgressError('');
+
+    let progressVal = 10;
+    const progressTimer = setInterval(() => {
+      progressVal += Math.floor(Math.random() * 6) + 3;
+      if (progressVal >= 90) {
+        progressVal = 90;
+        clearInterval(progressTimer);
+      }
+      setUploadProgress(progressVal);
+
+      if (progressVal < 30) {
+        setProgressStatus('Authenticating & requesting True Data from Lauramac API...');
+      } else if (progressVal < 65) {
+        setProgressStatus('Super matching True Data against Data Dictionary...');
+      } else {
+        setProgressStatus('Evaluating Condition rules and macro checks...');
+      }
+    }, 150);
+
+    try {
+      const data = await loanService.fetchAndValidateLoan(cleanLoanId, cleanSellerName, activeMode);
+
+      const recordsWithIds = (data.records || []).map((rec, idx) => ({
+        ...rec,
+        _id: rec.id || `rec_${idx}`,
+        action: rec.action || '',
+        remark: rec.remark || ''
+      }));
+
+      const packageLoanId = data.loan_id || cleanLoanId;
+
+      // Automatically save loan package to database
+      const saveRes = await loanService.savePackage(
+        data.filename,
+        data.summary,
+        recordsWithIds,
+        packageLoanId,
+        data.ingestion_mode || activeMode
+      );
+
+      const packageId = saveRes.package_id;
+      const savedRecords = (saveRes.records && saveRes.records.length > 0)
+        ? saveRes.records.map((rec, idx) => ({
+          ...rec,
+          _id: rec.id || `rec_${idx}`,
+          action: rec.action || '',
+          remark: rec.remark || ''
+        }))
+        : recordsWithIds;
+
+      clearInterval(progressTimer);
+      setUploadProgress(100);
+      setProgressStatus('API Validation Completed!');
+
+      setValidationData({ ...data, loan_id: packageLoanId, records: savedRecords, packageId });
+
+      setTimeout(() => {
+        setIsProgressModalOpen(false);
+        setIsModalOpen(true);
+        setActiveSheet('results');
+        setShowAll(false);
+        const msg = `Successfully fetched, validated and saved API package "${data.filename}" to database.`;
+        setSuccess(msg);
+        notify.success(msg);
+      }, 600);
+    } catch (err) {
+      clearInterval(progressTimer);
+      setIsProgressModalOpen(false);
+      setProgressError('');
+      setUploadProgress(0);
+      setProgressStatus('');
+      const errMsg = err.message || 'Failed to fetch and validate loan from Lauramac API.';
+      setApiError(errMsg);
+      setError(errMsg);
+      notify.error(errMsg);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!validationData || !validationData.packageId) return;
     setSaveLoading(true);
@@ -390,7 +514,7 @@ const UploadPage = () => {
     if (showAll) {
       return validationData.records;
     }
-    return validationData.records.filter(r => 
+    return validationData.records.filter(r =>
       (r.final_result && (r.final_result.startsWith('Invalid') || r.final_result.includes('Review Required'))) ||
       (r.result && r.result.startsWith('Invalid'))
     );
@@ -744,8 +868,8 @@ const UploadPage = () => {
     );
 
     // Ensure no duplicate or raw condition_text/condition_outcome columns
-    return cols.filter(c => 
-      c.header !== 'condition_text' && 
+    return cols.filter(c =>
+      c.header !== 'condition_text' &&
       c.header !== 'condition_outcome' &&
       !(c.category === 'Excel Column' && (c.accessor === 'Condition Text' || c.accessor === 'Condition Outcome'))
     );
@@ -831,77 +955,257 @@ const UploadPage = () => {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col pt-[60px]">
       <Header />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header Section */}
-        <div className="text-center space-y-4 mb-10">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Validate Loan Packages
-          </h1>
-          <p className="max-w-2xl mx-auto text-slate-500 text-sm">
-            Upload your loan package Excel workbook. The system will perform detailed field-level type checking, enum verification, and cross-field macro business rules against the data dictionary.
-          </p>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Ingest Loan Packages
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Upload loan packages via spreadsheet or fetch directly from the Lauramac LM API for rule validation.
+            </p>
+          </div>
+          {/* <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 shadow-2xs self-start sm:self-auto shrink-0">
+            <span className={`w-2 h-2 rounded-full ${isSuperAdmin ? 'bg-purple-500' : 'bg-emerald-500'}`}></span>
+            <span>{modeBadgeText}</span>
+          </div> */}
         </div>
 
-        {/* Drag & Drop Area */}
-        <div
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-300 ${dragActive
-            ? 'border-[#24A1DD] bg-[#24A1DD]/5 scale-[1.01]'
-            : 'border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50/50'
-            }`}
-        >
-          <input
-            type="file"
-            accept=".xlsx, .xls, .xlsm"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            disabled={loading}
-          />
-
-          <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-6">
-            {loading ? (
-              <UploadSkeleton />
-            ) : (
-              <>
-                <div className="w-20 h-20 bg-[#24A1DD]/10 border border-[#24A1DD]/30 rounded-2xl flex items-center justify-center text-[#24A1DD] shadow-inner transition-transform duration-300 group-hover:scale-105">
-                  <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-slate-800">
-                    {file ? file.name : 'Select or drag your loan package'}
-                  </h3>
-                  <p className="text-sm text-slate-500">
-                    Supports Microsoft Excel formats (.xlsx, .xls, .xlsm)
-                  </p>
-                </div>
-
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-slate-50 border-slate-200 text-slate-600 shadow-2xs">
-                  <span className={`w-2 h-2 rounded-full ${isSuperAdmin ? 'bg-purple-500' : 'bg-emerald-500'} animate-pulse`}></span>
-                  <span>{modeBadgeText}</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  className="px-6 py-3 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-2xl shadow-lg shadow-[#24A1DD]/20 transition-all active:scale-95"
-                >
-                  Browse File
-                </button>
-              </>
-            )}
+        {/* Ingestion Source Switcher Tabs */}
+        <div className="flex items-center gap-2 mb-6">
+          <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200">
+            <button
+              type="button"
+              onClick={() => {
+                setIngestionTab('file');
+                setApiError('');
+                setError('');
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${ingestionTab === 'file'
+                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Direct File Upload</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIngestionTab('api');
+                setApiError('');
+                setError('');
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${ingestionTab === 'api'
+                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Truedata via API</span>
+            </button>
           </div>
         </div>
+
+        {/* Option 1: File Upload */}
+        {ingestionTab === 'file' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200 ${dragActive
+                ? 'border-[#24A1DD] bg-[#24A1DD]/5'
+                : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                }`}
+            >
+              <input
+                type="file"
+                accept=".xlsx, .xls, .xlsm"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                disabled={loading}
+              />
+
+              <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-4">
+                {loading ? (
+                  <UploadSkeleton />
+                ) : (
+                  <>
+                    <div className="w-12 h-12 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 shadow-2xs">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {file ? file.name : 'Choose an Excel package or drag and drop'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Supports Microsoft Excel workbooks (.xlsx, .xls, .xlsm)
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-all cursor-pointer"
+                    >
+                      Browse File
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Option 2: Third-Party API Call (Lauramac) */}
+        {ingestionTab === 'api' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 mb-6">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  LauramAPI Ingestion
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Fetch True Data directly from the Lauramac system and perform validation.
+                </p>
+              </div>
+            </div>
+
+            {apiError && (
+              <div className="mb-6 p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-3">
+                <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1 font-medium">{apiError}</div>
+                <button
+                  type="button"
+                  onClick={() => setApiError('')}
+                  className="text-rose-500 hover:text-rose-700 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleApiFetch} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Loan ID Input */}
+                <div className="space-y-1.5">
+                  <label htmlFor="api-loan-id" className="block text-xs font-semibold text-slate-700">
+                    Loan ID <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    id="api-loan-id"
+                    type="text"
+                    value={apiLoanId}
+                    onChange={(e) => {
+                      setApiLoanId(e.target.value);
+                      if (apiError) setApiError('');
+                    }}
+                    // placeholder="e.g. 45678101"
+                    disabled={apiLoading}
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#24A1DD] focus:border-[#24A1DD] shadow-2xs font-mono transition-all disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Seller Name Input */}
+                <div className="space-y-1.5">
+                  <label htmlFor="api-seller-name" className="block text-xs font-semibold text-slate-700">
+                    Seller Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    id="api-seller-name"
+                    type="text"
+                    value={apiSellerName}
+                    onChange={(e) => {
+                      setApiSellerName(e.target.value);
+                      if (apiError) setApiError('');
+                    }}
+                    // placeholder="Test Seller 2"
+                    disabled={apiLoading}
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#24A1DD] focus:border-[#24A1DD] shadow-2xs transition-all disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Super Admin Mode Selector */}
+              {isSuperAdmin && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                  <span className="block text-xs font-semibold text-slate-700">
+                    Ingestion Mode (Super Admin):
+                  </span>
+                  <div className="flex flex-wrap gap-5 pt-0.5">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                      <input
+                        type="radio"
+                        name="apiSuperAdminMode"
+                        value="pre-underwrite"
+                        checked={apiMode === 'pre-underwrite'}
+                        onChange={() => setApiMode('pre-underwrite')}
+                        className="text-[#24A1DD] focus:ring-[#24A1DD] cursor-pointer"
+                      />
+                      <span>Pre-Underwriter</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                      <input
+                        type="radio"
+                        name="apiSuperAdminMode"
+                        value="junior-underwrite"
+                        checked={apiMode === 'junior-underwrite'}
+                        onChange={() => setApiMode('junior-underwrite')}
+                        className="text-[#24A1DD] focus:ring-[#24A1DD] cursor-pointer"
+                      />
+                      <span>Junior-Underwriter</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-4 flex justify-end border-t border-slate-100">
+                <button
+                  type="submit"
+                  disabled={apiLoading || loading || !apiLoanId.trim() || !apiSellerName.trim()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#24A1DD] hover:bg-[#1e88bb] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-lg shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  {apiLoading ? (
+                    <>
+                      <svg className="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Fetching & Validating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                      <span>Fetch & Validate Loan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </main>
 
       {/* Validation Results Full-Screen Modal */}
@@ -1234,12 +1538,16 @@ const UploadPage = () => {
       {/* 100% Validation Progress Loader Modal */}
       <ValidationProgressModal
         isOpen={isProgressModalOpen}
-        fileName={file?.name}
-        fileSize={file?.size}
+        fileName={ingestionTab === 'api' ? (apiLoanId ? `Loan ID: ${apiLoanId}` : 'Lauramac LM API') : file?.name}
+        fileSize={ingestionTab === 'api' ? null : file?.size}
+        title={ingestionTab === 'api' ? 'Lauramac API Validation' : undefined}
         progress={uploadProgress}
         status={progressStatus}
         error={progressError}
-        onClose={() => setIsProgressModalOpen(false)}
+        onClose={() => {
+          setIsProgressModalOpen(false);
+          setProgressError('');
+        }}
       />
 
       {/* Manage Columns Modal */}
@@ -1262,32 +1570,31 @@ const UploadPage = () => {
 
       {/* Super Admin Ingestion Mode Selection Modal */}
       {isModeModalOpen && pendingFile && (
-        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-fade-in">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50/60">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden animate-fade-in">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold text-slate-900">Select Ingestion Mode</h3>
+                <h3 className="text-sm font-semibold text-slate-900">Select Ingestion Mode</h3>
                 <p className="text-xs text-slate-500 truncate">File: {pendingFile.name}</p>
               </div>
             </div>
 
-            <div className="p-6 space-y-3.5">
+            <div className="p-5 space-y-3">
               <p className="text-xs text-slate-600">
-                As a <strong>Super Admin</strong>, please select the underwriter condition rules to apply for validating this package:
+                Select the underwriter condition rules to apply for validating this package:
               </p>
 
               <label
                 onClick={() => setSelectedSuperAdminMode('pre-underwrite')}
-                className={`flex items-start gap-3.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                  selectedSuperAdminMode === 'pre-underwrite'
-                    ? 'border-[#24A1DD] bg-[#24A1DD]/5 shadow-xs'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedSuperAdminMode === 'pre-underwrite'
+                  ? 'border-[#24A1DD] bg-[#24A1DD]/5'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
               >
                 <input
                   type="radio"
@@ -1295,16 +1602,16 @@ const UploadPage = () => {
                   value="pre-underwrite"
                   checked={selectedSuperAdminMode === 'pre-underwrite'}
                   onChange={() => setSelectedSuperAdminMode('pre-underwrite')}
-                  className="mt-1 text-[#24A1DD] focus:ring-[#24A1DD]"
+                  className="mt-0.5 text-[#24A1DD] focus:ring-[#24A1DD]"
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-800">Pre-Underwriter Mode</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200/60">
+                    <span className="text-xs font-semibold text-slate-900">Pre-Underwriter Mode</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                       Pre-UW
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     Validates against Pre-Underwriter conditions and business guidelines.
                   </p>
                 </div>
@@ -1312,11 +1619,10 @@ const UploadPage = () => {
 
               <label
                 onClick={() => setSelectedSuperAdminMode('junior-underwrite')}
-                className={`flex items-start gap-3.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                  selectedSuperAdminMode === 'junior-underwrite'
-                    ? 'border-indigo-600 bg-indigo-50/20 shadow-xs'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedSuperAdminMode === 'junior-underwrite'
+                  ? 'border-[#24A1DD] bg-[#24A1DD]/5'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
               >
                 <input
                   type="radio"
@@ -1324,23 +1630,23 @@ const UploadPage = () => {
                   value="junior-underwrite"
                   checked={selectedSuperAdminMode === 'junior-underwrite'}
                   onChange={() => setSelectedSuperAdminMode('junior-underwrite')}
-                  className="mt-1 text-indigo-600 focus:ring-indigo-600"
+                  className="mt-0.5 text-[#24A1DD] focus:ring-[#24A1DD]"
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-800">Junior-Underwriter Mode</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+                    <span className="text-xs font-semibold text-slate-900">Junior-Underwriter Mode</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                       Junior-UW
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     Validates against Junior-Underwriter conditions and business guidelines.
                   </p>
                 </div>
               </label>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -1348,14 +1654,14 @@ const UploadPage = () => {
                   setPendingFile(null);
                   if (fileInputRef.current) fileInputRef.current.value = '';
                 }}
-                className="px-4 py-2 border border-slate-200 hover:bg-white text-slate-700 font-semibold rounded-xl text-xs transition-all cursor-pointer"
+                className="px-3.5 py-1.5 border border-slate-300 hover:bg-white text-slate-700 font-medium rounded-lg text-xs transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmModeSelection}
-                className="px-5 py-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-semibold rounded-xl text-xs shadow-md shadow-[#24A1DD]/20 transition-all cursor-pointer"
+                className="px-4 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-medium rounded-lg text-xs shadow-2xs transition-all cursor-pointer"
               >
                 Continue with Ingestion
               </button>

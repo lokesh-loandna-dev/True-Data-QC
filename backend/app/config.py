@@ -16,3 +16,8 @@ EMAIL_USER = (os.getenv("EMAIL_USER") or "").strip("\"' ")
 EMAIL_PASS = (os.getenv("EMAIL_PASS") or "").strip("\"' ")
 SMTP_SERVER = (os.getenv("SMTP_SERVER") or "smtp.office365.com").strip("\"' ")
 SMTP_PORT = int(os.getenv("SMTP_PORT") or 587)
+
+# Lauramac API Configuration
+LAURAMAC_BASE_URL = (os.getenv("LAURAMAC_BASE_URL") or "https://ca.uat.lauramac.io").strip("\"' ").rstrip("/")
+LAURAMAC_USERNAME = (os.getenv("LAURAMAC_USERNAME") or "").strip("\"' ")
+LAURAMAC_PASSWORD = (os.getenv("LAURAMAC_PASSWORD") or "").strip("\"' ")
