@@ -337,7 +337,7 @@ const UploadPage = () => {
     // Progress Modal
     setIsProgressModalOpen(true);
     setUploadProgress(10);
-    setProgressStatus('Authenticating with Lauramac LM API...');
+    setProgressStatus('Authenticating with API...');
     setProgressError('');
 
     let progressVal = 10;
@@ -350,7 +350,7 @@ const UploadPage = () => {
       setUploadProgress(progressVal);
 
       if (progressVal < 30) {
-        setProgressStatus('Authenticating & requesting True Data from Lauramac API...');
+        setProgressStatus('Authenticating & requesting True Data via API...');
       } else if (progressVal < 65) {
         setProgressStatus('Super matching True Data against Data Dictionary...');
       } else {
@@ -410,7 +410,7 @@ const UploadPage = () => {
       setProgressError('');
       setUploadProgress(0);
       setProgressStatus('');
-      const errMsg = err.message || 'Failed to fetch and validate loan from Lauramac API.';
+      const errMsg = err.message || 'Failed to fetch and validate loan via API Ingestion.';
       setApiError(errMsg);
       setError(errMsg);
       notify.error(errMsg);
@@ -963,7 +963,7 @@ const UploadPage = () => {
               Ingest Loan Packages
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Upload loan packages via spreadsheet or fetch directly from the Lauramac LM API for rule validation.
+              Upload loan packages via spreadsheet or fetch directly via API Ingestion for rule validation.
             </p>
           </div>
           {/* <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 shadow-2xs self-start sm:self-auto shrink-0">
@@ -1072,16 +1072,16 @@ const UploadPage = () => {
           </div>
         )}
 
-        {/* Option 2: Third-Party API Call (Lauramac) */}
+        {/* Option 2: Third-Party API Call */}
         {ingestionTab === 'api' && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 mb-6">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">
-                  LauramAPI Ingestion
+                  API Ingestion
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Fetch True Data directly from the Lauramac system and perform validation.
+                  Fetch True Data directly via external API and perform validation.
                 </p>
               </div>
             </div>
@@ -1538,9 +1538,9 @@ const UploadPage = () => {
       {/* 100% Validation Progress Loader Modal */}
       <ValidationProgressModal
         isOpen={isProgressModalOpen}
-        fileName={ingestionTab === 'api' ? (apiLoanId ? `Loan ID: ${apiLoanId}` : 'Lauramac LM API') : file?.name}
+        fileName={ingestionTab === 'api' ? (apiLoanId ? `Loan ID: ${apiLoanId}` : 'API Ingestion') : file?.name}
         fileSize={ingestionTab === 'api' ? null : file?.size}
-        title={ingestionTab === 'api' ? 'Lauramac API Validation' : undefined}
+        title={ingestionTab === 'api' ? 'API Ingestion Validation' : undefined}
         progress={uploadProgress}
         status={progressStatus}
         error={progressError}
