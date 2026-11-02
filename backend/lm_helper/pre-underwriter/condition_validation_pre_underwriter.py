@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.12.0"
+__version__ = "5.14.0"
 
 import logging
 import re
@@ -763,6 +763,40 @@ def parse_clause(rule: Rule) -> Rule:
                            "ref_field": target.group(1).strip(),
                            "negate": negated}
             return rule
+
+    # --- a percentage of another field's value ------------------------------
+    # 'It should be "80%" of "Maximum Line of Credit" field in "Note" Screen'
+    # Without this the clause parsed as ALWAYS_EQUALS expecting the literal
+    # text "80%", so it failed on every loan.
+    percent_of = re.search(
+        r"(?i)(?:should|must)\s+be\s*\"?\s*([0-9]+(?:\.[0-9]+)?)\s*"
+        r"(?:%|percent)\s*\"?\s*of\s+(?:the\s+)?\"([^\"]+)\"", text)
+    if percent_of and not lower.startswith("if"):
+        rule.family = "PERCENT_OF_FIELD"
+        rule.params = {"percent": float(percent_of.group(1)),
+                       "ref_field": percent_of.group(2).strip()}
+        return rule
+
+    # --- oldest among every date field in the file --------------------------
+    # "This Date should be the oldest among all fields whose name contains
+    #  \"Date\", excluding any field whose name contains \"Birthdate\",
+    #  \"Date of Resident Since\" or \"Valid Date\""
+    #
+    # Replicates the VB macro exactly: the candidate set is every field in
+    # THIS loan file whose name contains "date", the exclusions are
+    # case-insensitive SUBSTRING tests on the field name, and the first
+    # earlier field found is reported.
+    oldest = re.search(
+        r"(?i)(?:should|must)\s+be\s+the\s+oldest\s+among\s+all\s+"
+        r"(?:fields|date\s+fields)", text)
+    if oldest and not lower.startswith("if"):
+        excluded = []
+        tail = re.search(r"(?i)\bexclud(?:e|ing)\b(.*)$", text)
+        if tail:
+            excluded = [t for t in _quoted(tail.group(1)) if t.strip()]
+        rule.family = "OLDEST_AMONG_DATES"
+        rule.params = {"exclude": excluded}
+        return rule
 
     # --- 1st day of the Nth or Mth month after another date -----------------
     # "This should be the 1st day of either the 1st or 2nd month after the
@@ -1898,6 +1932,66 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             return "Valid", f"Age {age} meets the {params['years']}-year minimum."
         return "Invalid", (f"Age {age} is below the required minimum of "
                            f"{params['years']} years (born {born:%m/%d/%Y}).")
+
+    if family == "PERCENT_OF_FIELD":
+        if _is_blank_value(value):
+            return "N/A - blank value", ""
+        name, other = index.resolve(params["ref_field"], rule.field)
+        if name is None:
+            return "Not Automated", (
+                f"Could not locate the referenced field "
+                f"{params['ref_field']!r} in this file.")
+        if _is_blank_value(other):
+            return "N/A - condition not met", (
+                f"{name!r} is blank, so the expected amount cannot be "
+                f"calculated.")
+        actual = _numeric_value(value)
+        basis = _numeric_value(other)
+        if actual is None:
+            return "Invalid", f"Value {str(value)!r} is not numeric."
+        if basis is None:
+            return "Not Automated", (
+                f"{name!r} = {str(other)!r} is not numeric, so the expected "
+                f"amount cannot be calculated.")
+        expected = basis * params["percent"] / 100.0
+        # Compared to the nearest dollar: currency rounding upstream means an
+        # exact match would fail on values such as 240000.004.
+        if round(actual) == round(expected):
+            return "Valid", (f"{actual:,.2f} is {params['percent']:g}% of "
+                             f"{name!r} ({basis:,.2f}).")
+        return "Invalid", (
+            f"Expected {expected:,.2f} ({params['percent']:g}% of {name!r} "
+            f"= {basis:,.2f}), found {actual:,.2f}.")
+
+    if family == "OLDEST_AMONG_DATES":
+        if _is_blank_value(value):
+            return "N/A - blank value", ""
+        this_date, why = _parse_date_for_rule(value)
+        if this_date is None:
+            return "Invalid", f"Not a valid date: {why}"
+
+        patterns = [p.lower() for p in (params.get("exclude") or [])]
+        own = _norm(rule.field)
+        for name in index.names:
+            lower_name = name.lower()
+            if "date" not in lower_name:
+                continue
+            if _norm(name) == own:
+                continue
+            if any(p in lower_name for p in patterns):
+                continue
+            other = index.exact(name)
+            if _is_blank_value(other):
+                continue
+            other_date, _why = _parse_date_for_rule(other)
+            # Unreadable dates are skipped, exactly as the macro does.
+            if other_date is None or other_date >= this_date:
+                continue
+            # Report the first earlier field and stop, matching the macro.
+            return "Invalid", (f"Date is not older than {name} "
+                               f"({other_date:%m/%d/%Y})")
+        return "Valid", (f"{this_date:%m/%d/%Y} is the oldest date field "
+                         f"in this file.")
 
     if family == "DATE_MONTH_WINDOW":
         if _is_blank_value(value):

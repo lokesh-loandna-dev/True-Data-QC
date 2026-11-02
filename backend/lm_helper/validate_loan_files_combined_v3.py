@@ -47,9 +47,9 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.12.0"
+__version__ = "5.14.0"
 
-REQUIRED_CONDITION_VERSION = "5.12.0"
+REQUIRED_CONDITION_VERSION = "5.14.0"
 
 try:
     import condition_validation_pre_underwriter as conditions
@@ -62,7 +62,10 @@ except ImportError:
             sys.path.insert(0, str(_pre_dir))
         import condition_validation_pre_underwriter as conditions
     except ImportError:
-        conditions = None
+        try:
+            import condition_validation as conditions
+        except ImportError:
+            conditions = None
 
 
 def check_condition_module_version() -> bool:
