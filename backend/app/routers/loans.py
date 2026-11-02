@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -41,6 +41,18 @@ router = APIRouter(
 def _is_deadlock(exc: Exception) -> bool:
     s = str(exc)
     return "1205" in s or "deadlock" in s.lower()
+
+_has_ingestion_mode_column = None
+
+def _check_has_ingestion_mode_col(conn) -> bool:
+    global _has_ingestion_mode_column
+    if not _has_ingestion_mode_column:
+        try:
+            res = conn.execute(text("SELECT COL_LENGTH('loan_packages', 'ingestion_mode')")).scalar()
+            _has_ingestion_mode_column = bool(res is not None)
+        except Exception:
+            _has_ingestion_mode_column = False
+    return _has_ingestion_mode_column
 
 def _retry_on_deadlock(fn, max_retries: int = 3):
     for attempt in range(max_retries):
@@ -213,6 +225,7 @@ class LoanApiFetchRequest(BaseModel):
 @router.post("/validate")
 def validate_loan_file(
     file: UploadFile = File(...),
+    mode: Optional[str] = Form(None),
     user_id: int = Depends(get_current_user_id)
 ):
     if not file.filename.endswith(('.xlsx', '.xls', '.xlsm')):
@@ -228,14 +241,33 @@ def validate_loan_file(
         username = user_data.get("username", "N/A")
         email = user_data.get("email", "N/A")
 
-        if "junior" in user_role_lower:
+        req_mode = str(mode or "").strip().lower()
+        is_super = is_super_admin(raw_role)
+        is_admin = is_any_admin(raw_role) or ("admin" in user_role_lower)
+
+        if (is_super or is_admin) and req_mode:
+            if "junior" in req_mode:
+                active_spec = JUNIOR_SPEC_PATH
+                active_rules = JUNIOR_UW_RULES
+                role_label = "Junior Underwriter"
+                ingestion_mode = "junior-underwrite"
+            else:
+                active_spec = PRE_SPEC_PATH
+                active_rules = PRE_UW_RULES
+                role_label = "Pre Underwriter"
+                ingestion_mode = "pre-underwrite"
+        elif "junior" in user_role_lower:
             active_spec = JUNIOR_SPEC_PATH
             active_rules = JUNIOR_UW_RULES
             role_label = "Junior Underwriter"
+            ingestion_mode = "junior-underwrite"
         else:
             active_spec = PRE_SPEC_PATH
             active_rules = PRE_UW_RULES
             role_label = "Pre Underwriter"
+            ingestion_mode = "pre-underwrite"
+
+        active_folder = LM_HELPER_DIR
 
         # In logs mark it when spec profile being used for ingestion
         ingestion_msg = f"[INGESTION] Active Spec: {active_spec.name} | Mode: {role_label} | File: {file.filename} | User: {username} (Role: {raw_role})"
@@ -403,7 +435,10 @@ def validate_loan_file(
             "headers": excel_headers,
             "summary": stats,
             "records": response_records,
-            "ingestion_folder": str(active_folder)
+            "ingestion_folder": str(active_folder),
+            "ingestion_mode": ingestion_mode,
+            "active_spec": active_spec.name,
+            "role_label": role_label
         }
 
     except Exception as e:
@@ -430,32 +465,38 @@ def fetch_and_validate_loan_api(
     email = user_data.get("email", "N/A")
 
     req_mode = (body.mode or "").strip().lower()
-    is_admin = "admin" in user_role_lower
+    is_super = is_super_admin(raw_role)
+    is_admin = is_any_admin(raw_role) or ("admin" in user_role_lower)
 
-    if is_admin and req_mode:
+    if (is_super or is_admin) and req_mode:
         if "junior" in req_mode:
             active_spec = JUNIOR_SPEC_PATH
             active_rules = JUNIOR_UW_RULES
             role_label = "Junior Underwriter"
+            ingestion_mode = "junior-underwrite"
         else:
             active_spec = PRE_SPEC_PATH
             active_rules = PRE_UW_RULES
             role_label = "Pre Underwriter"
+            ingestion_mode = "pre-underwrite"
     elif "junior" in user_role_lower:
         active_spec = JUNIOR_SPEC_PATH
         active_rules = JUNIOR_UW_RULES
         role_label = "Junior Underwriter"
+        ingestion_mode = "junior-underwrite"
     else:
         active_spec = PRE_SPEC_PATH
         active_rules = PRE_UW_RULES
         role_label = "Pre Underwriter"
+        ingestion_mode = "pre-underwrite"
 
+    active_folder = LM_HELPER_DIR
     clean_seller = re.sub(r'[\\/*?:"<>|]', "", seller_name_input)
     clean_loan_id = re.sub(r'[\\/*?:"<>|]', "", loan_id_input)
     now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"Loan_{clean_loan_id}_{clean_seller}_{now_str}.json"
 
-    ingestion_msg = f"[API INGESTION] Active Folder: {active_folder} | Mode: {role_label} | LoanId: {clean_loan_id} | Seller: {clean_seller} | User: {username} (Role: {raw_role})"
+    ingestion_msg = f"[API INGESTION] Active Spec: {active_spec.name} | Mode: {role_label} | LoanId: {clean_loan_id} | Seller: {clean_seller} | User: {username} (Role: {raw_role})"
     print(ingestion_msg)
     log_event("INFO", "API_INGESTION_START", ingestion_msg, username=username, email=email)
 
@@ -589,7 +630,10 @@ def fetch_and_validate_loan_api(
             "headers": excel_headers,
             "summary": stats,
             "records": response_records,
-            "ingestion_folder": str(active_folder)
+            "ingestion_folder": str(active_folder),
+            "ingestion_mode": ingestion_mode,
+            "active_spec": active_spec.name,
+            "role_label": role_label
         }
 
     except Exception as e:
@@ -625,21 +669,16 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                     loan_id_val = str(r.loan_id).strip()
                     break
 
-        insert_package_sql = text("""
-        INSERT INTO loan_packages (
-            filename, loan_id, user_id, uploaded_at, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
-            total_enum, enum_pass, enum_format_variance, enum_fail, enum_no_list,
-            numeric_format_flagged, total_macro, macro_valid, macro_invalid,
-            final_valid, final_invalid, final_blank, review_required
-        )
-        OUTPUT INSERTED.id
-        VALUES (
-            :filename, :loan_id, :user_id, SYSUTCDATETIME(), :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
-            :total_enum, :enum_pass, :enum_format_variance, :enum_fail, :enum_no_list,
-            :numeric_format_flagged, :total_macro, :macro_valid, :macro_invalid,
-            :final_valid, :final_invalid, :final_blank, :review_required
-        )
-        """)
+        # Determine ingestion mode label to store
+        raw_ingestion_mode = str(body.ingestion_mode or "").strip().lower()
+        if not raw_ingestion_mode:
+            user_data = get_user_by_id(user_id) or {}
+            raw_role = str(user_data.get("role") or "").strip().lower()
+            stored_mode = "Junior Underwriter" if "junior" in raw_role else "Pre Underwriter"
+        elif "junior" in raw_ingestion_mode:
+            stored_mode = "Junior Underwriter"
+        else:
+            stored_mode = "Pre Underwriter"
 
         summary_dict = body.summary
         params = {
@@ -690,7 +729,43 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
 
         def _do_save():
             with engine.begin() as conn:
-                pkg_id = conn.execute(insert_package_sql, params).scalar()
+                has_mode_col = _check_has_ingestion_mode_col(conn)
+                if has_mode_col:
+                    insert_package_sql = text("""
+                    INSERT INTO loan_packages (
+                        filename, loan_id, user_id, uploaded_at, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
+                        total_enum, enum_pass, enum_format_variance, enum_fail, enum_no_list,
+                        numeric_format_flagged, total_macro, macro_valid, macro_invalid,
+                        final_valid, final_invalid, final_blank, review_required, ingestion_mode
+                    )
+                    OUTPUT INSERTED.id
+                    VALUES (
+                        :filename, :loan_id, :user_id, SYSUTCDATETIME(), :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
+                        :total_enum, :enum_pass, :enum_format_variance, :enum_fail, :enum_no_list,
+                        :numeric_format_flagged, :total_macro, :macro_valid, :macro_invalid,
+                        :final_valid, :final_invalid, :final_blank, :review_required, :ingestion_mode
+                    )
+                    """)
+                    pkg_params = {**params, "ingestion_mode": stored_mode}
+                else:
+                    insert_package_sql = text("""
+                    INSERT INTO loan_packages (
+                        filename, loan_id, user_id, uploaded_at, total_fields, matched, unmatched, type_pass, type_fail, blank_values,
+                        total_enum, enum_pass, enum_format_variance, enum_fail, enum_no_list,
+                        numeric_format_flagged, total_macro, macro_valid, macro_invalid,
+                        final_valid, final_invalid, final_blank, review_required
+                    )
+                    OUTPUT INSERTED.id
+                    VALUES (
+                        :filename, :loan_id, :user_id, SYSUTCDATETIME(), :total_fields, :matched, :unmatched, :type_pass, :type_fail, :blank_values,
+                        :total_enum, :enum_pass, :enum_format_variance, :enum_fail, :enum_no_list,
+                        :numeric_format_flagged, :total_macro, :macro_valid, :macro_invalid,
+                        :final_valid, :final_invalid, :final_blank, :review_required
+                    )
+                    """)
+                    pkg_params = params
+
+                pkg_id = conn.execute(insert_package_sql, pkg_params).scalar()
 
                 # Bulk insert records in chunks
                 chunk_size = 1000
@@ -699,6 +774,7 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                     record_params = []
                     for r in chunk:
                         raw_dict = dict(r.raw_data) if isinstance(r.raw_data, dict) else {}
+                        raw_dict["ingestion_mode"] = stored_mode
                         if r.condition_text is not None and "Condition Text" not in raw_dict:
                             raw_dict["Condition Text"] = r.condition_text
                         if r.condition_outcome is not None and "Condition Outcome" not in raw_dict:
@@ -766,7 +842,7 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                         rd[k] = v
             saved_records.append(rd)
 
-        return {"status": "success", "package_id": package_id, "records": saved_records}
+        return {"status": "success", "package_id": package_id, "ingestion_mode": stored_mode, "records": saved_records}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -853,6 +929,36 @@ def get_saved_packages(user_id: int = Depends(get_current_user_id)):
                 if p.get("uploaded_at"):
                     p["uploaded_at"] = _format_utc_iso(p["uploaded_at"])
                 packages.append(p)
+
+            has_mode_col = _check_has_ingestion_mode_col(conn)
+            if not has_mode_col and packages:
+                pkg_ids = [p["id"] for p in packages if not p.get("ingestion_mode")]
+                if pkg_ids:
+                    id_list = ",".join(str(int(pid)) for pid in pkg_ids)
+                    sample_rows = conn.execute(
+                        text(f"""
+                            SELECT package_id, raw_data 
+                            FROM loan_package_records 
+                            WHERE id IN (
+                                SELECT MIN(id) 
+                                FROM loan_package_records 
+                                WHERE package_id IN ({id_list}) 
+                                GROUP BY package_id
+                            )
+                        """)
+                    ).fetchall()
+                    mode_map = {}
+                    for r_pkg_id, r_raw in sample_rows:
+                        if r_raw:
+                            try:
+                                rd = json.loads(r_raw)
+                                if isinstance(rd, dict) and rd.get("ingestion_mode"):
+                                    mode_map[r_pkg_id] = rd.get("ingestion_mode")
+                            except Exception:
+                                pass
+                    for p in packages:
+                        if not p.get("ingestion_mode") and p["id"] in mode_map:
+                            p["ingestion_mode"] = mode_map[p["id"]]
 
         return {"status": "success", "packages": packages}
     except Exception as e:
@@ -1259,6 +1365,7 @@ def get_package_details(package_id: int, user_id: int = Depends(get_current_user
                 "uploaded_by_id": lp["user_id"],
                 "uploaded_by": lp.get("uploaded_by"),
                 "uploaded_email": lp.get("uploaded_email"),
+                "ingestion_mode": lp.get("ingestion_mode"),
             },
             "loan_id": loan_id_val,
             "uploaded_by": lp.get("uploaded_by"),
