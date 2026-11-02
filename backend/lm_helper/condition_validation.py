@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.14.0"
+__version__ = "5.15.0"
 
 import logging
 import re
@@ -45,6 +45,32 @@ log = logging.getLogger("validate.conditions")
 
 # Spec sheet columns
 SPEC_SHEET = "Sheet1"
+
+# Column layouts for the different condition workbooks. The parser, the rule
+# families and the evaluator are identical for every profile -- only the
+# column names and the form of the field identifier differ, so one engine
+# serves both rather than a forked copy per team.
+SPEC_PROFILES = {
+    "preuw": {
+        "sheet": "Data",
+        "field": "Data Field",
+        "conditions": "Conditions",
+        "source": "True Source",
+        "kind": "Direct Field/Inter Related",
+        # Field identifiers are dictionary Field NAMES.
+        "field_form": "name",
+    },
+    "jruw": {
+        "sheet": "UW - Fields",
+        "field": "Screen Field Label",
+        "conditions": "Conditions",
+        "source": None,
+        "kind": "Direct/Interrelated Field",
+        # Field identifiers are dictionary Field LABELS.
+        "field_form": "label",
+    },
+}
+DEFAULT_PROFILE = "preuw"
 SPEC_FIELD_COL = "Data Field"
 SPEC_SOURCE_COL = "True Source"
 SPEC_KIND_COL = "Direct Field/Inter Related"
@@ -271,8 +297,12 @@ def _extract_format_constraints(text: str) -> dict:
         fmt["digit_count"] = int(digits.group(1))
         fmt["only_digits"] = True
 
-    if re.search(r"(?i)numeric characters only|only numeric characters"
-                 r"|numeric value only", body):
+    # Covers "numeric characters only", "contains only numerical value" and
+    # "should contains only the numeric values". \bnumeric cannot match inside
+    # "alphanumeric", so permissive alphanumeric rules are untouched.
+    if re.search(r"(?i)\bnumeric(?:al)?\s+(?:characters?|values?)\s+only"
+                 r"|only\s+(?:the\s+)?\bnumeric(?:al)?\s*(?:characters?|values?)?"
+                 r"|\bnumeric\s+value\s+only", body):
         fmt["only_digits"] = True
 
     length = re.search(r"(?:not\s+exceed|no\s+more\s+than|maximum\s+of"
@@ -1089,7 +1119,9 @@ def parse_clause(rule: Rule) -> Rule:
             fmt["only_digits"] = True
 
         # "must contain numeric characters only" / "only numeric characters"
-        if re.search(r"(?i)numeric characters only|only numeric characters"
+        # / "contains only numerical value" / "only the numeric values"
+        if re.search(r"(?i)\bnumeric(?:al)?\s+(?:characters?|values?)\s+only"
+                     r"|only\s+(?:the\s+)?\bnumeric(?:al)?\s*(?:characters?|values?)?"
                      r"|must contain a valid numeric value", body):
             fmt["only_digits"] = True
 
@@ -1284,10 +1316,29 @@ def parse_clause(rule: Rule) -> Rule:
     return rule
 
 
-def load_rules(path) -> dict[str, list[Rule]]:
-    """Read the spec workbook and return {normalised field name: [Rule, ...]}."""
+def load_rules(path, profile=DEFAULT_PROFILE) -> dict[str, list[Rule]]:
+    """Read the spec workbook and return {normalised field key: [Rule, ...]}.
+
+    `profile` names an entry in SPEC_PROFILES, or is a mapping of the same
+    shape. The Pre-UW and Jr.UW workbooks differ only in their column names
+    and in whether the field identifier is a dictionary Field Name or Field
+    Label, so one loader serves both.
+    """
+    if isinstance(profile, str):
+        if profile not in SPEC_PROFILES:
+            raise ValueError(
+                f"Unknown spec profile {profile!r}. "
+                f"Known: {sorted(SPEC_PROFILES)}")
+        profile = SPEC_PROFILES[profile]
+
+    field_col = profile.get("field", SPEC_FIELD_COL)
+    cond_col = profile.get("conditions", SPEC_COND_COL)
+    source_col = profile.get("source", SPEC_SOURCE_COL)
+    kind_col = profile.get("kind", SPEC_KIND_COL)
+    sheet_name = profile.get("sheet", SPEC_SHEET)
+
     workbook = openpyxl.load_workbook(path, data_only=True)
-    sheet = workbook[SPEC_SHEET] if SPEC_SHEET in workbook.sheetnames \
+    sheet = workbook[sheet_name] if sheet_name in workbook.sheetnames \
         else workbook.worksheets[0]
 
     header = {}
@@ -1295,25 +1346,25 @@ def load_rules(path) -> dict[str, list[Rule]]:
         if cell.value is not None:
             header[_clean(cell.value)] = cell.column
 
-    for required in (SPEC_FIELD_COL, SPEC_COND_COL):
+    for required in (field_col, cond_col):
         if required not in header:
             raise ValueError(
-                f"Condition spec is missing column {required!r}. "
-                f"Found: {list(header)}")
+                f"Condition spec sheet {sheet.title!r} is missing column "
+                f"{required!r}. Found: {list(header)}")
 
     rules: dict[str, list[Rule]] = {}
     total = automated = 0
     for row in range(2, sheet.max_row + 1):
-        field_name = _clean(sheet.cell(row=row, column=header[SPEC_FIELD_COL]).value)
+        field_name = _clean(sheet.cell(row=row, column=header[field_col]).value)
         if not field_name:
             continue
-        condition = sheet.cell(row=row, column=header[SPEC_COND_COL]).value
+        condition = sheet.cell(row=row, column=header[cond_col]).value
         source = _clean(sheet.cell(
-            row=row, column=header[SPEC_SOURCE_COL]).value) \
-            if SPEC_SOURCE_COL in header else ""
+            row=row, column=header[source_col]).value) \
+            if source_col and source_col in header else ""
         kind = _clean(sheet.cell(
-            row=row, column=header[SPEC_KIND_COL]).value) \
-            if SPEC_KIND_COL in header else ""
+            row=row, column=header[kind_col]).value) \
+            if kind_col and kind_col in header else ""
 
         pending_guard = None
         for clause in _split_clauses(condition):
@@ -2644,13 +2695,25 @@ def _clause_verdict(status: str) -> str:
     return "N/A"
 
 
-def evaluate_conditions(field_names, values, rules):
-    """Return one (status, kind, remark) triple per sample row."""
+def evaluate_conditions(field_names, values, rules, labels=None):
+    """Return one (status, kind, remark) triple per sample row.
+
+    `labels` is the sample's Data Label column. A spec keyed on dictionary
+    Field Labels (the Jr.UW workbook) is matched against it, so the same
+    evaluator serves both field identifier forms.
+    """
     index = FieldIndex(field_names, values)
+    if labels is None:
+        labels = [None] * len(field_names)
     output = []
 
-    for name, value in zip(field_names, values):
+    for name, value, label in zip(field_names, values, labels):
         key = _norm(name)
+        if key not in rules and label:
+            # Fall back to the label form before declaring "no rule".
+            label_key = _norm(label)
+            if label_key in rules:
+                key = label_key
         applicable = rules.get(key)
         if not applicable:
             output.append(("N/A - no condition rule", "", "",

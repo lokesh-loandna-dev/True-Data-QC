@@ -52,34 +52,33 @@ def _retry_on_deadlock(fn, max_retries: int = 3):
                 continue
             raise
 
-# Paths for pre-underwriter and junior-underwriter folders
+# Paths for lm_helper and condition validation specs
 LM_HELPER_DIR = Path(__file__).resolve().parent.parent.parent / "lm_helper"
-PRE_UW_DIR = LM_HELPER_DIR / "pre-underwriter"
-JUNIOR_UW_DIR = LM_HELPER_DIR / "junior-underwriter"
+if str(LM_HELPER_DIR) not in sys.path:
+    sys.path.insert(0, str(LM_HELPER_DIR))
 
-# Ensure folders are importable
-for p in (PRE_UW_DIR, JUNIOR_UW_DIR):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+import condition_validation as cv
+cv_pre = cv
+cv_junior = cv
 
-import condition_validation_pre_underwriter as cv_pre
-import condition_Validation_junior_underwriter as cv_junior
+PRE_SPEC_PATH = LM_HELPER_DIR / "Condition_Validation_Pre_Underwriter.xlsx"
+JUNIOR_SPEC_PATH = LM_HELPER_DIR / "Condition_Validation_Junior_Underwriter.xlsx"
 
-PRE_SPEC_PATH = PRE_UW_DIR / "Condition_Validation_Pre_Underwriter.xlsx"
-JUNIOR_SPEC_PATH = JUNIOR_UW_DIR / "Condition_Validation_Junior_Underwriter.xlsx"
+PRE_UW_DIR = LM_HELPER_DIR
+JUNIOR_UW_DIR = LM_HELPER_DIR
 
-# Load rules directly on startup
+# Load rules directly on startup using unified role-based profiles
 PRE_UW_RULES = None
 if PRE_SPEC_PATH.exists():
     try:
-        PRE_UW_RULES = cv_pre.load_rules(PRE_SPEC_PATH)
+        PRE_UW_RULES = cv.load_rules(PRE_SPEC_PATH, profile="preuw")
     except Exception as e:
         print(f"Warning: Failed to load Pre-Underwriter spec: {e}")
 
 JUNIOR_UW_RULES = None
 if JUNIOR_SPEC_PATH.exists():
     try:
-        JUNIOR_UW_RULES = cv_junior.load_rules(JUNIOR_SPEC_PATH)
+        JUNIOR_UW_RULES = cv.load_rules(JUNIOR_SPEC_PATH, profile="jruw")
     except Exception as e:
         print(f"Warning: Failed to load Junior-Underwriter spec: {e}")
 
@@ -230,18 +229,16 @@ def validate_loan_file(
         email = user_data.get("email", "N/A")
 
         if "junior" in user_role_lower:
-            active_folder = JUNIOR_UW_DIR
+            active_spec = JUNIOR_SPEC_PATH
             active_rules = JUNIOR_UW_RULES
-            active_module = cv_junior
             role_label = "Junior Underwriter"
         else:
-            active_folder = PRE_UW_DIR
+            active_spec = PRE_SPEC_PATH
             active_rules = PRE_UW_RULES
-            active_module = cv_pre
             role_label = "Pre Underwriter"
 
-        # In logs mark it when folder being used for ingestion
-        ingestion_msg = f"[INGESTION] Active Folder: {active_folder} | Mode: {role_label} | File: {file.filename} | User: {username} (Role: {raw_role})"
+        # In logs mark it when spec profile being used for ingestion
+        ingestion_msg = f"[INGESTION] Active Spec: {active_spec.name} | Mode: {role_label} | File: {file.filename} | User: {username} (Role: {raw_role})"
         print(ingestion_msg)
         log_event("INFO", "INGESTION_FOLDER_ACTIVE", ingestion_msg, username=username, email=email)
 
@@ -321,11 +318,10 @@ def validate_loan_file(
         if not labels:
             raise HTTPException(status_code=400, detail="The Excel sheet does not contain any valid data rows.")
 
-        # Run validation with the active underwriter code & rules
+        # Run validation with the active underwriter rules
         results = evaluate_rows(
             field_names, labels, values, dictionary, loan_ids=loan_ids,
             condition_rules=active_rules,
-            condition_module=active_module
         )
         stats = summarize(file.filename, results, labels, dictionary)
         if "Review Required" not in stats and "Overall Review Required" in stats:
@@ -438,24 +434,20 @@ def fetch_and_validate_loan_api(
 
     if is_admin and req_mode:
         if "junior" in req_mode:
-            active_folder = JUNIOR_UW_DIR
+            active_spec = JUNIOR_SPEC_PATH
             active_rules = JUNIOR_UW_RULES
-            active_module = cv_junior
             role_label = "Junior Underwriter"
         else:
-            active_folder = PRE_UW_DIR
+            active_spec = PRE_SPEC_PATH
             active_rules = PRE_UW_RULES
-            active_module = cv_pre
             role_label = "Pre Underwriter"
     elif "junior" in user_role_lower:
-        active_folder = JUNIOR_UW_DIR
+        active_spec = JUNIOR_SPEC_PATH
         active_rules = JUNIOR_UW_RULES
-        active_module = cv_junior
         role_label = "Junior Underwriter"
     else:
-        active_folder = PRE_UW_DIR
+        active_spec = PRE_SPEC_PATH
         active_rules = PRE_UW_RULES
-        active_module = cv_pre
         role_label = "Pre Underwriter"
 
     clean_seller = re.sub(r'[\\/*?:"<>|]', "", seller_name_input)
@@ -532,7 +524,6 @@ def fetch_and_validate_loan_api(
         results = evaluate_rows(
             field_names, labels, values, dictionary, loan_ids=loan_ids,
             condition_rules=active_rules,
-            condition_module=active_module
         )
         stats = summarize(filename, results, labels, dictionary)
         if "Review Required" not in stats and "Overall Review Required" in stats:

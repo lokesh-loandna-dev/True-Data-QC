@@ -47,23 +47,18 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.14.0"
+__version__ = "5.15.0"
 
-REQUIRED_CONDITION_VERSION = "5.14.0"
+REQUIRED_CONDITION_VERSION = "5.15.0"
 
 try:
-    import condition_validation_pre_underwriter as conditions
+    import condition_validation as conditions
 except ImportError:
     try:
-        from pathlib import Path
-        import sys
-        _pre_dir = Path(__file__).resolve().parent / "pre-underwriter"
-        if str(_pre_dir) not in sys.path:
-            sys.path.insert(0, str(_pre_dir))
-        import condition_validation_pre_underwriter as conditions
+        from lm_helper import condition_validation as conditions
     except ImportError:
         try:
-            import condition_validation as conditions
+            from . import condition_validation as conditions
         except ImportError:
             conditions = None
 
@@ -1349,7 +1344,7 @@ def consolidate_result(row):
 
 def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
                   strict=False, blank_as_fail=False, strict_numeric=False,
-                  as_of=None, condition_rules=None, condition_module=None):
+                  as_of=None, condition_rules=None):
     """Return one 8-tuple matching NEW_COLUMNS for each sample row."""
     dictionary_results = []
     for label, value in zip(labels, values):
@@ -1407,10 +1402,9 @@ def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
 
     # Condition validation is strictly additive: it reads the same inputs but
     # contributes only its own three columns and never alters "Result".
-    cond_engine = condition_module if condition_module is not None else conditions
-    if condition_rules and cond_engine is not None:
-        condition_results = cond_engine.evaluate_conditions(
-            field_names, values, condition_rules)
+    if condition_rules and conditions is not None:
+        condition_results = conditions.evaluate_conditions(
+            field_names, values, condition_rules, labels=labels)
     else:
         blank = ("N/A - no condition rule", "", "",
                  "(condition spec not supplied)", "")
@@ -1780,6 +1774,10 @@ def main(argv=None) -> int:
                         help="Condition_Validation spec workbook. When given, "
                              "three extra columns are appended; existing "
                              "columns are unaffected.")
+    parser.add_argument("--spec-profile", default="preuw",
+                        help="Column layout of the --conditions workbook: "
+                             "'preuw' (Data sheet, Data Field) or 'jruw' "
+                             "(UW - Fields sheet, Screen Field Label).")
     parser.add_argument("--version", action="store_true",
                         help="Print the version of every module and exit.")
     parser.add_argument("--ignore-version", action="store_true",
@@ -1835,7 +1833,9 @@ def main(argv=None) -> int:
                      "(requires %s)", __version__,
                      getattr(conditions, "__version__", "unknown"),
                      REQUIRED_CONDITION_VERSION)
-            condition_rules = conditions.load_rules(args.conditions)
+            log.info("Condition spec profile: %s", args.spec_profile)
+            condition_rules = conditions.load_rules(args.conditions,
+                                                    args.spec_profile)
         except Exception as exc:
             log.error("Could not load condition spec: %s", exc)
             return 1

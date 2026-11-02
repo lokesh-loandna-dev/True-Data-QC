@@ -194,7 +194,6 @@ def process_and_ingest_excel(file_path: Path, target_timestamp: datetime, user_i
     results = evaluate_rows(
         field_names, labels, values, DATA_DICT, loan_ids=loan_ids,
         condition_rules=active_rules,
-        condition_module=active_module
     )
     stats = summarize(filename, results, labels, DATA_DICT)
 

@@ -21,19 +21,13 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
-try:
-    import condition_validation_pre_underwriter as cv
-except ImportError:
-    from pathlib import Path
-    import sys
-    _p = Path(__file__).resolve().parent / "pre-underwriter"
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
-    import condition_validation_pre_underwriter as cv
+import condition_validation as cv
 
 # Must match validate_loan_files_v5.py, so the audit and the validator can
 # never disagree about what is automatable.
-REQUIRED_CONDITION_VERSION = "5.5.0"
+__version__ = "5.15.0"
+
+REQUIRED_CONDITION_VERSION = "5.15.0"
 
 
 def _version_tuple(text):
@@ -58,7 +52,7 @@ def check_parser_version():
         return False
     return True
 
-SPEC_SHEET_CANDIDATES = ("Data", "Sheet1")
+SPEC_SHEET_CANDIDATES = ("Data", "Sheet1", "UW - Fields")
 MAX_RELATED_COLUMNS = 6
 
 # Families that read another field's value.
@@ -67,7 +61,7 @@ CROSS_FIELD_FAMILIES = {
     "COND_ALLOWED_SET", "COND_FORMAT",
     "MUTEX", "MATCH_FIELD", "OTHER_FIELD", "DATE_COMPARE", "DATE_OFFSET",
     "DATE_WITHIN", "FIELDS_MATCH_THEN_MATCH", "YEAR_MATCHES_FIELD",
-    "DATE_AROUND", "DATE_BETWEEN",
+    "DATE_AROUND", "DATE_BETWEEN", "DATE_MONTH_WINDOW", "DATE_TERM_SUM",
 }
 
 UNPARSED = ("NOT_AUTOMATED", "SPEC_MALFORMED")
@@ -100,6 +94,8 @@ FAMILY_NOTES = {
     "FIELDS_MATCH_THEN_MATCH": "If two named fields agree, this must equal a third",
     "YEAR_MATCHES_FIELD": "Year must match the year of another field's date",
     "DATE_AROUND": "Date must fall within N periods either side of another field",
+    "DATE_MONTH_WINDOW": "Must be the 1st day of the Nth or Mth month after another field",
+    "DATE_TERM_SUM": "Must be another field's date plus a term in months, on the 1st",
     "DATE_BETWEEN": "Date must fall between two other fields' dates",
     "FORMAT": "Character format: length / digits / case / special characters",
     "POSITIVE_NUMBER": "Value must be greater than zero",
@@ -121,27 +117,51 @@ def norm(text):
     return re.sub(r"[^a-z0-9]", "", str(text).lower())
 
 
-def load_spec(path):
+def load_spec(path, profile=None):
+    """Read a condition workbook using the column layout for `profile`.
+
+    Mirrors condition_validation.load_rules so the audit and the validator
+    always read the same cells.
+    """
+    if profile is None:
+        profile = cv.DEFAULT_PROFILE
+    if isinstance(profile, str):
+        profile = cv.SPEC_PROFILES[profile]
+    field_col = profile.get("field", "Data Field")
+    cond_col = profile.get("conditions", "Conditions")
+    source_col = profile.get("source") or ""
+    kind_col = profile.get("kind") or ""
+    sheet_name = profile.get("sheet", "")
+
     workbook = openpyxl.load_workbook(path, data_only=True)
-    sheet = next((workbook[n] for n in SPEC_SHEET_CANDIDATES
-                  if n in workbook.sheetnames), workbook.worksheets[0])
+    if sheet_name and sheet_name in workbook.sheetnames:
+        sheet = workbook[sheet_name]
+    else:
+        sheet = next((workbook[n] for n in SPEC_SHEET_CANDIDATES
+                      if n in workbook.sheetnames), workbook.worksheets[0])
     header = {}
     for cell in sheet[1]:
         if cell.value is not None:
             header[" ".join(str(cell.value).split())] = cell.column
+
+    # The Jr.UW sheet numbers its rows "S.No:" rather than "S.No".
+    sno_col = next((k for k in ("S.No", "S.No:", "SNo") if k in header), None)
 
     rows = []
     for index in range(2, sheet.max_row + 1):
         def get(name):
             column = header.get(name)
             return sheet.cell(row=index, column=column).value if column else None
+        # The Jr.UW workbook carries tens of thousands of empty trailing rows;
+        # counting them as spec rows made every total meaningless.
+        if not str(get(field_col) or "").strip():
+            continue
         rows.append({
-            "S.No": get("S.No"),
-            "Data Field": " ".join(str(get("Data Field") or "").split()),
-            "True Source": " ".join(str(get("True Source") or "").split()),
-            "Spec Kind": " ".join(str(
-                get("Direct Field/Inter Related") or "").split()),
-            "Conditions": get("Conditions"),
+            "S.No": get(sno_col) if sno_col else index - 1,
+            "Data Field": " ".join(str(get(field_col) or "").split()),
+            "True Source": " ".join(str(get(source_col) or "").split()),
+            "Spec Kind": " ".join(str(get(kind_col) or "").split()),
+            "Conditions": get(cond_col),
         })
     return rows
 
@@ -156,6 +176,11 @@ def referenced_fields(rule):
         option = params.get("trigger_option")
         if option:
             names.append(f"(same group) {option}")
+        # The forbidden options are checkboxes too. They were never checked
+        # against the dictionary, so a misspelled option name in the list went
+        # undetected.
+        for forbidden in params.get("forbidden") or []:
+            names.append(f"(same group) {forbidden}")
     else:
         if params.get("ref_field"):
             names.append(params["ref_field"])
@@ -164,8 +189,11 @@ def referenced_fields(rule):
                 names.append(extra["ref_field"])
         if params.get("subject"):
             names.append(params["subject"])
-        # Both sides of a two-field comparison are referenced fields.
-        for side in ("left", "right"):
+        # Every parameter that names another field must be listed here, or the
+        # audit reports zero references for that rule and a missing field goes
+        # undetected until runtime. DATE_BETWEEN was missed this way.
+        for side in ("left", "right", "lower_field", "upper_field",
+                     "term_field"):
             if params.get(side):
                 names.append(params[side])
 
@@ -183,6 +211,84 @@ def referenced_fields(rule):
             seen.add(key)
             out.append(name)
     return out
+
+
+def resolve_strict(reference, owner_field, dictionary_norm, dictionary_names):
+    """Does this referenced field exist in the data dictionary?
+
+    Accepts only an exact name, an exact name once a borrower prefix from the
+    owning field is applied, or an exact name with a parenthetical qualifier
+    removed. A suffix or substring hit is reported as NOT FOUND with the near
+    misses listed, because that is how "Closing Date" was quietly accepted as
+    "Short Sale Estimated Closing Date".
+    """
+    if reference.startswith("(same group) "):
+        option = reference[len("(same group) "):]
+        # The spec now writes checkbox options fully qualified
+        # ("Borrower 1 Race - Asian"). Prepending the owner's category to one
+        # of those built "Borrower 1 Race - Borrower 1 Race - Asian" and
+        # reported a false NOT IN DICTIONARY, so try the option as written
+        # before any scoping.
+        if norm(option) in dictionary_norm:
+            return dictionary_norm[norm(option)], "OK", ""
+        # Try progressively shorter prefixes. Sibling checkboxes sit either
+        # under the full category ("Borrower 2 Race - Asian") or directly
+        # under the borrower ("Borrower 1 Face-to-Face Interview"); using only
+        # the full owner name missed the second shape entirely.
+        base = owner_field.rsplit(" - ", 1)[0] if " - " in owner_field \
+            else owner_field
+        words = base.split()
+        prefixes = [" ".join(words[:i]) for i in range(len(words), 0, -1)]
+        for prefix in prefixes:
+            candidate = f"{prefix} - {option}"
+            if norm(candidate) in dictionary_norm:
+                return (dictionary_norm[norm(candidate)],
+                        "OK (checkbox sibling)", "")
+            flat = f"{prefix} {option}"
+            if norm(flat) in dictionary_norm:
+                return dictionary_norm[norm(flat)], "OK (checkbox sibling)", ""
+        for prefix in prefixes:
+            near = [n for n in dictionary_names
+                    if norm(n).startswith(norm(prefix))
+                    and norm(option) in norm(n)]
+            if len(near) == 1:
+                return near[0], "OK (checkbox sibling)", ""
+            if near:
+                return "", "NOT IN DICTIONARY", "; ".join(sorted(near)[:3])
+        close = difflib.get_close_matches(f"{prefixes[-1]} {option}",
+                                          dictionary_names, n=3, cutoff=0.6)
+        return "", "NOT IN DICTIONARY", "; ".join(close)
+
+    key = norm(reference)
+    if key in dictionary_norm:
+        return dictionary_norm[key], "OK", ""
+
+    # Borrower-scoped: the spec writes "Citizenship?" for
+    # "Borrower 2 Citizenship?" when attached to a Borrower 2 field.
+    borrower = re.match(r"(?i)^(borrower\s*\d+|b\d+|guarantor\s*\d+)\b",
+                        owner_field.strip())
+    if borrower:
+        scoped = norm(f"{borrower.group(1)} {reference}")
+        if scoped in dictionary_norm:
+            return (dictionary_norm[scoped],
+                    "OK (borrower-scoped)", "")
+
+    bare_text = re.sub(r"\([^)]*\)", " ", reference).strip()
+    inside = " ".join(re.findall(r"\(([^)]*)\)", reference)).strip()
+    bare = norm(bare_text)
+    if bare and bare in dictionary_norm:
+        alt = dictionary_norm.get(norm(inside))
+        note = (f"also matches {alt!r} if the bracketed part is the field"
+                if alt else "")
+        return (dictionary_norm[bare], "VERIFY (parenthetical dropped)", note)
+
+    # Near misses, listed so the spec can be corrected -- never accepted.
+    near = [n for n in dictionary_names
+            if norm(n).endswith(key) or (key and key in norm(n))]
+    if not near:
+        near = difflib.get_close_matches(reference, dictionary_names, n=3,
+                                         cutoff=0.6)
+    return "", "NOT IN DICTIONARY", "; ".join(sorted(near)[:3])
 
 
 def resolve_in_dictionary(reference, dictionary_norm, dictionary_names):
@@ -360,6 +466,9 @@ def main():
         return 1
     spec_path, dict_path, out_path = (Path(sys.argv[1]), Path(sys.argv[2]),
                                       Path(sys.argv[3]))
+    # Optional 4th argument: the spec column profile (preuw | jruw).
+    profile = sys.argv[4] if len(sys.argv) > 4 and not sys.argv[4].startswith("-") \
+        else cv.DEFAULT_PROFILE
 
     if not check_parser_version() and "--ignore-version" not in sys.argv:
         print("Refusing to run. Pass --ignore-version to override.")
@@ -387,7 +496,7 @@ def main():
                       if str(v).strip()}
             enum_lookup.setdefault(norm(field_name), set()).update(values)
 
-    spec_rows = load_spec(spec_path)
+    spec_rows = load_spec(spec_path, profile)
     records = []
     clause_records = []
 
@@ -446,27 +555,16 @@ def main():
 
         resolved, problems, suggestions = [], [], []
         for reference in references:
-            match, status = resolve_in_dictionary(
-                reference, dictionary_norm, dictionary_names)
+            match, status, near = resolve_strict(
+                reference, field, dictionary_norm, dictionary_names)
             resolved.append((reference, match, status))
             if status == "NOT IN DICTIONARY":
-                close = difflib.get_close_matches(
-                    reference, dictionary_names, n=2, cutoff=0.6)
                 problems.append(f"{reference!r}: not in dictionary")
-                if close:
-                    suggestions.append(
-                        f"{reference!r} -> did you mean "
-                        + " or ".join(repr(c) for c in close) + "?")
-                else:
-                    suggestions.append(
-                        f"{reference!r}: no similar field exists; confirm the "
-                        f"field name with the business team.")
-            elif status == "AMBIGUOUS":
-                problems.append(f"{reference!r}: matches several fields")
                 suggestions.append(
-                    f"{reference!r} matches {match}. Qualify the name in the "
-                    f"clause (e.g. include the borrower or category) if the "
-                    f"intended field is not the row's own borrower.")
+                    f"{reference!r} -> nearest dictionary name(s): {near}"
+                    if near else
+                    f"{reference!r}: no similar field exists; confirm the "
+                    f"correct field name with the business team.")
 
         is_cross = any(r.family in CROSS_FIELD_FAMILIES for r in parsed)
         label = row["Spec Kind"].lower()
@@ -497,15 +595,15 @@ def main():
             clause_problems = []
             clause_resolved = []
             for reference in clause_refs:
-                match, status = resolve_in_dictionary(
-                    reference, dictionary_norm, dictionary_names)
+                match, status, _near = resolve_strict(
+                    reference, field, dictionary_norm, dictionary_names)
                 clause_resolved.append(f"{reference} -> {status}")
                 if not status.startswith("OK"):
                     clause_problems.append(f"{reference!r}: {status}")
 
             unparsed = rule.family in UNPARSED
             gap = parser_gap(rule.text) if unparsed else None
-            suspicious = suspicious_parse(
+            clause_suspicious = suspicious_parse(
                 rule, enum_lookup.get(norm(field), set()))
 
             if unparsed:
@@ -518,8 +616,9 @@ def main():
                               "which dictionary field is meant.")
                 owner = "Business (field name)"
                 clause_verdict = "NEEDS FIX - reference unresolved"
-            elif suspicious:
-                clause_issue, clause_fix = suspicious, "Verify the parse."
+            elif clause_suspicious:
+                clause_issue, clause_fix = (clause_suspicious,
+                                            "Verify the parse.")
                 owner = "Review"
                 clause_verdict = "NEEDS REVIEW - parse may be wrong"
             elif field_status != "OK":
@@ -564,6 +663,7 @@ def main():
             "Cross-Field": "Yes" if is_cross else "No",
             "Related Field Count": len(references),
             "Related Field Issues": " | ".join(problems),
+            "Related Field Note": "",
             "Related Field Suggestion": " || ".join(suggestions),
             "Problem Clauses": " || ".join(issues),
             "Correction Needed": " || ".join(fixes),
@@ -579,11 +679,61 @@ def main():
                 record[f"Related Field {slot + 1}"] = ""
                 record[f"Related Field {slot + 1} Status"] = ""
         if len(resolved) > MAX_RELATED_COLUMNS:
-            record["Related Field Issues"] = (
-                f"{len(resolved)} referenced fields (only "
-                f"{MAX_RELATED_COLUMNS} columns shown) | "
-                + record["Related Field Issues"])
+            record["Related Field Note"] = (
+                f"{len(resolved)} referenced fields; only "
+                f"{MAX_RELATED_COLUMNS} shown in the columns above")
         records.append(record)
+
+    # One row per DISTINCT referenced field, so the spec author has a single
+    # list of names to correct rather than hunting through clause rows.
+    reference_rows = {}
+    for record in clause_records:
+        for reference in str(record["Referenced Fields"]).split("; "):
+            reference = reference.strip()
+            if not reference:
+                continue
+            match, status, near = resolve_strict(
+                reference, record["Data Field"], dictionary_norm,
+                dictionary_names)
+            entry = reference_rows.setdefault(reference, {
+                "Referenced Field": reference,
+                "Dictionary Status": status,
+                "Dictionary Match": match,
+                "Nearest Dictionary Names": near,
+                "Used By Fields": set(),
+                "Clause Count": 0,
+            })
+            entry["Used By Fields"].add(record["Data Field"])
+            entry["Clause Count"] += 1
+            entry.setdefault("Failing Owners", set())
+            # A borrower-scoped or checkbox reference can resolve for most
+            # owning fields and fail for a few (label-form names such as
+            # "B2Race"). Report both, rather than condemning the whole
+            # reference or hiding the failures.
+            if status == "NOT IN DICTIONARY":
+                entry["Failing Owners"].add(record["Data Field"])
+                entry["Nearest Dictionary Names"] = near
+                if entry["Dictionary Status"].startswith("OK"):
+                    entry["Dictionary Status"] = "PARTIAL - fails for some fields"
+                else:
+                    entry["Dictionary Status"] = status
+            elif entry["Dictionary Status"] == "NOT IN DICTIONARY":
+                entry["Dictionary Status"] = "PARTIAL - fails for some fields"
+
+    reference_frame = pd.DataFrame([
+        {**v,
+         "Fields Affected": len(v["Used By Fields"]),
+         "Fields Failing": len(v.get("Failing Owners") or ()),
+         "Used By Fields": "; ".join(sorted(v["Used By Fields"])[:8]),
+         "Failing Owners": "; ".join(sorted(v.get("Failing Owners") or ())[:8])}
+        for v in reference_rows.values()
+    ])
+    if not reference_frame.empty:
+        reference_frame = reference_frame[[
+            "Referenced Field", "Dictionary Status", "Dictionary Match",
+            "Nearest Dictionary Names", "Fields Affected", "Fields Failing",
+            "Clause Count", "Used By Fields", "Failing Owners"]].sort_values(
+            ["Dictionary Status", "Fields Affected"], ascending=[True, False])
 
     clause_frame = pd.DataFrame(clause_records)
     frame = pd.DataFrame(records)
@@ -628,10 +778,15 @@ def main():
         for blocker in str(row.Blockers).split("; "):
             if blocker:
                 blocker_counts[blocker] = blocker_counts.get(blocker, 0) + 1
-    blockers_frame = (pd.DataFrame(
+    # An empty frame has no columns to sort, which crashed the audit the
+    # moment the spec became clean enough to have zero blockers.
+    blockers_frame = pd.DataFrame(
         [{"Blocker": k, "Fields Affected": v}
-         for k, v in blocker_counts.items()])
-        .sort_values("Fields Affected", ascending=False))
+         for k, v in blocker_counts.items()],
+        columns=["Blocker", "Fields Affected"])
+    if not blockers_frame.empty:
+        blockers_frame = blockers_frame.sort_values(
+            "Fields Affected", ascending=False)
 
     clause_summary = (clause_frame.groupby(["Clause Verdict", "Spec Kind"])
                       .size().unstack(fill_value=0))
@@ -677,6 +832,13 @@ def main():
              "Parser gap").sum())},
         {"Metric": "Rows with a SUSPICIOUS parse (wrong automation risk)",
          "Count": int((frame["Suspicious Parse"].fillna("") != "").sum())},
+        {"Metric": "--- REFERENCED FIELDS ---", "Count": None},
+        {"Metric": "Distinct fields referenced by conditions",
+         "Count": len(reference_frame)},
+        {"Metric": "Referenced fields NOT IN DICTIONARY",
+         "Count": int((reference_frame["Dictionary Status"]
+                       == "NOT IN DICTIONARY").sum())
+         if not reference_frame.empty else 0},
         {"Metric": "--- CLAUSE LEVEL ---", "Count": None},
         {"Metric": "Total clauses", "Count": len(clause_frame)},
         {"Metric": "Clauses OK - no issues",
@@ -694,6 +856,15 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(out_path) as writer:
         summary.to_excel(writer, sheet_name="Summary", index=False)
+        if not reference_frame.empty:
+            flagged = reference_frame[
+                reference_frame["Dictionary Status"].isin(
+                    ["NOT IN DICTIONARY", "PARTIAL - fails for some fields",
+                     "VERIFY (parenthetical dropped)"])]
+            flagged.to_excel(writer, sheet_name="Referenced Fields MISSING",
+                             index=False)
+            reference_frame.to_excel(
+                writer, sheet_name="Referenced Field Check", index=False)
         breakdown.to_excel(writer, sheet_name="Verdict by Type", index=False)
         blockers_frame.to_excel(writer, sheet_name="Blockers", index=False)
         clause_summary.to_excel(writer, sheet_name="Clause Summary",
@@ -719,6 +890,23 @@ def main():
     print(clause_summary.to_string(index=False))
     print()
     print(clause_owner.to_string(index=False))
+    if not reference_frame.empty:
+        missing = reference_frame[
+            reference_frame["Dictionary Status"].isin(
+                ["NOT IN DICTIONARY", "PARTIAL - fails for some fields",
+                 "VERIFY (parenthetical dropped)"])]
+        print()
+        if missing.empty:
+            print("All referenced fields exist in the data dictionary.")
+        else:
+            print(f"REFERENCED FIELDS NOT IN THE DICTIONARY "
+                  f"({len(missing)}) - correct these in the spec:")
+            for row in missing.itertuples(index=False):
+                print(f"  [{row[1]}] {row[0]!r}")
+                print(f"      used by {row[4]} field(s), "
+                      f"{row[5]} failing")
+                if row[3]:
+                    print(f"      nearest: {row[3]}")
     print(f"\nWritten: {out_path}")
     return 0
 
