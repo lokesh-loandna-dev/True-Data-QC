@@ -29,27 +29,31 @@ const Header = () => {
     { name: 'Data Dictionary', path: '/data-dictionary' },
   ];
 
-  const isSuperAdmin = (role) => {
-    const lower = (role || '').toLowerCase();
-    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
-  };
-
-  const canAccessUserManagement = (role) => {
+  const isAnyAdmin = (role) => {
     const lower = (role || '').trim().toLowerCase();
     return (
       lower === 'super admin' ||
       lower === 'super_admin' ||
       lower === 'admin' ||
       (lower.includes('admin') && lower.includes('pre')) ||
-      (lower.includes('admin') && lower.includes('junior'))
+      (lower.includes('admin') && lower.includes('junior')) ||
+      lower.includes('admin')
     );
   };
+
+  const isSuperAdmin = (role) => {
+    const lower = (role || '').toLowerCase();
+    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
+  };
+
+  const canAccessUserManagement = (role) => isAnyAdmin(role);
+  const canAccessProhance = (role) => isAnyAdmin(role);
 
   if (canAccessUserManagement(user?.role)) {
     navLinks.push({ name: 'User Management', path: '/users' });
   }
 
-  if (isSuperAdmin(user?.role)) {
+  if (canAccessProhance(user?.role)) {
     navLinks.push({ name: 'Prohance', path: '/prohance' });
   }
 

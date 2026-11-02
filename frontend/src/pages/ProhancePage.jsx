@@ -8,13 +8,20 @@ const ProhancePage = () => {
   const { user } = useAuth();
   const fileInputRef = useRef(null);
 
-  const isSuperAdmin = (role) => {
-    const lower = (role || '').toLowerCase();
-    return lower === 'super admin' || lower === 'super_admin' || lower === 'admin';
+  const isAnyAdmin = (role) => {
+    const lower = (role || '').trim().toLowerCase();
+    return (
+      lower === 'super admin' ||
+      lower === 'super_admin' ||
+      lower === 'admin' ||
+      (lower.includes('admin') && lower.includes('pre')) ||
+      (lower.includes('admin') && lower.includes('junior')) ||
+      lower.includes('admin')
+    );
   };
 
-  // Extra layer of protection on frontend - Super Admin only
-  if (!isSuperAdmin(user?.role)) {
+  // Extra layer of protection on frontend - Super Admin and Admins
+  if (!isAnyAdmin(user?.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -461,7 +461,7 @@ def fetch_and_validate_loan_api(
     clean_seller = re.sub(r'[\\/*?:"<>|]', "", seller_name_input)
     clean_loan_id = re.sub(r'[\\/*?:"<>|]', "", loan_id_input)
     now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"Lauramac_Loan_{clean_loan_id}_{clean_seller}_{now_str}.json"
+    filename = f"Loan_{clean_loan_id}_{clean_seller}_{now_str}.json"
 
     ingestion_msg = f"[API INGESTION] Active Folder: {active_folder} | Mode: {role_label} | LoanId: {clean_loan_id} | Seller: {clean_seller} | User: {username} (Role: {raw_role})"
     print(ingestion_msg)
