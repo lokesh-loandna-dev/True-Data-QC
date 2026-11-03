@@ -500,7 +500,7 @@ const ColumnFilterModal = ({
                       onChange={() => handleToggleOption(optString)}
                       className="w-3.5 h-3.5 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
                     />
-                    <span className="truncate">{optString}</span>
+                    <span className="truncate" title={optString}>{optString}</span>
                   </label>
                 );
               })

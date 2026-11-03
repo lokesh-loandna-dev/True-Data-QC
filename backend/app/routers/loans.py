@@ -813,6 +813,15 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
         # Build response from request body — avoids a full re-SELECT of all inserted rows
         saved_records = []
         for r in body.records:
+            raw_data_dict = r.raw_data if isinstance(r.raw_data, dict) else {}
+            cond_text_val = r.condition_text
+            if cond_text_val is None:
+                cond_text_val = raw_data_dict.get("Condition Text") or raw_data_dict.get("condition_text")
+
+            cond_outcome_val = r.condition_outcome
+            if cond_outcome_val is None:
+                cond_outcome_val = raw_data_dict.get("Condition Outcome") or raw_data_dict.get("condition_outcome")
+
             rd = {
                 "package_id": package_id,
                 "loan_id": str(r.loan_id) if r.loan_id is not None else None,
@@ -832,6 +841,8 @@ def save_loan_package(body: LoanSaveRequest, user_id: int = Depends(get_current_
                 "condition_validation": str(r.condition_validation) if r.condition_validation is not None else None,
                 "condition_rule_type": str(r.condition_rule_type) if r.condition_rule_type is not None else None,
                 "condition_remarks": str(r.condition_remarks) if r.condition_remarks is not None else None,
+                "condition_text": str(cond_text_val) if cond_text_val is not None else None,
+                "condition_outcome": str(cond_outcome_val) if cond_outcome_val is not None else None,
                 "action": str(r.action) if r.action is not None else None,
                 "remark": str(r.remark) if r.remark is not None else None,
                 "raw_data": r.raw_data,

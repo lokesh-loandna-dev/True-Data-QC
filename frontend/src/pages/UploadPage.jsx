@@ -235,12 +235,17 @@ const UploadPage = () => {
 
       const packageId = saveRes.package_id;
       const savedRecords = (saveRes.records && saveRes.records.length > 0)
-        ? saveRes.records.map((rec, idx) => ({
-          ...rec,
-          _id: rec.id || `rec_${idx}`,
-          action: normalizeAction(rec.action),
-          remark: rec.remark || ''
-        }))
+        ? saveRes.records.map((rec, idx) => {
+          const originalRec = recordsWithIds[idx] || {};
+          return {
+            ...rec,
+            condition_text: rec.condition_text ?? originalRec.condition_text ?? rec['Condition Text'] ?? rec.raw_data?.['Condition Text'] ?? '',
+            condition_outcome: rec.condition_outcome ?? originalRec.condition_outcome ?? rec['Condition Outcome'] ?? rec.raw_data?.['Condition Outcome'] ?? '',
+            _id: rec.id || `rec_${idx}`,
+            action: normalizeAction(rec.action),
+            remark: rec.remark || ''
+          };
+        })
         : recordsWithIds;
 
       clearProgressTimer();
@@ -358,12 +363,17 @@ const UploadPage = () => {
 
       const packageId = saveRes.package_id;
       const savedRecords = (saveRes.records && saveRes.records.length > 0)
-        ? saveRes.records.map((rec, idx) => ({
-          ...rec,
-          _id: rec.id || `rec_${idx}`,
-          action: normalizeAction(rec.action),
-          remark: rec.remark || ''
-        }))
+        ? saveRes.records.map((rec, idx) => {
+          const originalRec = recordsWithIds[idx] || {};
+          return {
+            ...rec,
+            condition_text: rec.condition_text ?? originalRec.condition_text ?? rec['Condition Text'] ?? rec.raw_data?.['Condition Text'] ?? '',
+            condition_outcome: rec.condition_outcome ?? originalRec.condition_outcome ?? rec['Condition Outcome'] ?? rec.raw_data?.['Condition Outcome'] ?? '',
+            _id: rec.id || `rec_${idx}`,
+            action: normalizeAction(rec.action),
+            remark: rec.remark || ''
+          };
+        })
         : recordsWithIds;
 
       clearProgressTimer();

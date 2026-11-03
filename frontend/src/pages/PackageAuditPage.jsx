@@ -525,6 +525,12 @@ const PackageAuditPage = () => {
         accessor: 'condition_text',
         sortable: true,
         headerClassName: 'whitespace-nowrap min-w-[240px]',
+        filterType: 'text',
+        filterValue: (r) => {
+          const val = r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '';
+          return val !== null && val !== undefined && String(val).trim() !== '' ? String(val).trim() : '(Blank)';
+        },
+        sortValue: (r) => r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '',
         render: (r) => (
           <span className="text-slate-600 break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
             {r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? ''}
@@ -537,6 +543,12 @@ const PackageAuditPage = () => {
         accessor: 'condition_outcome',
         sortable: true,
         headerClassName: 'whitespace-nowrap min-w-[220px]',
+        filterType: 'text',
+        filterValue: (r) => {
+          const val = r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '';
+          return val !== null && val !== undefined && String(val).trim() !== '' ? String(val).trim() : '(Blank)';
+        },
+        sortValue: (r) => r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '',
         render: (r) => {
           const val = r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '';
           if (!val) return null;
