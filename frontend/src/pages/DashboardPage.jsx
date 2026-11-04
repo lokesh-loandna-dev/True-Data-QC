@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { encodePackageId } from '../utils/routeCipher';
 import { useAuth } from '../hooks/useAuth';
 import Header from '../layout/Header';
@@ -46,9 +46,14 @@ const PackageDetailedRowView = ({
         {/* Top Bar: Identity & Close */}
         <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200/80">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <span className="text-xs font-bold text-slate-900 truncate max-w-sm sm:max-w-md" title={pkg.filename}>
+            <Link
+              to={`/dashboard/package/${encodePackageId(pkg.id)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs font-bold text-[#283245] hover:text-[#24A1DD] hover:underline truncate max-w-sm sm:max-w-md transition-colors cursor-pointer"
+              title={pkg.filename}
+            >
               {pkg.filename}
-            </span>
+            </Link>
             {pkg.loan_id && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700 font-mono text-[11px] font-semibold">
                 Loan ID: {pkg.loan_id}
@@ -721,9 +726,14 @@ const DashboardPage = () => {
         accessor: 'filename',
         sortable: true,
         render: (pkg) => (
-          <span className="font-semibold text-slate-900 max-w-xs truncate block" title={pkg.filename}>
+          <Link
+            to={`/dashboard/package/${encodePackageId(pkg.id)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="font-semibold text-[#283245] hover:text-[#24A1DD] hover:underline max-w-xs truncate block cursor-pointer transition-colors"
+            title={pkg.filename}
+          >
             {pkg.filename}
-          </span>
+          </Link>
         ),
       },
       {
