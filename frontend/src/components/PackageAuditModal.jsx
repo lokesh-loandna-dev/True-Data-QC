@@ -322,6 +322,7 @@ export const PackageAuditModal = ({
         header: 'Loan ID',
         accessor: 'loan_id',
         sortable: true,
+        filterable: false,
         render: (r) => <span className="whitespace-nowrap font-medium text-slate-600">{r.loan_id || '-'}</span>,
         category: 'Excel Column'
       },
@@ -383,10 +384,14 @@ export const PackageAuditModal = ({
         }
       } else {
         if (!cols.some(c => c.accessor === colName)) {
+          const isConstantField = ['loanid', 'loan_id', 'username', 'email'].includes(
+            String(colName).toLowerCase().replace(/[\s_-]/g, '')
+          );
           cols.push({
             header: colName,
             accessor: colName,
             sortable: true,
+            filterable: !isConstantField,
             render: (r) => (
               <span className="text-slate-700 break-words whitespace-pre-wrap max-w-xs block leading-snug">
                 {r.raw_data?.[colName] ?? r[colName] ?? ''}
@@ -415,6 +420,7 @@ export const PackageAuditModal = ({
         header: 'Loan Id',
         accessor: 'pkg_loan_id',
         sortable: false,
+        filterable: false,
         render: () => (
           <span className="font-mono text-xs font-semibold text-slate-700 whitespace-nowrap">
             {loanId || '-'}
@@ -426,6 +432,7 @@ export const PackageAuditModal = ({
         header: 'Username',
         accessor: 'pkg_username',
         sortable: false,
+        filterable: false,
         render: () => (
           <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
             {packageUsername || '-'}
@@ -437,6 +444,7 @@ export const PackageAuditModal = ({
         header: 'Email',
         accessor: 'pkg_email',
         sortable: false,
+        filterable: false,
         render: () => (
           <span className="text-xs text-slate-600 whitespace-nowrap">
             {packageEmail || '-'}
