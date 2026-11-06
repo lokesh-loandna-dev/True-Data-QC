@@ -4,7 +4,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -1203,7 +1203,7 @@ def bulk_export_packages(
         content_bytes = output.getvalue()
         output.seek(0)
 
-        date_str = datetime.utcnow().strftime("%Y-%m-%d")
+        date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         download_filename = f"Bulk_Audit_Export_{len(packages_rows)}_Packages_{date_str}.xlsx"
 
         return StreamingResponse(

@@ -1,6 +1,10 @@
--- Performance indexes and schema corrections for truedata_qc_db
+-- Performance indexes and schema corrections.
 -- Run by DBA against the target database. Safe to re-run (IF NOT EXISTS / DECLARE guards).
 -- Do NOT execute from the application.
+-- IMPORTANT: change the USE statement to match the target database before running:
+--   Production : USE truedata_qc_db
+--   UAT        : USE ops_qc_db
+--   QA (local) : USE qa_ops_qc_db
 
 USE truedata_qc_db;
 
@@ -27,18 +31,39 @@ IF NOT EXISTS (
     ON dbo.users (username ASC);
 
 -- ============================================================
--- 1. loan_package_records (package_id)
--- CRITICAL: every read/update/delete on records filters by package_id.
--- Without this, each lookup is a full table scan as records accumulate.
--- ON DELETE CASCADE from loan_packages also uses this to find child rows.
+-- 1. loan_package_records — composite deadlock-fix index
+-- Covers every read/update/delete (package_id seek), ON DELETE CASCADE,
+-- and the split-OR update pattern in update_package_records.
+-- SQL Server cannot index NVARCHAR(MAX) columns, so narrow data_field first.
+-- Drop the old single-column index (made redundant — composite leads with same column).
 -- ============================================================
-IF NOT EXISTS (
+
+-- Narrow data_field from MAX to 200 so it can be an index key column.
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID('dbo.loan_package_records')
+      AND name = 'data_field'
+      AND max_length = -1
+)
+    ALTER TABLE dbo.loan_package_records ALTER COLUMN data_field NVARCHAR(200);
+
+-- Drop old single-column index if still present.
+IF EXISTS (
     SELECT 1 FROM sys.indexes
     WHERE object_id = OBJECT_ID('dbo.loan_package_records')
       AND name = 'IX_loan_package_records_package_id'
 )
-    CREATE NONCLUSTERED INDEX IX_loan_package_records_package_id
-    ON dbo.loan_package_records (package_id ASC);
+    DROP INDEX IX_loan_package_records_package_id ON dbo.loan_package_records;
+
+-- Create composite covering index (deadlock fix from v9/v10).
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('dbo.loan_package_records')
+      AND name = 'IX_loan_package_records_lookup'
+)
+    CREATE NONCLUSTERED INDEX IX_loan_package_records_lookup
+    ON dbo.loan_package_records (package_id ASC, data_field ASC, loan_id ASC)
+    INCLUDE (id);
 
 -- ============================================================
 -- 2. loan_packages (user_id, uploaded_at DESC)

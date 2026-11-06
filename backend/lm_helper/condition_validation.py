@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.15.0"
+__version__ = "5.17.0"
 
 import logging
 import re
@@ -104,6 +104,11 @@ GUARDABLE_FAMILIES = {
     "NOT_BLANK", "NOT_EQUALS", "ALLOWED_SET", "GREATER_THAN", "EXACT_DIGITS",
     "NOT_FUTURE_DATE", "MIN_YEAR", "VALID_DATE", "MIN_VALUE", "MAX_VALUE",
     "FORMAT", "DATE_COMPARE",
+    # Numeric constraints belong here too: "If X states Yes then not blank"
+    # followed by "It should contain multiple Numbers" means the second
+    # clause applies only when the first condition holds. Without these the
+    # numeric rule fired on every loan, including ones the guard excludes.
+    "MULTI_NUMERIC", "POSITIVE_NUMBER", "WHOLE_NUMBER", "VALUE_RANGE",
 }
 
 
@@ -195,10 +200,21 @@ def _display_text(value) -> str:
 
 
 def _is_blank_value(value) -> bool:
+    """True only for a genuinely empty cell.
+
+    The string "None" is NOT blank: 36 dictionary fields list it as a
+    permitted enumeration value (Negative Amortization Program Type, Other
+    Lien Position and others). Treating it as missing reported real data as
+    blank and failed every such field. An empty cell arrives as Python None
+    and is caught above; "nan" is kept because pandas renders a float NaN
+    that way on the CSV path.
+    """
     if value is None:
         return True
+    if isinstance(value, float) and value != value:        # NaN
+        return True
     text = str(value).strip()
-    return text == "" or text.lower() in {"nan", "none"}
+    return text == "" or text.lower() == "nan"
 
 
 def _is_true(value) -> bool:

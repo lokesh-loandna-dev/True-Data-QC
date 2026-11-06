@@ -78,7 +78,7 @@ BEGIN
         loan_id NVARCHAR(100) NULL,
         user_id INT NULL FOREIGN KEY REFERENCES users(id) ON DELETE SET NULL,
         filename NVARCHAR(500) NOT NULL,
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        uploaded_at DATETIME DEFAULT SYSUTCDATETIME(),
         total_fields INT NOT NULL,
         matched INT NOT NULL,
         unmatched INT NOT NULL,
@@ -127,7 +127,7 @@ BEGIN
         id INT IDENTITY(1,1) PRIMARY KEY,
         package_id INT NOT NULL FOREIGN KEY REFERENCES loan_packages(id) ON DELETE CASCADE,
         loan_id NVARCHAR(100) NULL,
-        data_field NVARCHAR(MAX) NULL,
+        data_field NVARCHAR(200) NULL,
         data_label NVARCHAR(MAX) NULL,
         true_data NVARCHAR(MAX) NULL,
         dictionary_match_status NVARCHAR(100) NULL,
@@ -189,7 +189,7 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='audit_logs' AND xtype='U')
 BEGIN
     CREATE TABLE audit_logs (
         id INT IDENTITY(1,1) PRIMARY KEY,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timestamp DATETIME DEFAULT SYSUTCDATETIME(),
         log_level VARCHAR(20) NOT NULL,
         action VARCHAR(100) NOT NULL,
         username VARCHAR(100) NULL,

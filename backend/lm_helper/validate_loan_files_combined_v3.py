@@ -47,9 +47,9 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.15.0"
+__version__ = "5.17.0"
 
-REQUIRED_CONDITION_VERSION = "5.15.0"
+REQUIRED_CONDITION_VERSION = "5.17.0"
 
 try:
     import condition_validation as conditions

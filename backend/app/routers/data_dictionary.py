@@ -177,7 +177,7 @@ async def upload_data_dictionary(
             params.append(row)
 
         with engine.begin() as conn:
-            conn.execute(text("TRUNCATE TABLE dbo.data_dictionary"))
+            conn.execute(text("DELETE FROM dbo.data_dictionary"))
             chunk_size = 1000
             for i in range(0, len(params), chunk_size):
                 conn.execute(insert_query, params[i:i + chunk_size])

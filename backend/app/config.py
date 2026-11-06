@@ -9,6 +9,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", 5000))
 SECRET_KEY = os.getenv("SECRET_KEY", "ops_qc_secret_key_2026")
 
+# Comma-separated list of allowed CORS origins.
+# Example .env entry: ALLOWED_ORIGINS=https://truedata-qc.loandna.com,https://ops-qc.loandna.com
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 # Email / SMTP Configuration

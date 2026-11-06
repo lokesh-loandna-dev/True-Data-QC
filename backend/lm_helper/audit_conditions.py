@@ -25,9 +25,9 @@ import condition_validation as cv
 
 # Must match validate_loan_files_v5.py, so the audit and the validator can
 # never disagree about what is automatable.
-__version__ = "5.15.0"
+__version__ = "5.17.0"
 
-REQUIRED_CONDITION_VERSION = "5.15.0"
+REQUIRED_CONDITION_VERSION = "5.17.0"
 
 
 def _version_tuple(text):

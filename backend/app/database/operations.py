@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 from app.database.connection import engine
 
@@ -261,7 +261,7 @@ def save_password_reset_otp(email: str, otp_code: str, expiry_minutes: int = 10)
     if not engine:
         raise Exception("Database engine not initialized")
     clean_email = email.strip().lower()
-    expires_at = datetime.utcnow() + timedelta(minutes=expiry_minutes)
+    expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=expiry_minutes)
     
     with engine.begin() as connection:
         # Invalidate previous unconsumed OTPs
@@ -289,11 +289,13 @@ def verify_password_reset_otp(email: str, otp_code: str) -> dict:
     clean_email = email.strip().lower()
     clean_otp = otp_code.strip()
 
-    with engine.connect() as connection:
+    # Single transaction with UPDLOCK: SELECT and UPDATE are atomic.
+    # Prevents double-use by concurrent verify requests on the same OTP.
+    with engine.begin() as connection:
         result = connection.execute(
             text("""
                 SELECT TOP 1 id, otp_code, expires_at, verified, used, attempts
-                FROM password_reset_otps
+                FROM password_reset_otps WITH (UPDLOCK)
                 WHERE email = :email AND used = 0
                 ORDER BY id DESC
             """),
@@ -307,33 +309,26 @@ def verify_password_reset_otp(email: str, otp_code: str) -> dict:
         otp_id = record["id"]
         attempts = record.get("attempts", 0)
 
-        # Check max attempts
         if attempts >= 5:
             return {"valid": False, "reason": "Too many failed attempts. Please request a new OTP."}
 
-        # Check expiration
         expires_at = record["expires_at"]
-        if expires_at and expires_at < datetime.utcnow():
+        if expires_at and expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
             return {"valid": False, "reason": "OTP has expired. Please request a new OTP."}
 
-        # Check code match
         if record["otp_code"] != clean_otp:
-            # Increment attempts
-            with engine.begin() as update_conn:
-                update_conn.execute(
-                    text("UPDATE password_reset_otps SET attempts = attempts + 1 WHERE id = :id"),
-                    {"id": otp_id}
-                )
+            connection.execute(
+                text("UPDATE password_reset_otps SET attempts = attempts + 1 WHERE id = :id"),
+                {"id": otp_id}
+            )
             remaining = 5 - (attempts + 1)
             remaining_msg = f" ({remaining} attempts remaining)" if remaining > 0 else " (Maximum attempts reached)"
             return {"valid": False, "reason": f"Invalid verification code.{remaining_msg}"}
 
-        # Code is correct: mark verified
-        with engine.begin() as update_conn:
-            update_conn.execute(
-                text("UPDATE password_reset_otps SET verified = 1 WHERE id = :id"),
-                {"id": otp_id}
-            )
+        connection.execute(
+            text("UPDATE password_reset_otps SET verified = 1 WHERE id = :id"),
+            {"id": otp_id}
+        )
         return {"valid": True, "reason": "OTP verified successfully"}
 
 def consume_password_reset_otp(email: str) -> bool:

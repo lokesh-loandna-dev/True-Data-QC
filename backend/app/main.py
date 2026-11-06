@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.config import DATABASE_URL, BACKEND_PORT
+from app.config import DATABASE_URL, BACKEND_PORT, ALLOWED_ORIGINS
 from app.database.connection import engine, db_status, init_db
 from app.database.operations import purge_old_audit_logs
 from app.auth import router as auth_router
@@ -56,12 +56,13 @@ async def log_requests_and_exceptions(request: Request, call_next):
             content={"status": "error", "detail": "Internal Server Error"}
         )
 
-# Enable CORS middleware — restrict to known origins only.
-# allow_origins=["*"] + allow_credentials=True is browser-rejected; never combine them.
+# ALLOWED_ORIGINS is loaded from the ALLOWED_ORIGINS env var (comma-separated list).
+# allow_origins=["*"] + allow_credentials=True is browser-rejected per CORS spec §7.1.5.
+# Set ALLOWED_ORIGINS=https://truedata-qc.loandna.com in .env / server environment.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["*"],
+    allow_credentials=bool(ALLOWED_ORIGINS),
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
