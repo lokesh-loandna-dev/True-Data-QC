@@ -3,7 +3,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import HTTPException, Header
-from app.config import SECRET_KEY, SESSION_TIMEOUT_MINUTES
+from app.config import (
+    SECRET_KEY,
+    SESSION_TIMEOUT_MINUTES,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_MINUTES,
+)
 from app.logger import log_event
 
 ALGORITHM = "HS256"
@@ -22,23 +27,33 @@ def verify_password(password: str, hashed_password: str) -> bool:
         log_event("WARNING", "PASSWORD_VERIFY_ERROR", f"Error evaluating password hash: {str(e)}")
         return False
 
-def generate_token(user_id: int, expires_delta: timedelta | None = None) -> str:
+def generate_token(user_id: int, expires_delta: timedelta | None = None, token_type: str = "access") -> str:
     now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
+    elif token_type == "refresh":
+        expire = now + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     else:
-        expire = now + timedelta(minutes=SESSION_TIMEOUT_MINUTES)
+        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "user_id": user_id,
+        "type": token_type,
         "iat": now,
         "exp": expire
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-def verify_token(token: str) -> int | None:
+def generate_refresh_token(user_id: int, expires_delta: timedelta | None = None) -> str:
+    return generate_token(user_id, expires_delta=expires_delta, token_type="refresh")
+
+def verify_token(token: str, expected_type: str = "access") -> int | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type = payload.get("type")
+        if token_type and expected_type and token_type != expected_type:
+            log_event("WARNING", "TOKEN_TYPE_MISMATCH", f"Expected token type '{expected_type}', found '{token_type}'")
+            return None
         user_id = payload.get("user_id")
         if user_id is None:
             sub = payload.get("sub")
@@ -46,13 +61,36 @@ def verify_token(token: str) -> int | None:
         return user_id
     except jwt.ExpiredSignatureError:
         log_event("WARNING", "TOKEN_EXPIRED", "Provided JWT token has expired")
-        return None
+        raise HTTPException(status_code=401, detail="Provided JWT token has expired")
     except jwt.InvalidTokenError as e:
         log_event("WARNING", "TOKEN_INVALID", f"Provided JWT token is invalid: {str(e)}")
         return None
     except (ValueError, TypeError) as e:
         log_event("WARNING", "TOKEN_DECODE_ERROR", f"Error decoding token payload: {str(e)}")
         return None
+
+def verify_refresh_token(token: str) -> int | None:
+    return verify_token(token, expected_type="refresh")
+
+def get_user_id_from_refresh_token(refresh_token: str) -> int:
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type = payload.get("type")
+        if token_type and token_type != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type: Expected refresh token")
+        user_id = payload.get("user_id")
+        if user_id is None:
+            sub = payload.get("sub")
+            user_id = int(sub) if sub else None
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+        return int(user_id)
+    except jwt.ExpiredSignatureError:
+        log_event("WARNING", "REFRESH_TOKEN_EXPIRED", "Refresh token has expired")
+        raise HTTPException(status_code=401, detail="Provided JWT token has expired")
+    except jwt.InvalidTokenError as e:
+        log_event("WARNING", "REFRESH_TOKEN_INVALID", f"Invalid refresh token: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
 def get_current_user_id(authorization: str = Header(None)):
     if not authorization:
@@ -65,9 +103,9 @@ def get_current_user_id(authorization: str = Header(None)):
             log_event("WARNING", "AUTH_HEADER_INVALID", issue)
             raise HTTPException(status_code=401, detail="Bearer token format required")
         
-        user_id = verify_token(token)
+        user_id = verify_token(token, expected_type="access")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
+            raise HTTPException(status_code=401, detail="Invalid token")
         return user_id
     except HTTPException:
         raise
@@ -87,34 +125,12 @@ def get_user_id_for_refresh(authorization: str = Header(None)) -> int:
             log_event("WARNING", "AUTH_HEADER_INVALID", issue)
             raise HTTPException(status_code=401, detail="Bearer token format required")
         
-        # Decode without enforcing immediate expiration to evaluate refresh grace period
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
-        user_id = payload.get("user_id")
-        if user_id is None:
-            sub = payload.get("sub")
-            user_id = int(sub) if sub else None
-            
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-            
-        exp = payload.get("exp")
-        if exp:
-            exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
-            now = datetime.now(timezone.utc)
-            # Allow refresh if token is still valid OR expired within a grace period (e.g., 15 minutes)
-            grace_period = timedelta(minutes=max(15, SESSION_TIMEOUT_MINUTES))
-            if now > (exp_time + grace_period):
-                log_event("WARNING", "REFRESH_TOKEN_EXPIRED", "Token expired beyond refresh grace period", user_id=user_id)
-                raise HTTPException(status_code=401, detail="Session expired beyond grace period. Please log in again.")
-                
-        return int(user_id)
+        return get_user_id_from_refresh_token(token)
     except HTTPException:
         raise
-    except jwt.InvalidTokenError as e:
-        log_event("WARNING", "REFRESH_TOKEN_INVALID", f"Invalid token on refresh: {str(e)}")
-        raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
-        log_event("WARNING", "REFRESH_TOKEN_ERROR", f"Error decoding token on refresh: {str(e)}")
+        issue = f"Failed to parse authorization header: {str(e)}"
+        log_event("WARNING", "AUTH_HEADER_PARSE_ERROR", issue)
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
 def generate_reset_token(email: str, expires_minutes: int = 15) -> str:

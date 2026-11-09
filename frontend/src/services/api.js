@@ -1,22 +1,50 @@
 class ApiClient {
   constructor() {
     this.tokenKey = 'ops_qc_token';
+    this.refreshTokenKey = 'ops_qc_refresh_token';
   }
 
   getToken() {
     return sessionStorage.getItem(this.tokenKey);
   }
 
-  setToken(token) {
+  getRefreshToken() {
+    return sessionStorage.getItem(this.refreshTokenKey);
+  }
+
+  setToken(token, refreshToken = null) {
     if (token) {
       sessionStorage.setItem(this.tokenKey, token);
     } else {
       sessionStorage.removeItem(this.tokenKey);
     }
+
+    if (refreshToken) {
+      sessionStorage.setItem(this.refreshTokenKey, refreshToken);
+    } else if (refreshToken === null && !token) {
+      sessionStorage.removeItem(this.refreshTokenKey);
+    }
   }
 
   clearToken() {
     sessionStorage.removeItem(this.tokenKey);
+    sessionStorage.removeItem(this.refreshTokenKey);
+  }
+
+  async refreshTokenRequest(refreshToken) {
+    const apiBaseUrl = window._env_?.VITE_API_URL || window._env_?.VITE_BACKEND_URL || '';
+    const res = await fetch(`${apiBaseUrl}/api/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${refreshToken}`
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    if (!res.ok) {
+      throw new Error(`Refresh failed with status ${res.status}`);
+    }
+    return await res.json();
   }
 
   async request(endpoint, options = {}) {
@@ -59,11 +87,45 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        // Handle 401 Unauthorized globally if token expires
-        if (response.status === 401) {
+        // Handle 401 Unauthorized with silent token refresh, matching APEX
+        const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh');
+        if (response.status === 401 && !isAuthEndpoint) {
+          if (!options._retry) {
+            const refreshToken = this.getRefreshToken();
+            if (refreshToken) {
+              try {
+                const refreshRes = await this.refreshTokenRequest(refreshToken);
+                if (refreshRes && (refreshRes.access_token || refreshRes.token)) {
+                  const newToken = refreshRes.access_token || refreshRes.token;
+                  const newRefreshToken = refreshRes.refresh_token || refreshToken;
+                  this.setToken(newToken, newRefreshToken);
+                  
+                  // Retry original request with newly issued token
+                  return this.request(endpoint, {
+                    ...options,
+                    _retry: true,
+                    headers: {
+                      ...options.headers,
+                      'Authorization': `Bearer ${newToken}`
+                    }
+                  });
+                }
+              } catch (refreshErr) {
+                console.error('Silent token refresh failed:', refreshErr);
+              }
+            }
+          }
+
+          // If we reach here, token refresh failed or retry was already attempted
           this.clearToken();
+          const detailMsg = data?.detail || data?.message || 'Provided JWT token has expired';
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('auth:session_expired', { detail: { reason: 'unauthorized' } }));
+            window.dispatchEvent(new CustomEvent('auth:session_expired', { 
+              detail: { reason: 'unauthorized', message: detailMsg } 
+            }));
+            if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+              window.location.replace('/login');
+            }
           }
         }
         
@@ -123,12 +185,6 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        this.clearToken();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('auth:session_expired', { detail: { reason: 'unauthorized' } }));
-        }
-      }
       let errorMsg = `HTTP error! status: ${response.status}`;
       try {
         const errJson = await response.json();
@@ -139,6 +195,45 @@ class ApiClient {
           if (txt) errorMsg = txt;
         } catch (_) {}
       }
+
+      if (response.status === 401) {
+        if (!options._retry) {
+          const refreshToken = this.getRefreshToken();
+          if (refreshToken) {
+            try {
+              const refreshRes = await this.refreshTokenRequest(refreshToken);
+              if (refreshRes && (refreshRes.access_token || refreshRes.token)) {
+                const newToken = refreshRes.access_token || refreshRes.token;
+                const newRefreshToken = refreshRes.refresh_token || refreshToken;
+                this.setToken(newToken, newRefreshToken);
+                return this.downloadBlob(endpoint, {
+                  ...options,
+                  _retry: true,
+                  headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${newToken}`
+                  }
+                }, onProgress);
+              }
+            } catch (refreshErr) {
+              console.error('Silent token refresh in downloadBlob failed:', refreshErr);
+            }
+          }
+        }
+
+        // If we reach here, token refresh failed or retry was already attempted
+        this.clearToken();
+        const detailMsg = errorMsg && errorMsg.includes('expired') ? errorMsg : 'Provided JWT token has expired';
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:session_expired', { 
+            detail: { reason: 'unauthorized', message: detailMsg } 
+          }));
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+            window.location.replace('/login');
+          }
+        }
+      }
+
       throw new Error(errorMsg);
     }
 
@@ -182,6 +277,7 @@ export const authApi = {
   forgotPassword: (email, password, confirm_password) =>
     api.post('/api/auth/forgot-password', { email, password, confirm_password }),
   getProfile: () => api.get('/api/auth/profile'),
-  refreshToken: () => api.post('/api/auth/refresh-token', {}),
+  getSessionTimeout: () => api.get('/api/auth/session-timeout'),
+  refreshToken: (token) => api.post('/api/auth/refresh-token', token ? { refresh_token: token } : {}),
 };
 

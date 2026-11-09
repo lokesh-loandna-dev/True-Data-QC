@@ -22,6 +22,13 @@ export const AuthProvider = ({ children }) => {
           console.error('Failed to restore auth session:', err);
           api.clearToken();
           setUser(null);
+          showError('Provided JWT token has expired', {
+            id: 'session-unauthorized-error',
+            duration: 5000,
+          });
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
+            window.location.replace('/login');
+          }
         }
       }
       setLoading(false);
@@ -34,7 +41,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleSessionExpired = (e) => {
       const reason = e?.detail?.reason || 'unauthorized';
-      logout(reason);
+      const message = e?.detail?.message || 'Provided JWT token has expired';
+      logout(reason, message);
     };
 
     const handleStorageChange = (e) => {
@@ -59,11 +67,16 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await authApi.login(email, password);
-      const { token, user: loggedInUser } = response;
+      const { token, access_token, refresh_token, user: loggedInUser } = response;
+      const activeToken = access_token || token;
       
-      api.setToken(token);
-      localStorage.setItem('ops_qc_last_activity', Date.now().toString());
-      localStorage.removeItem('ops_qc_logout_event');
+      api.setToken(activeToken, refresh_token);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('session_start_time', Date.now().toString());
+        sessionStorage.removeItem('session_expired_flag');
+        localStorage.setItem('ops_qc_last_activity', Date.now().toString());
+        localStorage.removeItem('ops_qc_logout_event');
+      }
       setUser(loggedInUser);
       return loggedInUser;
     } catch (err) {
@@ -150,39 +163,43 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (reason = null) => {
+  const logout = (reason = null, message = null) => {
     api.clearToken();
     if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('session_start_time');
+      if (reason !== 'inactivity') {
+        sessionStorage.removeItem('session_expired_flag');
+      }
       localStorage.removeItem('ops_qc_last_activity');
       localStorage.setItem('ops_qc_logout_event', Date.now().toString());
     }
     setUser(null);
     setError(null);
 
-    const { timeoutMinutes } = getSessionTimeoutConfig();
-
-    if (reason === 'inactivity') {
-      showWarning(`Your session has expired due to ${timeoutMinutes} minutes of inactivity. Please log in again.`, {
-        id: 'session-timeout-warning',
-        duration: 6000,
-      });
-    } else if (reason === 'unauthorized') {
-      showError('Your session has expired or is invalid. Please log in again.', {
+    if (reason === 'unauthorized') {
+      const displayMsg = message || 'Provided JWT token has expired';
+      showError(displayMsg, {
         id: 'session-unauthorized-error',
         duration: 5000,
       });
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
+        window.location.replace('/login');
+      }
     }
   };
 
   const refreshSession = async () => {
     try {
-      const response = await authApi.refreshToken();
-      if (response?.token) {
-        api.setToken(response.token);
+      const refreshToken = api.getRefreshToken();
+      const response = await authApi.refreshToken(refreshToken);
+      const newToken = response?.access_token || response?.token;
+      if (newToken) {
+        api.setToken(newToken, response?.refresh_token || refreshToken);
         if (response.user) {
           setUser(response.user);
         }
         if (typeof window !== 'undefined') {
+          sessionStorage.setItem('session_start_time', Date.now().toString());
           localStorage.setItem('ops_qc_last_activity', Date.now().toString());
         }
         return response;

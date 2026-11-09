@@ -35,3 +35,7 @@ class ResetPasswordRequest(BaseModel):
     password: str
     confirm_password: str
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str | None = None
+
+

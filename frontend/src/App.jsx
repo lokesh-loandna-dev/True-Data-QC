@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { PageSkeleton } from './components/SkeletonLoader';
-import SessionTimeoutManager from './components/SessionTimeoutManager';
+import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 
 // Dynamic lazy imports for route-based code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -32,7 +32,7 @@ const App = () => {
         }}
       />
       <Router>
-        <SessionTimeoutManager />
+        <SessionTimeoutHandler />
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             {/* Public authentication routes */}

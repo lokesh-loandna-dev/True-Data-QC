@@ -1,6 +1,6 @@
 import secrets
-from fastapi import APIRouter, HTTPException, Depends
-from app.config import EMAIL_REGEX
+from fastapi import APIRouter, HTTPException, Depends, Header
+from app.config import EMAIL_REGEX, SESSION_TIMEOUT_MINUTES
 from app.database.connection import db_status
 from app.auth.schemas import (
     UserRegisterRequest,
@@ -9,13 +9,16 @@ from app.auth.schemas import (
     SendOtpRequest,
     VerifyOtpRequest,
     ResetPasswordRequest,
+    RefreshTokenRequest,
 )
 from app.auth.security import (
     hash_password,
     verify_password,
     generate_token,
+    generate_refresh_token,
     get_current_user_id,
     get_user_id_for_refresh,
+    get_user_id_from_refresh_token,
     generate_reset_token,
     verify_reset_token,
 )
@@ -33,6 +36,10 @@ from app.services.email_service import send_otp_email
 from app.logger import log_event
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
+
+@router.get("/session-timeout")
+def get_session_timeout():
+    return {"session_timeout": SESSION_TIMEOUT_MINUTES}
 
 from app.auth.security import is_super_admin
 
@@ -139,12 +146,15 @@ def login_user(req: UserLoginRequest):
             detail="Your account is pending admin approval. You will be able to log in once an administrator approves your account."
         )
 
-    token = generate_token(user["id"])
+    access_token = generate_token(user["id"])
+    refresh_token = generate_refresh_token(user["id"])
     log_event("INFO", "LOGIN_SUCCESS", "User logged in successfully", username=username, email=email)
     return {
         "status": "success",
         "message": "Login successful",
-        "token": token,
+        "token": access_token,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "user": {
             "id": user["id"],
             "username": user["username"],
@@ -336,19 +346,40 @@ def get_profile(user_id: int = Depends(get_current_user_id)):
     }
 
 @router.post("/refresh-token")
-def refresh_session_token(user_id: int = Depends(get_user_id_for_refresh)):
+@router.post("/refresh")
+def refresh_session_token(
+    req: RefreshTokenRequest | None = None,
+    authorization: str | None = Header(None)
+):
+    token_str = None
+    if req and req.refresh_token:
+        token_str = req.refresh_token.strip()
+    elif authorization:
+        parts = authorization.split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token_str = parts[1].strip()
+        else:
+            token_str = authorization.strip()
+
+    if not token_str:
+        raise HTTPException(status_code=401, detail="Refresh token is required")
+
+    user_id = get_user_id_from_refresh_token(token_str)
     user = get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.get("status") != "active":
         raise HTTPException(status_code=403, detail="Account is not active")
 
-    new_token = generate_token(user["id"])
+    new_access_token = generate_token(user["id"])
+    new_refresh_token = generate_refresh_token(user["id"])
     log_event("INFO", "TOKEN_REFRESH", f"Session token refreshed for user '{user.get('username')}'", user_id=user_id)
     return {
         "status": "success",
         "message": "Token refreshed successfully",
-        "token": new_token,
+        "token": new_access_token,
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
         "user": user
     }
 
