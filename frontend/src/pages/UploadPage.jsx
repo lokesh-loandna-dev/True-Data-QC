@@ -30,8 +30,8 @@ const UploadPage = () => {
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
   const [selectedSuperAdminMode, setSelectedSuperAdminMode] = useState('pre-underwrite');
 
-  // Ingestion Source Tab: 'file' | 'api'
-  const [ingestionTab, setIngestionTab] = useState('file');
+  // Ingestion Source Tab: 'api' | 'file'
+  const [ingestionTab, setIngestionTab] = useState('api');
 
   // API Ingestion Form State
   const [apiLoanId, setApiLoanId] = useState('');
@@ -532,24 +532,6 @@ const UploadPage = () => {
             <button
               type="button"
               onClick={() => {
-                setIngestionTab('file');
-                setApiError('');
-                setError('');
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
-                ingestionTab === 'file'
-                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span>Direct File Upload</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 setIngestionTab('api');
                 setApiError('');
                 setError('');
@@ -565,10 +547,46 @@ const UploadPage = () => {
               </svg>
               <span>Truedata via API</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIngestionTab('file');
+                setApiError('');
+                setError('');
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                ingestionTab === 'file'
+                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Direct File Upload</span>
+            </button>
           </div>
         </div>
 
-        {/* Option 1: File Upload Dropzone (Issue 6 resolved: non-nested interactive control) */}
+        {/* Option 1: Third-Party API Call (Decomposed component) */}
+        {ingestionTab === 'api' && (
+          <ApiIngestionCard
+            apiLoanId={apiLoanId}
+            setApiLoanId={setApiLoanId}
+            apiSellerName={apiSellerName}
+            setApiSellerName={setApiSellerName}
+            apiMode={apiMode}
+            setApiMode={setApiMode}
+            isSuperAdmin={isSuperAdmin}
+            apiLoading={apiLoading}
+            loading={loading}
+            apiError={apiError}
+            setApiError={setApiError}
+            onSubmit={handleApiFetch}
+          />
+        )}
+
+        {/* Option 2: File Upload Dropzone (Issue 6 resolved: non-nested interactive control) */}
         {ingestionTab === 'file' && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
             <div
@@ -629,24 +647,6 @@ const UploadPage = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Option 2: Third-Party API Call (Decomposed component) */}
-        {ingestionTab === 'api' && (
-          <ApiIngestionCard
-            apiLoanId={apiLoanId}
-            setApiLoanId={setApiLoanId}
-            apiSellerName={apiSellerName}
-            setApiSellerName={setApiSellerName}
-            apiMode={apiMode}
-            setApiMode={setApiMode}
-            isSuperAdmin={isSuperAdmin}
-            apiLoading={apiLoading}
-            loading={loading}
-            apiError={apiError}
-            setApiError={setApiError}
-            onSubmit={handleApiFetch}
-          />
         )}
       </main>
 
