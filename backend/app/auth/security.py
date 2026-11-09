@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import HTTPException, Header
-from app.config import SECRET_KEY
+from app.config import SECRET_KEY, SESSION_TIMEOUT_MINUTES
 from app.logger import log_event
 
 ALGORITHM = "HS256"
@@ -27,7 +27,7 @@ def generate_token(user_id: int, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
         expire = now + expires_delta
     else:
-        expire = now + timedelta(hours=24)
+        expire = now + timedelta(minutes=SESSION_TIMEOUT_MINUTES)
     payload = {
         "sub": str(user_id),
         "user_id": user_id,
@@ -74,6 +74,47 @@ def get_current_user_id(authorization: str = Header(None)):
     except Exception as e:
         issue = f"Failed to parse authorization header: {str(e)}"
         log_event("WARNING", "AUTH_HEADER_PARSE_ERROR", issue)
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+def get_user_id_for_refresh(authorization: str = Header(None)) -> int:
+    if not authorization:
+        log_event("WARNING", "AUTH_HEADER_MISSING", "Authorization header missing on token refresh")
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    try:
+        token_type, token = authorization.split(" ", 1)
+        if token_type.lower() != "bearer":
+            issue = f"Authorization header format invalid: Expected 'Bearer', received '{token_type}'"
+            log_event("WARNING", "AUTH_HEADER_INVALID", issue)
+            raise HTTPException(status_code=401, detail="Bearer token format required")
+        
+        # Decode without enforcing immediate expiration to evaluate refresh grace period
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
+        user_id = payload.get("user_id")
+        if user_id is None:
+            sub = payload.get("sub")
+            user_id = int(sub) if sub else None
+            
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+            
+        exp = payload.get("exp")
+        if exp:
+            exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+            now = datetime.now(timezone.utc)
+            # Allow refresh if token is still valid OR expired within a grace period (e.g., 15 minutes)
+            grace_period = timedelta(minutes=max(15, SESSION_TIMEOUT_MINUTES))
+            if now > (exp_time + grace_period):
+                log_event("WARNING", "REFRESH_TOKEN_EXPIRED", "Token expired beyond refresh grace period", user_id=user_id)
+                raise HTTPException(status_code=401, detail="Session expired beyond grace period. Please log in again.")
+                
+        return int(user_id)
+    except HTTPException:
+        raise
+    except jwt.InvalidTokenError as e:
+        log_event("WARNING", "REFRESH_TOKEN_INVALID", f"Invalid token on refresh: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        log_event("WARNING", "REFRESH_TOKEN_ERROR", f"Error decoding token on refresh: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
 def generate_reset_token(email: str, expires_minutes: int = 15) -> str:

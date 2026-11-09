@@ -15,6 +15,7 @@ from app.auth.security import (
     verify_password,
     generate_token,
     get_current_user_id,
+    get_user_id_for_refresh,
     generate_reset_token,
     verify_reset_token,
 )
@@ -331,6 +332,23 @@ def get_profile(user_id: int = Depends(get_current_user_id)):
     log_event("INFO", "PROFILE_FETCHED", "User profile fetched successfully", username=user.get("username"), email=user.get("email"))
     return {
         "status": "success",
+        "user": user
+    }
+
+@router.post("/refresh-token")
+def refresh_session_token(user_id: int = Depends(get_user_id_for_refresh)):
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.get("status") != "active":
+        raise HTTPException(status_code=403, detail="Account is not active")
+
+    new_token = generate_token(user["id"])
+    log_event("INFO", "TOKEN_REFRESH", f"Session token refreshed for user '{user.get('username')}'", user_id=user_id)
+    return {
+        "status": "success",
+        "message": "Token refreshed successfully",
+        "token": new_token,
         "user": user
     }
 

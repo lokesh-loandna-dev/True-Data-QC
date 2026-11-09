@@ -62,6 +62,9 @@ class ApiClient {
         // Handle 401 Unauthorized globally if token expires
         if (response.status === 401) {
           this.clearToken();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:session_expired', { detail: { reason: 'unauthorized' } }));
+          }
         }
         
         const errorMessage = data?.detail || data?.message || `HTTP error! status: ${response.status}`;
@@ -122,6 +125,9 @@ class ApiClient {
     if (!response.ok) {
       if (response.status === 401) {
         this.clearToken();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:session_expired', { detail: { reason: 'unauthorized' } }));
+        }
       }
       let errorMsg = `HTTP error! status: ${response.status}`;
       try {
@@ -176,5 +182,6 @@ export const authApi = {
   forgotPassword: (email, password, confirm_password) =>
     api.post('/api/auth/forgot-password', { email, password, confirm_password }),
   getProfile: () => api.get('/api/auth/profile'),
+  refreshToken: () => api.post('/api/auth/refresh-token', {}),
 };
 

@@ -8,6 +8,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", 5000))
 SECRET_KEY = os.getenv("SECRET_KEY", "ops_qc_secret_key_2026")
+SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
 
 # Comma-separated list of allowed CORS origins.
 # Example .env entry: ALLOWED_ORIGINS=https://truedata-qc.loandna.com,https://ops-qc.loandna.com
