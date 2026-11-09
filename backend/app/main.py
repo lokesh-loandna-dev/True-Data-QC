@@ -10,7 +10,7 @@ from app.database.operations import purge_old_audit_logs
 from app.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.data_dictionary import router as data_dictionary_router
-from app.routers.loans import router as loans_router
+from app.routers.loans import router as loans_router, PRE_UW_RULES, JUNIOR_UW_RULES
 from app.logger import log_event, cleanup_old_logs
 
 from prohance.app.main import router as prohance_router
@@ -28,6 +28,10 @@ async def lifespan(app: FastAPI):
         log_event("INFO", "DB_CONNECT", "Successfully connected to SQL database")
     else:
         log_event("ERROR", "DB_CONNECT_FAILED", f"Database connection issue: {db_status.get('error')}")
+    if PRE_UW_RULES is None:
+        log_event("ERROR", "SPEC_CHECK_FAILED", "Pre-Underwriter rules are None at startup — all Pre-UW validations will return Review Required")
+    if JUNIOR_UW_RULES is None:
+        log_event("ERROR", "SPEC_CHECK_FAILED", "Junior-Underwriter rules are None at startup — all Jr-UW validations will return Review Required")
     yield
     # Shutdown logic
     if engine:
@@ -80,6 +84,15 @@ def read_root():
         "status": "success",
         "message": "Uvicorn server is running successfully!",
         "port": BACKEND_PORT
+    }
+
+@app.get("/api/health")
+def health_check():
+    """Returns spec and DB status — call this after deployment to confirm everything loaded."""
+    return {
+        "db": "connected" if db_status.get("connected") else "disconnected",
+        "pre_uw_spec": f"loaded ({len(PRE_UW_RULES)} fields)" if PRE_UW_RULES is not None else "FAILED — Review Required for all Pre-UW",
+        "junior_uw_spec": f"loaded ({len(JUNIOR_UW_RULES)} fields)" if JUNIOR_UW_RULES is not None else "FAILED — Review Required for all Jr-UW",
     }
 
 @app.get("/db-status")

@@ -84,15 +84,21 @@ PRE_UW_RULES = None
 if PRE_SPEC_PATH.exists():
     try:
         PRE_UW_RULES = cv.load_rules(PRE_SPEC_PATH, profile="preuw")
+        log_event("INFO", "SPEC_LOADED", f"Pre-Underwriter spec loaded OK: {len(PRE_UW_RULES)} fields from {PRE_SPEC_PATH.name}")
     except Exception as e:
-        print(f"Warning: Failed to load Pre-Underwriter spec: {e}")
+        log_event("ERROR", "SPEC_LOAD_FAILED", f"Pre-Underwriter spec failed to load: {e}")
+else:
+    log_event("ERROR", "SPEC_LOAD_FAILED", f"Pre-Underwriter spec not found: {PRE_SPEC_PATH}")
 
 JUNIOR_UW_RULES = None
 if JUNIOR_SPEC_PATH.exists():
     try:
         JUNIOR_UW_RULES = cv.load_rules(JUNIOR_SPEC_PATH, profile="jruw")
+        log_event("INFO", "SPEC_LOADED", f"Junior-Underwriter spec loaded OK: {len(JUNIOR_UW_RULES)} fields from {JUNIOR_SPEC_PATH.name}")
     except Exception as e:
-        print(f"Warning: Failed to load Junior-Underwriter spec: {e}")
+        log_event("ERROR", "SPEC_LOAD_FAILED", f"Junior-Underwriter spec failed to load: {e}")
+else:
+    log_event("ERROR", "SPEC_LOAD_FAILED", f"Junior-Underwriter spec not found: {JUNIOR_SPEC_PATH}")
 
 CONDITION_RULES = PRE_UW_RULES
 
