@@ -24,6 +24,17 @@ const LoginPage = () => {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
+  // Show the correct banner when the user was auto-logged out
+  useEffect(() => {
+    const reason = sessionStorage.getItem('session_expired_reason');
+    if (!reason) return;
+    sessionStorage.removeItem('session_expired_reason');
+    if (reason === 'inactivity') {
+      notify.warning('You were signed out due to inactivity. Please sign in again.');
+    }
+    // 'unauthorized' / 'token_expired' already show a toast from AuthContext (same id = no duplicate)
+  }, []);
+
   const validateForm = () => {
     if (!email) {
       const msg = 'Email is required';

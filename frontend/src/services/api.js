@@ -117,15 +117,13 @@ class ApiClient {
           }
 
           // If we reach here, token refresh failed or retry was already attempted
+          // Dispatch event and let React (ProtectedRoute + AuthContext) handle navigation
           this.clearToken();
-          const detailMsg = data?.detail || data?.message || 'Provided JWT token has expired';
+          const detailMsg = data?.detail || data?.message || 'Your session has expired. Please sign in again.';
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('auth:session_expired', { 
               detail: { reason: 'unauthorized', message: detailMsg } 
             }));
-            if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-              window.location.replace('/login');
-            }
           }
         }
         
@@ -222,15 +220,13 @@ class ApiClient {
         }
 
         // If we reach here, token refresh failed or retry was already attempted
+        // Dispatch event and let React (ProtectedRoute + AuthContext) handle navigation
         this.clearToken();
-        const detailMsg = errorMsg && errorMsg.includes('expired') ? errorMsg : 'Provided JWT token has expired';
+        const detailMsg = errorMsg && errorMsg.includes('expired') ? errorMsg : 'Your session has expired. Please sign in again.';
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('auth:session_expired', { 
             detail: { reason: 'unauthorized', message: detailMsg } 
           }));
-          if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-            window.location.replace('/login');
-          }
         }
       }
 

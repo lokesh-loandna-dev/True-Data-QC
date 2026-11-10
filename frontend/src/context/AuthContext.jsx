@@ -22,13 +22,13 @@ export const AuthProvider = ({ children }) => {
           console.error('Failed to restore auth session:', err);
           api.clearToken();
           setUser(null);
-          showError('Provided JWT token has expired', {
+          // Show a toast — deduped by id so this won't stack with the api.js event handler toast
+          showError('Your session has expired. Please sign in again.', {
             id: 'session-unauthorized-error',
             duration: 5000,
           });
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
-            window.location.replace('/login');
-          }
+          // Navigation is handled by ProtectedRoute reacting to isAuthenticated = false;
+          // avoid window.location.replace so toast survives the React Router transition
         }
       }
       setLoading(false);
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleSessionExpired = (e) => {
       const reason = e?.detail?.reason || 'unauthorized';
-      const message = e?.detail?.message || 'Provided JWT token has expired';
+      const message = e?.detail?.message || 'Your session has expired. Please sign in again.';
       logout(reason, message);
     };
 
@@ -74,6 +74,7 @@ export const AuthProvider = ({ children }) => {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('session_start_time', Date.now().toString());
         sessionStorage.removeItem('session_expired_flag');
+        sessionStorage.removeItem('session_expired_reason');
         localStorage.setItem('ops_qc_last_activity', Date.now().toString());
         localStorage.removeItem('ops_qc_logout_event');
       }
@@ -167,24 +168,29 @@ export const AuthProvider = ({ children }) => {
     api.clearToken();
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('session_start_time');
-      if (reason !== 'inactivity') {
-        sessionStorage.removeItem('session_expired_flag');
-      }
+      sessionStorage.removeItem('session_expired_flag');
       localStorage.removeItem('ops_qc_last_activity');
       localStorage.setItem('ops_qc_logout_event', Date.now().toString());
+      // Persist the logout reason so LoginPage can display the right message
+      if (reason === 'inactivity') {
+        sessionStorage.setItem('session_expired_reason', 'inactivity');
+      } else if (reason === 'unauthorized') {
+        sessionStorage.setItem('session_expired_reason', 'unauthorized');
+      } else {
+        sessionStorage.removeItem('session_expired_reason');
+      }
     }
     setUser(null);
     setError(null);
 
     if (reason === 'unauthorized') {
-      const displayMsg = message || 'Provided JWT token has expired';
+      const displayMsg = message || 'Your session has expired. Please sign in again.';
       showError(displayMsg, {
         id: 'session-unauthorized-error',
         duration: 5000,
       });
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.replace('/login');
-      }
+      // Navigation handled by ProtectedRoute reacting to isAuthenticated = false
+      // No window.location.replace — toast survives the React Router transition
     }
   };
 
