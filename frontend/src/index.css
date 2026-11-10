@@ -28,6 +28,21 @@
 
 @import "tailwindcss";
 
+/* ── Session-timeout modal: freeze all app chrome beneath the overlay ────────
+   SessionTimeoutHandler sets data-modal-open="true" on <html> when the modal
+   is visible. This disables pointer events on every element that sits below
+   z-[9999] — including the fixed header (z-50) — so users cannot interact
+   with navigation, dropdowns, or page content while the dialog is open.    */
+html[data-modal-open="true"] *:not([data-modal-layer]) {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+/* The modal card itself must remain interactive */
+html[data-modal-open="true"] [data-modal-layer] * {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
 @theme {
   --color-primary: #24A1DD;
   --color-primary-hover: #1D4ED8;
