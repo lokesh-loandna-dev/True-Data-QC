@@ -8,7 +8,7 @@ import { exportToExcel } from '../utils/excelExport';
 import { notify } from '../utils/toast';
 import { ManageColumnsModal } from '../components/ManageColumnsModal';
 import Tooltip from '../components/Tooltip';
-import { extractLoanId } from '../utils/loanUtils';
+import { extractLoanId, isExcludedAuditColumn } from '../utils/loanUtils';
 import { userPreferencesService } from '../services/userPreferencesService';
 import { decodePackageId } from '../utils/routeCipher';
 
@@ -349,31 +349,8 @@ const PackageAuditPage = () => {
 
     const cols = [];
 
-    const excludedExcelKeys = new Set([
-      'condition_text',
-      'condition_outcome',
-      'Condition Text',
-      'Condition Outcome',
-      'condition_validation',
-      'condition_rule_type',
-      'condition_remarks',
-      'Condition Validation',
-      'Condition Rule Type',
-      'Condition Remarks',
-      'final_result',
-      'final_remarks',
-      'Final Result',
-      'Final Remarks',
-      'action',
-      'remark',
-      'Action',
-      'Remark',
-      'User Remark',
-      'raw_data'
-    ]);
-
     excelCols.forEach((colName) => {
-      if (!colName || excludedExcelKeys.has(colName)) return;
+      if (isExcludedAuditColumn(colName)) return;
 
       let accKey = colName;
       if (colName === 'Data Field') accKey = 'data_field';
@@ -456,78 +433,6 @@ const PackageAuditPage = () => {
     );
 
     cols.push(
-      {
-        header: 'Dict Match',
-        accessor: 'dictionary_match_status',
-        sortable: true,
-        render: (r) => getStatusBadge(r.dictionary_match_status),
-        category: 'Validation'
-      },
-      {
-        header: 'Type Check',
-        accessor: 'data_type_validation',
-        sortable: true,
-        render: (r) => getStatusBadge(r.data_type_validation),
-        category: 'Validation'
-      },
-      {
-        header: 'Type Remarks',
-        accessor: 'data_type_remarks',
-        sortable: true,
-        render: (r) => <span className="text-slate-500 break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.data_type_remarks || ''}</span>,
-        category: 'Validation'
-      },
-      {
-        header: 'Numeric Format',
-        accessor: 'numeric_format_flag',
-        sortable: true,
-        render: (r) => getStatusBadge(r.numeric_format_flag),
-        category: 'Validation'
-      },
-      {
-        header: 'Enum Check',
-        accessor: 'enum_validation',
-        sortable: true,
-        headerClassName: 'whitespace-nowrap',
-        cellClassName: 'whitespace-nowrap',
-        render: (r) => <span className="whitespace-nowrap">{getStatusBadge(r.enum_validation)}</span>,
-        category: 'Validation'
-      },
-      {
-        header: 'Enum Remarks',
-        accessor: 'enum_remarks',
-        sortable: true,
-        render: (r) => <span className="text-slate-500 break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.enum_remarks || ''}</span>,
-        category: 'Validation'
-      },
-      {
-        header: 'Macro Check',
-        accessor: 'macro_validation_result',
-        sortable: true,
-        render: (r) => getStatusBadge(r.macro_validation_result),
-        category: 'Validation'
-      },
-      {
-        header: 'Combined Result',
-        accessor: 'result',
-        sortable: true,
-        render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug">{getStatusBadge(r.result, true)}</span>,
-        category: 'Validation'
-      },
-      {
-        header: 'Condition Check',
-        accessor: 'condition_validation',
-        sortable: true,
-        render: (r) => getStatusBadge(r.condition_validation),
-        category: 'Validation'
-      },
-      {
-        header: 'Condition Remarks',
-        accessor: 'condition_remarks',
-        sortable: true,
-        render: (r) => <span className="text-slate-500 break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.condition_remarks || ''}</span>,
-        category: 'Validation'
-      },
       {
         header: 'Condition Text',
         accessor: 'condition_text',

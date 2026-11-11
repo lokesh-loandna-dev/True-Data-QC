@@ -63,3 +63,53 @@ export const normalizeAction = (action) => {
   return trimmed;
 };
 
+const EXCLUDED_AUDIT_COLUMN_NAMES = new Set([
+  'condition text',
+  'condition outcome',
+  'condition validation',
+  'condition rule type',
+  'condition remarks',
+  'final result',
+  'final remarks',
+  'action',
+  'remark',
+  'user remark',
+  'raw data',
+  'all sources',
+  'true source',
+  'tape data',
+  'compare results',
+  'discrepancy decision',
+  'comment',
+  'ingestion mode',
+  'dict match',
+  'dictionary match status',
+  'type check',
+  'data type validation',
+  'type remarks',
+  'data type remarks',
+  'numeric format',
+  'numeric format flag',
+  'enum check',
+  'enum validation',
+  'enum remarks',
+  'macro check',
+  'macro validation result',
+  'combined result',
+  'condition check',
+]);
+
+/**
+ * Returns true if a dynamic Excel/raw_data column header should be excluded
+ * from Manage Columns and the main validation/audit table.
+ */
+export const isExcludedAuditColumn = (colName) => {
+  if (!colName) return true;
+  const normalized = String(colName)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, ' ');
+  return EXCLUDED_AUDIT_COLUMN_NAMES.has(normalized);
+};
+
+
