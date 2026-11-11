@@ -32,7 +32,7 @@ from __future__ import annotations
 # results. validate_loan_files_v5.py and audit_conditions.py check it at
 # startup so a stale copy of this file cannot be used silently -- that once
 # produced two different audits from the same spec with no warning.
-__version__ = "5.17.0"
+__version__ = "5.24.0"
 
 import logging
 import re
@@ -691,6 +691,23 @@ def _parse_conditional(text: str, lower: str, owner_field: str = ""):
             })
             return family, params
 
+    # "then it should be \"NA\" and never be \"Missing\"" states a required
+    # value AND a forbidden one. The never-be branch below ran first and
+    # forbade both, inverting the rule: a correct value of "NA" was reported
+    # Invalid. The required value wins; the forbidden one is implied by it.
+    required = re.search(r'(?i)(?:should|must|needs?\s+to)\s+be\s+'
+                         r'"([^"]+)"\s*(?:,|and)\s*(?:should\s+)?'
+                         r'(?:never|not)\s+be\s*"([^"]+)"', consequent)
+    if required:
+        family = "COND_EQUALS"
+        params = {"expected": [required.group(1).strip()]}
+        params.update({
+            "ref_field": ref_field, "ref_values": values,
+            "starts_with": starts_with, "negate": negate,
+            "extra_conditions": conditions[1:],
+        })
+        return family, params
+
     if re.search(r"never\s+be", cons_low) or re.search(r"not\s+be", cons_low):
         target = cons_quotes[0] if cons_quotes else ""
         if _norm(target) in {"blank", "empty"} or not cons_quotes:
@@ -809,6 +826,19 @@ def parse_clause(rule: Rule) -> Rule:
                            "ref_field": target.group(1).strip(),
                            "negate": negated}
             return rule
+
+    # --- the field must be empty -------------------------------------------
+    # "This should always be \"Blank\"" means the field must carry no value.
+    # Without this it parsed as ALWAYS_EQUALS expecting the literal text
+    # "Blank", so an empty field was reported Invalid and the word "Blank"
+    # was reported Valid - exactly inverted.
+    must_blank = re.search(
+        r"(?i)^\s*(?:this\s+field|the\s+field|this|it|field|value)?\s*"
+        r"(?:should|must|needs?\s+to)\s+(?:always\s+)?be\s*"
+        r"\"?\s*(blank|empty|null)\s*\"?\s*\.?\s*$", text)
+    if must_blank and not lower.startswith("if"):
+        rule.family = "MUST_BE_BLANK"
+        return rule
 
     # --- a percentage of another field's value ------------------------------
     # 'It should be "80%" of "Maximum Line of Credit" field in "Note" Screen'
@@ -1216,6 +1246,13 @@ def parse_clause(rule: Rule) -> Rule:
         if digits:
             rule.family = "EXACT_DIGITS"
             rule.params = {"count": int(digits.group(1))}
+            return rule
+
+        # "It should not be a Future year" - the value is a year, or a list
+        # of years ("[2025,2026]"), not a calendar date. Reading it as a date
+        # failed on every multi-value cell.
+        if re.search(r"(?i)future\s+year", lower) and re.search(r"not|never", lower):
+            rule.family = "NOT_FUTURE_YEAR"
             return rule
 
         if "future date" in lower and re.search(r"not|never", lower):
@@ -1656,7 +1693,7 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
     if guard and guard.get("ref_field"):
         guard_name, guard_value = index.resolve(guard["ref_field"], rule.field)
         if guard_name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the governing field "
                 f"{guard['ref_field']!r} for this rule.")
         triggered, how = _condition_holds(guard, guard_value)
@@ -1668,7 +1705,7 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             extra_name, extra_value = index.resolve(spec["ref_field"],
                                                     rule.field)
             if extra_name is None:
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"Could not locate the referenced field "
                     f"{spec['ref_field']!r} for this rule.")
             held, how = _condition_holds(spec, extra_value)
@@ -1785,12 +1822,12 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
             if isinstance(other_value, list):
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"{params['ref_field']!r} is ambiguous in this file; "
                     f"candidates: {', '.join(other_value[:4])}.")
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other_value):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the years cannot be compared.")
@@ -1815,11 +1852,21 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         right_name, right_value = index.resolve(params["right"], rule.field)
         for label in ("left", "right"):
             if (left_name if label == "left" else right_name) is None:
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"Could not locate the referenced field "
-                    f"{params[label]!r} in this file.")
+                    f"{params[label]!r} in this file, so the rule does not apply.")
 
-        agree = _norm(left_value) == _norm(right_value)
+        # "Same" here means one name contains the other, not strict equality.
+        # Lender Name and Loan Origination Company describe the same company
+        # with differing legal suffixes ("Evergreen Moneysource Mortgage
+        # Company" vs "... , a Washington Corporation"), so exact comparison
+        # reported every loan as different. Containment is checked in both
+        # directions; the 8-character floor stops a short value matching
+        # inside an unrelated longer one.
+        left_norm, right_norm = _norm(left_value), _norm(right_value)
+        agree = left_norm == right_norm
+        if not agree and min(len(left_norm), len(right_norm)) >= 8:
+            agree = left_norm in right_norm or right_norm in left_norm
         want_agree = not params.get("negate", False)
         if agree != want_agree:
             state = "are the same" if agree else "are different"
@@ -1836,9 +1883,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             target_name, target_value = index.resolve(params["ref_field"],
                                                       rule.field)
             if target_name is None:
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"Could not locate the referenced field "
-                    f"{params['ref_field']!r} in this file.")
+                    f"{params['ref_field']!r} in this file, so the rule does not apply.")
             if _norm(value) == _norm(target_value):
                 return "Valid", context + f"this equals {target_name!r}."
             return "Invalid", (context + f"this should equal {target_name!r} "
@@ -1860,9 +1907,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         for label, name in (("left", left_name), ("right", right_name)):
             if name is None:
                 missing = params["left"] if label == "left" else params["right"]
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"Could not locate the referenced field {missing!r} "
-                    f"in this file.")
+                    f"in this file, so the rule does not apply.")
         fields_agree = _norm(left_value) == _norm(right_value)
         want_agree = not params.get("negate", False)
         if fields_agree != want_agree:
@@ -1875,9 +1922,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         target_name, target_value = index.resolve(params["ref_field"],
                                                   rule.field)
         if target_name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         how = "do not match" if params.get("negate") else "match"
         if _norm(value) == _norm(target_value):
             return "Valid", (f"{left_name!r} and {right_name!r} {how}, and "
@@ -2000,14 +2047,20 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         return "Invalid", (f"Age {age} is below the required minimum of "
                            f"{params['years']} years (born {born:%m/%d/%Y}).")
 
+    if family == "MUST_BE_BLANK":
+        if _is_blank_value(value):
+            return "Valid", ""
+        return "Invalid", (f"Field should be blank, found "
+                           f"{_display_text(value)!r}.")
+
     if family == "PERCENT_OF_FIELD":
         if _is_blank_value(value):
             return "N/A - blank value", ""
         name, other = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the expected amount cannot be "
@@ -2058,16 +2111,16 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             return "Invalid", (f"Date is not older than {name} "
                                f"({other_date:%m/%d/%Y})")
         return "Valid", (f"{this_date:%m/%d/%Y} is the oldest date field "
-                         f"in this file.")
+                         f"in this file, so the rule does not apply.")
 
     if family == "DATE_MONTH_WINDOW":
         if _is_blank_value(value):
             return "N/A - blank value", ""
         name, other = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the expected date cannot be derived.")
@@ -2097,9 +2150,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         if base_name is None or term_name is None:
             missing = (params["ref_field"] if base_name is None
                        else params["term_field"])
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field {missing!r} "
-                f"in this file.")
+                f"in this file, so the rule does not apply.")
         if _is_blank_value(base_value) or _is_blank_value(term_value):
             return "N/A - condition not met", (
                 f"{base_name!r} or {term_name!r} is blank, so the expected "
@@ -2137,9 +2190,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         if low_name is None or high_name is None:
             missing = params["lower_field"] if low_name is None \
                 else params["upper_field"]
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field {missing!r} "
-                f"in this file.")
+                f"in this file, so the rule does not apply.")
         if _is_blank_value(low_value) or _is_blank_value(high_value):
             return "N/A - condition not met", (
                 f"{low_name!r} or {high_name!r} is blank, so the range "
@@ -2174,9 +2227,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             return "N/A - blank value", ""
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other_value):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the window cannot be measured.")
@@ -2203,9 +2256,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             return "N/A - blank value", ""
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other_value):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the interval cannot be measured.")
@@ -2242,9 +2295,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             return "N/A - blank value", ""
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other_value):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the offset cannot be calculated.")
@@ -2282,12 +2335,12 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
             if isinstance(other_value, list):
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"{params['ref_field']!r} is ambiguous in this file; "
                     f"candidates: {', '.join(other_value[:4])}.")
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(other_value):
             return "N/A - condition not met", (
                 f"{name!r} is blank, so the dates cannot be compared.")
@@ -2319,9 +2372,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
     if family == "MATCH_FIELD":
         name, other_value = index.resolve(params["ref_field"], rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['ref_field']!r} in this file.")
+                f"{params['ref_field']!r} in this file, so the rule does not apply.")
         if _is_blank_value(value) and _is_blank_value(other_value):
             return "N/A - blank value", f"Both this field and {name!r} are blank."
         if _norm(value) == _norm(other_value):
@@ -2333,9 +2386,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         subject = params["subject"]
         name, subject_value = index.resolve(subject, rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Rule constrains {subject!r}, which is not present in this "
-                f"file.")
+                f"file, so the rule does not apply.")
         inner = Rule(field=name, source=rule.source, kind=rule.kind,
                      text=params["inner_text"])
         inner.family = params["inner_family"]
@@ -2443,6 +2496,42 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         return "Invalid", (f"Value {str(value)!r} contains {len(digits)} "
                            f"digits; exactly {params['count']} required.")
 
+    if family == "NOT_FUTURE_YEAR":
+        if _is_blank_value(value):
+            return "N/A - blank value", ""
+        from datetime import date as _date
+        # The current year is allowed even though it is not finished: a
+        # partial year of verified income is legitimate.
+        # Matches NOT_FUTURE_DATE, which also uses today rather than --as-of;
+        # the condition engine is not passed an as-of date.
+        this_year = _date.today().year
+        parts = split_multivalue_numbers(_display_text(value))
+        years, bad = [], []
+        for part in parts:
+            text = part.strip()
+            if re.fullmatch(r"\d{4}", text):
+                years.append(int(text))
+            else:
+                bad.append(part)
+        if bad:
+            return "Invalid", (
+                f"Value {_display_text(value)!r} contains "
+                f"{'entries that are' if len(bad) > 1 else 'an entry that is'}"
+                f" not a 4-digit year: "
+                + ", ".join(repr(b) for b in bad[:4]) + ".")
+        if not years:
+            return "Invalid", (f"Value {_display_text(value)!r} contains no "
+                               f"year.")
+        future = [y for y in years if y > this_year]
+        if future:
+            return "Invalid", (
+                f"{', '.join(str(y) for y in future)} "
+                f"{'are' if len(future) > 1 else 'is'} later than the current "
+                f"year ({this_year}).")
+        return "Valid", (f"{', '.join(str(y) for y in years)} "
+                         f"{'are' if len(years) > 1 else 'is'} not in the "
+                         f"future.")
+
     if family == "NOT_FUTURE_DATE":
         if _is_blank_value(value):
             return "N/A - blank value", ""
@@ -2470,12 +2559,12 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
                                                    params["trigger_option"])
         if name is None:
             if isinstance(trigger_value, list):
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"{params['trigger_option']!r} is ambiguous in this file; "
                     f"candidates: {', '.join(trigger_value[:4])}.")
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Could not locate the referenced field "
-                f"{params['trigger_option']!r} in this file.")
+                f"{params['trigger_option']!r} in this file, so the rule does not apply.")
         if not _is_true(trigger_value):
             return "N/A - condition not met", (
                 f"{name!r} is not selected, so the rule does not apply.")
@@ -2545,12 +2634,12 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
     name, ref_value = index.resolve(params["ref_field"], rule.field)
     if name is None:
         if isinstance(ref_value, list):
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"{params['ref_field']!r} is ambiguous in this file; "
                 f"candidates: {', '.join(ref_value[:4])}.")
-        return "Not Automated", (
+        return "N/A - condition not met", (
             f"Could not locate the referenced field "
-            f"{params['ref_field']!r} in this file.")
+            f"{params['ref_field']!r} in this file, so the rule does not apply.")
 
     ref_values = params.get("ref_values") or []
     # Every condition in the antecedent must hold. The referenced values are
@@ -2571,9 +2660,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
             check_name, check_value = index.resolve(spec["ref_field"],
                                                     rule.field)
             if check_name is None:
-                return "Not Automated", (
+                return "N/A - condition not met", (
                     f"Could not locate the referenced field "
-                    f"{spec['ref_field']!r} in this file.")
+                    f"{spec['ref_field']!r} in this file, so the rule does not apply.")
         held, how = _condition_holds(spec, check_value)
         resolved.append((check_name, check_value, how, held))
         if not held and unmet is None:
@@ -2619,9 +2708,9 @@ def _evaluate_rule(rule: Rule, value, index: FieldIndex):
         subject = params["subject"]
         name, subject_value = index.resolve(subject, rule.field)
         if name is None:
-            return "Not Automated", (
+            return "N/A - condition not met", (
                 f"Rule constrains {subject!r}, which is not present in this "
-                f"file.")
+                f"file, so the rule does not apply.")
         inner = Rule(field=name, source=rule.source, kind=rule.kind,
                      text=params["inner_text"])
         inner.family = params["inner_family"]

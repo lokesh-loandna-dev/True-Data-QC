@@ -10,7 +10,9 @@ and writes the annotated copy to an output folder:
     Data Type Remarks         why a type check failed (blank when it passed)
     Enum Validation           TRUE / TRUE - format variance / FALSE / N/A - <reason>
     Enum Remarks              why an enum check failed or was coerced
-    Macro Validation Result   translated VBA Module 1 business-rule result
+    Macro Validation Result   retained for schema compatibility; always blank
+                             since the VBA business rules moved into the
+                             condition spec
     Result                    combined final result for the row
 
 Usage
@@ -47,9 +49,9 @@ import pandas as pd
 # This file's own version. REQUIRED_CONDITION_VERSION below says which parser
 # it needs -- the two are different things, and only this one identifies the
 # build you are running.
-__version__ = "5.17.0"
+__version__ = "5.24.0"
 
-REQUIRED_CONDITION_VERSION = "5.17.0"
+REQUIRED_CONDITION_VERSION = "5.24.0"
 
 try:
     import condition_validation as conditions
@@ -630,558 +632,7 @@ def _set_result(results: list[str], row_index: int | None, message: str) -> None
         results[row_index] = message
 
 
-def _validate_number_of_borrowers(value) -> str:
-    number = _as_float(value)
-    if number is None or number < 1 or number > 4:
-        return "Invalid Number"
-    return "Valid"
-
-
-def _validate_birthdate(value, field_name: str, today: date) -> str:
-    parsed = _parse_vba_date(value, field_name)
-    if parsed is None or _invalid_vba_year(parsed):
-        return "Invalid Date"
-    if parsed > today or parsed > _subtract_years(today, 18):
-        return "Invalid Date"
-    return "Valid"
-
-
-def _validate_years(value) -> str:
-    number = _as_float(value)
-    if number is None:
-        return "Invalid Number"
-    if number < 0 or number > 99.92:
-        return "Invalid Range"
-    decimal_value = round(number - int(number), 2)
-    allowed = {0, 0.08, 0.17, 0.25, 0.33, 0.42,
-               0.50, 0.58, 0.67, 0.75, 0.83, 0.92}
-    return "Valid" if decimal_value in allowed else "Invalid Decimal"
-
-
-def _validate_standard_date(value, field_name: str, today: date) -> str:
-    parsed = _parse_vba_date(value, field_name)
-    if parsed is None or _invalid_vba_year(parsed) or parsed > today:
-        return "Invalid Date"
-    return "Valid"
-
-
-def evaluate_macro_business_rules(field_names, values, loan_ids=None,
-                                  today: date | None = None) -> list[str]:
-    """Translate VBA Module 1 and return one business-rule result per row.
-
-    The original macro groups rows by Loan ID. Files without a Loan ID column
-    are treated as one loan, which matches the uploaded sample workbook.
-    Duplicate Data Field names follow VBA Scripting.Dictionary behaviour: the
-    last occurrence in a loan replaces earlier occurrences for cross-field
-    validation.
-    """
-    today = today or date.today()
-    count = len(field_names)
-    results = [""] * count
-    if loan_ids is None:
-        loan_ids = ["__WORKBOOK__"] * count
-
-    grouped: dict[str, dict[str, dict]] = {}
-    collapsed = 0
-    for row_index, (loan_id, field_name, value) in enumerate(
-            zip(loan_ids, field_names, values)):
-        loan_key = _text(loan_id) or "__BLANK_LOAN__"
-        name = _text(field_name)
-        bucket = grouped.setdefault(loan_key, {})
-        if name in bucket:
-            # VBA Scripting.Dictionary semantics: last occurrence wins. Repeated
-            # names (e.g. three "Amount of Other Lien" rows) therefore leave the
-            # earlier rows without a macro result. Surface it rather than hide it.
-            collapsed += 1
-        bucket[name] = {"value": value, "row": row_index}
-
-    if collapsed:
-        log.warning("%d row(s) share a Data Field name with a later row and "
-                    "were skipped by macro business rules (last occurrence "
-                    "wins, matching the VBA macro).", collapsed)
-
-    for fields in grouped.values():
-        # Per-field validations in the same order as Module 1.
-        for field_name, item in list(fields.items()):
-            value = item["value"]
-            row_index = item["row"]
-            borrower_no = get_borrower_number(field_name)
-
-            if field_name.strip().lower() == "number of borrowers":
-                _set_result(results, row_index,
-                            _validate_number_of_borrowers(value))
-
-            if "birthdate" in field_name.lower():
-                if borrower_no == 0 or _borrower_applicable(borrower_no, fields):
-                    _set_result(results, row_index,
-                                _validate_birthdate(value, field_name, today))
-                else:
-                    _set_result(results, row_index, "")
-
-            if ("years in current home" in field_name.lower()
-                    or "years in line of work" in field_name.lower()):
-                if borrower_no == 0 or _borrower_applicable(borrower_no, fields):
-                    _set_result(results, row_index, _validate_years(value))
-                else:
-                    _set_result(results, row_index, "")
-
-            if (field_name.strip() in STANDARD_DATE_FIELDS
-                    and "birthdate" not in field_name.lower()
-                    and "photo id expiration date" not in field_name.lower()):
-                _set_result(results, row_index,
-                            _validate_standard_date(value, field_name, today))
-
-        # Cross-field validations, preserving the VBA call order/overwrites.
-        _validate_date_consistency(fields, results)
-        _validate_cash_disbursement(fields, results)
-        _validate_prepayment_penalty(fields, results)
-        _validate_date_range(fields, results)
-        _validate_photo_id_expiration(fields, results, today)
-        _validate_application_date(fields, results)
-        _validate_resident_since_date(fields, results)
-        _validate_passport_expiration(fields, results, today)
-        _validate_creditor_received_application(fields, results)
-        _validate_cash_to_close(fields, results)
-        _validate_non_us_document_expiration(fields, results)
-        _validate_date_last_rate_was_set(fields, results)
-        _validate_effective_date_pmi(fields, results)
-        _validate_expiration_date_pmi_certification(fields, results)
-        _validate_first_payment_date(fields, results)
-        _validate_maturity_date(fields, results)
-        _validate_first_interest_rate_change_date(fields, results)
-
-    return results
-
-
-def _validate_date_consistency(fields: dict, results: list[str]) -> None:
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is None:
-        return
-    for field_name in ("Borrower 1 Final Signature Date",
-                       "Notary Acknowledgment Date",
-                       "Closing - Settlement Date"):
-        if field_name not in fields:
-            continue
-        parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-        row = _field_row(fields, field_name)
-        if parsed is None:
-            _set_result(results, row, "Invalid Date")
-        elif parsed != note_date:
-            _set_result(
-                results, row,
-                f"Date mismatch with Note Date ({note_date:%m/%d/%Y})")
-
-
-def _validate_cash_disbursement(fields: dict, results: list[str]) -> None:
-    if "Cash Disbursement Date" not in fields or "Note Date" not in fields:
-        return
-    row = _field_row(fields, "Cash Disbursement Date")
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if (_lower(_field_value(fields, "Loan Purpose")) == "refinance"
-            and _lower(_field_value(fields, "Occupancy")) == "primary residence"):
-        expected = _add_workdays(note_date, 3)
-    else:
-        expected = note_date
-    actual = _parse_vba_date(
-        _field_value(fields, "Cash Disbursement Date"), "Cash Disbursement Date")
-    _set_result(results, row, "Valid" if actual == expected
-                else "Invalid Cash Disbursement Date")
-
-
-def _validate_prepayment_penalty(fields: dict, results: list[str]) -> None:
-    field_name = "Prepayment Penalty Calculation"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    penalty = _lower(_field_value(fields, field_name))
-    occupancy = _lower(_field_value(fields, "Occupancy"))
-    other_rider = _lower(_field_value(fields, "Other Rider"))
-    if occupancy == "investment" and other_rider == "true":
-        if penalty in {"", "no prepayment penalty"}:
-            message = ("Possible Prepayment Penalty as the Other rider box "
-                       "is check marked")
-        else:
-            message = "Valid"
-    else:
-        message = ("Valid" if penalty == "no prepayment penalty" else
-                   "Possible selected incorrect option for Prepayment Penalty calculation")
-    _set_result(results, row, message)
-
-
-def _validate_date_range(fields: dict, results: list[str]) -> None:
-    application = _parse_vba_date(_field_value(fields, "Application Date"),
-                                  "Application Date")
-    cash = _parse_vba_date(_field_value(fields, "Cash Disbursement Date"),
-                           "Cash Disbursement Date")
-    if application is None or cash is None:
-        return
-    for field_name, item in fields.items():
-        if not any(fragment.lower() in field_name.lower()
-                   for fragment in DATE_RANGE_FIELD_FRAGMENTS):
-            continue
-        value = item["value"]
-        if is_blank(value):
-            continue
-        parsed = _parse_vba_date(value, field_name)
-        if parsed is None:
-            message = "Invalid Date"
-        elif _invalid_vba_year(parsed):
-            message = "Invalid Date"
-        elif not (application <= parsed <= cash):
-            message = "Date should be between Application Date and Cash Disbursement Date"
-        else:
-            message = "Valid"
-        _set_result(results, item["row"], message)
-
-
-def _validate_photo_id_expiration(fields: dict, results: list[str], today: date) -> None:
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is None:
-        return
-    for field_name, item in fields.items():
-        if "photo id expiration date" not in field_name.lower():
-            continue
-        borrower_no = get_borrower_number(field_name)
-        if borrower_no and not _borrower_applicable(borrower_no, fields):
-            _set_result(results, item["row"], "")
-            continue
-        parsed = _parse_vba_date(item["value"], field_name)
-        if parsed is None:
-            message = "Invalid Date"
-        elif _invalid_vba_year(parsed):
-            message = "Invalid Year"
-        elif parsed <= today or parsed < note_date:
-            message = "The Date is not future or less than Note date"
-        else:
-            message = "Valid"
-        _set_result(results, item["row"], message)
-
-
-def _validate_application_date(fields: dict, results: list[str]) -> None:
-    field_name = "Application Date"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    application = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if application is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(application):
-        _set_result(results, row, "Invalid Year")
-        return
-    for compare_name, item in fields.items():
-        lower_name = compare_name.lower()
-        if ("date" not in lower_name or compare_name == field_name
-                or "birthdate" in lower_name
-                or "date of resident since" in lower_name
-                or "valid date" in lower_name):
-            continue
-        compare_date = _parse_vba_date(item["value"], compare_name)
-        if compare_date is not None and compare_date < application:
-            _set_result(
-                results, row,
-                f"Date is not older than {compare_name} ({compare_date:%m/%d/%Y})")
-            return
-    _set_result(results, row, "Valid")
-
-
-def _citizen_field_name(borrower_no: int) -> str:
-    return f"Borrower {borrower_no} Citizen" if borrower_no else ""
-
-
-def _validate_resident_since_date(fields: dict, results: list[str]) -> None:
-    for field_name, item in fields.items():
-        lower_name = field_name.lower()
-        is_target = ("date resident since" in lower_name
-                     or "date of resident since" in lower_name)
-        if (not is_target or "b1 date resident since/valid date" in lower_name
-                or "b2 date resident since/valid date" in lower_name):
-            continue
-        borrower_no = get_borrower_number(field_name)
-        if borrower_no and not _borrower_applicable(borrower_no, fields):
-            _set_result(results, item["row"], "")
-            continue
-        citizen = _lower(_field_value(fields, _citizen_field_name(borrower_no)))
-        mandatory = citizen != "us citizen"
-        if is_blank(item["value"]):
-            _set_result(results, item["row"], "Invalid Date" if mandatory else "")
-            continue
-        parsed = _parse_vba_date(item["value"], field_name)
-        if parsed is None:
-            message = "Invalid Date"
-        elif _invalid_vba_year(parsed):
-            message = "Invalid Year"
-        else:
-            message = "Valid"
-        _set_result(results, item["row"], message)
-
-
-def _validate_passport_expiration(fields: dict, results: list[str], today: date) -> None:
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    for field_name, item in fields.items():
-        if "passport expiration date" not in field_name.lower():
-            continue
-        borrower_no = get_borrower_number(field_name)
-        if borrower_no and not _borrower_applicable(borrower_no, fields):
-            _set_result(results, item["row"], "")
-            continue
-        if is_blank(item["value"]):
-            _set_result(results, item["row"], "")
-            continue
-        parsed = _parse_vba_date(item["value"], field_name)
-        if parsed is None:
-            message = "Invalid Date"
-        elif _invalid_vba_year(parsed):
-            message = "Invalid Year"
-        elif parsed < today:
-            message = "The Date is not future or less than Note date"
-        elif note_date is not None and parsed < note_date:
-            message = "Date is before Note date"
-        else:
-            message = "Valid"
-        _set_result(results, item["row"], message)
-
-
-def _validate_creditor_received_application(fields: dict, results: list[str]) -> None:
-    field_name = "Date Creditor Received Application"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if parsed is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(parsed):
-        _set_result(results, row, "Invalid Year")
-        return
-    application = _parse_vba_date(_field_value(fields, "Application Date"),
-                                  "Application Date")
-    if application is None:
-        return
-    _set_result(results, row, "Valid" if parsed == application
-                else "Not Matching with Application date")
-
-
-def _validate_cash_to_close(fields: dict, results: list[str]) -> None:
-    field_name = "Cash to Close"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    amount = _as_float(_field_value(fields, field_name))
-    if amount is None:
-        _set_result(results, row, "Invalid Number")
-    elif amount < 0:
-        _set_result(results, row, "Cash to close reflects as negative")
-    else:
-        _set_result(results, row, "Valid")
-
-
-def _validate_non_us_document_expiration(fields: dict, results: list[str]) -> None:
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    for field_name, item in fields.items():
-        if "non-us document expiration date" not in field_name.lower():
-            continue
-        borrower_no = get_borrower_number(field_name)
-        if borrower_no and not _borrower_applicable(borrower_no, fields):
-            _set_result(results, item["row"], "")
-            continue
-        citizen = _lower(_field_value(fields, _citizen_field_name(borrower_no)))
-        mandatory = citizen != "us citizen"
-        if is_blank(item["value"]):
-            _set_result(results, item["row"], "Invalid Date" if mandatory else "")
-            continue
-        parsed = _parse_vba_date(item["value"], field_name)
-        if parsed is None:
-            message = "Invalid Date"
-        elif _invalid_vba_year(parsed):
-            message = "Invalid Year"
-        elif note_date is not None and parsed <= note_date:
-            message = "Date is before Note date"
-        else:
-            message = "Valid"
-        _set_result(results, item["row"], message)
-
-
-def _validate_date_last_rate_was_set(fields: dict, results: list[str]) -> None:
-    field_name = "Date Last Rate Was Set"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if parsed is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(parsed):
-        _set_result(results, row, "Invalid Year")
-        return
-    application = _parse_vba_date(_field_value(fields, "Application Date"),
-                                  "Application Date")
-    if application is not None and parsed < application:
-        _set_result(results, row, "Date is before Application date")
-        return
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is not None and parsed >= note_date:
-        _set_result(results, row, "Date is not before Note date")
-        return
-    _set_result(results, row, "Valid")
-
-
-def _validate_effective_date_pmi(fields: dict, results: list[str]) -> None:
-    field_name = "Effective Date - PMI"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    loan_type = _lower(_field_value(fields, "Loan Type"))
-    premium = _as_float(_field_value(fields, "MI Initial Monthly Premium Amount"))
-    if premium is None:
-        return
-    if loan_type != "conventional" or premium <= 0:
-        _set_result(results, row, "")
-        return
-    parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if parsed is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(parsed):
-        _set_result(results, row, "Invalid Year")
-        return
-    application = _parse_vba_date(_field_value(fields, "Application Date"),
-                                  "Application Date")
-    if application is not None and parsed < application:
-        _set_result(results, row,
-                    "Date is before Application date. Validate Rate date or application date")
-        return
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is not None and parsed >= note_date:
-        _set_result(results, row, "Date is not before Note date")
-        return
-    _set_result(results, row, "Valid")
-
-
-def _validate_expiration_date_pmi_certification(fields: dict,
-                                                 results: list[str]) -> None:
-    field_name = "Expiration Date - PMI Certification"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    loan_type = _lower(_field_value(fields, "Loan Type"))
-    premium = _as_float(_field_value(fields, "MI Initial Monthly Premium Amount"))
-    if premium is None:
-        return
-    if loan_type != "conventional" or premium <= 0:
-        _set_result(results, row, "")
-        return
-    parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if parsed is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(parsed):
-        _set_result(results, row, "Invalid Year")
-        return
-    first_payment = _parse_vba_date(_field_value(fields, "First Payment Date"),
-                                    "First Payment Date")
-    if first_payment is not None and parsed <= first_payment:
-        _set_result(results, row,
-                    "Expiration Date should be after First Payment Date")
-        return
-    _set_result(results, row, "Valid")
-
-
-def _validate_first_payment_date(fields: dict, results: list[str]) -> None:
-    field_name = "First Payment Date"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    first_payment = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if first_payment is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(first_payment):
-        _set_result(results, row, "Invalid Year")
-        return
-    note_date = _parse_vba_date(_field_value(fields, "Note Date"), "Note Date")
-    if note_date is None:
-        if "Note Date" in fields:
-            _set_result(results, row, "Invalid Date")
-        return
-    expected = {d for d in (_first_day_after_months(note_date, 1),
-                            _first_day_after_months(note_date, 2))
-                if d is not None}
-    _set_result(results, row, "Valid" if first_payment in expected
-                else "Invalid First Payment Date")
-
-
-def _validate_maturity_date(fields: dict, results: list[str]) -> None:
-    field_name = "Maturity Date"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    maturity = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if maturity is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(maturity):
-        _set_result(results, row, "Invalid Year")
-        return
-    if "Amortization Term" not in fields:
-        return
-    term_value = _as_float(_field_value(fields, "Amortization Term"))
-    if term_value is None:
-        _set_result(results, row, "Invalid Amortization Term")
-        return
-    amortization_term = int(round(term_value))
-    first_payment = _parse_vba_date(_field_value(fields, "First Payment Date"),
-                                    "First Payment Date")
-    if first_payment is None:
-        if "First Payment Date" in fields:
-            _set_result(results, row, "Invalid Date")
-        return
-    expected = _first_day_after_months(first_payment, amortization_term - 1)
-    if expected is None:
-        _set_result(results, row,
-                    f"Invalid Amortization Term ({amortization_term}); "
-                    f"implied maturity date is out of range")
-        return
-    _set_result(results, row, "Valid" if maturity == expected
-                else "Invalid Maturity Date")
-
-
-def _validate_first_interest_rate_change_date(fields: dict,
-                                               results: list[str]) -> None:
-    field_name = "First Interest Rate Change Date"
-    if field_name not in fields:
-        return
-    row = _field_row(fields, field_name)
-    if is_blank(_field_value(fields, field_name)):
-        _set_result(results, row, "Valid")
-        return
-    parsed = _parse_vba_date(_field_value(fields, field_name), field_name)
-    if parsed is None:
-        _set_result(results, row, "Invalid Date")
-        return
-    if _invalid_vba_year(parsed):
-        _set_result(results, row, "Invalid Year")
-        return
-    first_payment = _parse_vba_date(_field_value(fields, "First Payment Date"),
-                                    "First Payment Date")
-    if first_payment is None:
-        if "First Payment Date" in fields:
-            _set_result(results, row, "Invalid Date")
-        return
-    if parsed <= first_payment:
-        _set_result(results, row,
-                    "First Interest Rate Change Date must be after First Payment Date")
-        return
-    if parsed.day != 1:
-        _set_result(results, row, "Invalid First Interest Rate Change Date")
-        return
-    _set_result(results, row, "Valid")
-
-
-def combine_validation_result(dictionary_result, macro_result: str) -> str:
+def combine_validation_result(dictionary_result, macro_result: str = "") -> str:
     """Produce the requested single Result column from all validation layers."""
     match_status, type_status, type_remark, numeric_flag, enum_status, enum_remark = dictionary_result
     failures = []
@@ -1193,6 +644,8 @@ def combine_validation_result(dictionary_result, macro_result: str) -> str:
         failures.append(numeric_flag)
     if enum_status == "FALSE":
         failures.append(enum_remark or "Invalid enumeration")
+    # macro_result is always empty now; the parameter is kept so existing
+    # callers and tests continue to work.
     if macro_result and macro_result != "Valid":
         failures.append(macro_result)
 
@@ -1388,8 +841,10 @@ def evaluate_rows(field_names, labels, values, dictionary, loan_ids=None,
             ("Matched", type_status, type_remark, numeric_flag,
              enum_status, enum_remark))
 
-    macro_results = evaluate_macro_business_rules(
-        field_names, values, loan_ids=loan_ids, today=as_of)
+    # Business rules formerly evaluated here now live in the condition spec.
+    # The column is still emitted, blank, so the database schema and any
+    # downstream reader are unaffected.
+    macro_results = [""] * len(field_names)
 
     base = [
         dictionary_result + (
@@ -1609,7 +1064,6 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
                 if str(data_type).strip() == "Enumeration":
                     total_enum += 1
 
-    total_macro = sum(1 for r in results if r[6] not in ("", None))
     # Filter statistics directly from Final Result (column index 11), with fallback to r[7] if not consolidated
     final_valid = sum(1 for r in results if (str(r[13]) == "Valid" if len(r) > 11 else str(r[7]) == "Valid"))
     final_invalid = sum(1 for r in results if (str(r[13]) == "Invalid" if len(r) > 11 else str(r[7]).startswith("Invalid")))
@@ -1644,9 +1098,7 @@ def summarize(filename: str, results, labels=None, dictionary=None) -> dict:
         ),
         "Numeric Format Flagged": sum(1 for r in results
                                       if str(r[3]).startswith("FLAGGED")),
-        "Total Macro": total_macro,
-        "Macro Valid": sum(1 for r in results if r[6] == "Valid"),
-        "Macro Invalid": sum(1 for r in results if r[6] not in ("", None, "Valid")),
+
         "Final Valid": final_valid,
         "Final Invalid": final_invalid,
         "Final Blank": final_blank,

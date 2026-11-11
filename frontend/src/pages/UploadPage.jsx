@@ -204,7 +204,7 @@ const UploadPage = () => {
       } else if (progressVal < 60) {
         setProgressStatus('Checking field data types & enum rules...');
       } else {
-        setProgressStatus('Running macro business validation & saving package...');
+        setProgressStatus('Running condition validation & saving package...');
       }
     }, 150);
 
@@ -334,7 +334,7 @@ const UploadPage = () => {
       } else if (progressVal < 65) {
         setProgressStatus('Super matching True Data against Data Dictionary...');
       } else {
-        setProgressStatus('Evaluating Condition rules and macro checks...');
+        setProgressStatus('Evaluating Condition rules & validation checks...');
       }
     }, 150);
 

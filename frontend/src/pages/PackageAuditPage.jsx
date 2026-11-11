@@ -801,7 +801,7 @@ const PackageAuditPage = () => {
                   </div>
 
                   {/* Detailed Analysis Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Dictionary Matches */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-150 pb-2">
@@ -877,26 +877,9 @@ const PackageAuditPage = () => {
                       </div>
                     </div>
 
-                    {/* Business Rules (Macro Rules) */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-150 pb-2">
-                        Business Rule Modules ({packageDetails.summary?.["Total Macro"] ?? 0} Evaluated)
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Macro Valid</span>
-                          <span className="font-bold text-green-600">{packageDetails.summary?.["Macro Valid"] ?? 0}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Macro Fail (Invalid Date / Ranges)</span>
-                          <span className="font-bold text-red-600">{packageDetails.summary?.["Macro Invalid"] ?? 0}</span>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Condition Validation */}
                     {condSummary && (
-                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4 md:col-span-2">
+                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4 md:col-span-3">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-150 pb-2">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Condition Validation ({condSummary.condRulesApplied} Rules Applied)

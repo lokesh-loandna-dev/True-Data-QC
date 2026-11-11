@@ -25,9 +25,9 @@ import condition_validation as cv
 
 # Must match validate_loan_files_v5.py, so the audit and the validator can
 # never disagree about what is automatable.
-__version__ = "5.17.0"
+__version__ = "5.24.0"
 
-REQUIRED_CONDITION_VERSION = "5.17.0"
+REQUIRED_CONDITION_VERSION = "5.24.0"
 
 
 def _version_tuple(text):
@@ -88,6 +88,7 @@ FAMILY_NOTES = {
     "COND_EQUALS": "If the referenced field matches, this must equal value(s)",
     "COND_ALLOWED_SET": "If the referenced field matches, this must be one of a list",
     "COND_FORMAT": "If the referenced field matches, this must meet a character format",
+    "MUST_BE_BLANK": "The field must carry no value",
     "COND_NOT_EQUALS": "If the referenced field matches, this must not equal value(s)",
     "MATCH_FIELD": "Must equal the value of another field",
     "OTHER_FIELD": "Constrains a different field named in the sentence",
@@ -479,6 +480,12 @@ def main():
     dictionary = pd.read_excel(dict_path, keep_default_na=False, na_values=[""])
     dictionary_names = [str(x).strip() for x in dictionary["Field Name"]
                         if str(x).strip()]
+    # The Jr.UW spec identifies fields by dictionary Field LABEL, not Field
+    # Name. Indexing names alone reported every such field as missing.
+    if "Field Label" in dictionary.columns:
+        dictionary_names += [str(x).strip() for x in dictionary["Field Label"]
+                             if str(x).strip()]
+    dictionary_names = list(dict.fromkeys(dictionary_names))
     dictionary_norm = {}
     for name in dictionary_names:
         dictionary_norm.setdefault(norm(name), name)
