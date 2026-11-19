@@ -694,8 +694,8 @@ const DashboardPage = () => {
         },
         accessor: 'sno',
         sortable: false,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
-        cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] dark:bg-[#1B3A4F] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[var(--bg-elevated)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
         render: (pkg, index, globalIndexOffset = 0, isExpanded = false) => (
           <div className="flex items-center gap-2">
             <input
@@ -992,7 +992,7 @@ const DashboardPage = () => {
         align: 'right',
         sortable: false,
         headerClassName: 'sticky top-0 right-0 z-40 bg-[var(--bg-elevated)] dark:bg-[#1B3A4F] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[rgba(255,255,255,0.04)] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        cellClassName: 'sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[var(--bg-elevated)] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         render: (pkg) => (
           <div className="flex justify-end gap-1.5 whitespace-nowrap">
             <Tooltip text="Audit Details" position="top">
