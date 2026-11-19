@@ -471,17 +471,17 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col pt-[60px]">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] flex flex-col pt-[60px] transition-colors duration-200">
       <Header />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--border)]">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] tracking-tight">
               Ingest Loan Packages
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
               Upload loan packages via spreadsheet or fetch directly via API Ingestion for rule validation.
             </p>
           </div>
@@ -489,15 +489,15 @@ const UploadPage = () => {
 
         {/* Global Feedback Banners */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-6 p-4 rounded-xl bg-[var(--error-bg)] border border-[var(--error)]/30 text-[var(--error)] text-xs flex items-start gap-3">
+            <svg className="w-5 h-5 text-[var(--error)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="flex-1 font-medium">{error}</div>
             <button
               type="button"
               onClick={() => setError('')}
-              className="text-red-500 hover:text-red-700 cursor-pointer"
+              className="text-[var(--error)] hover:opacity-80 cursor-pointer"
               aria-label="Dismiss error"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -508,15 +508,15 @@ const UploadPage = () => {
         )}
 
         {success && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-3">
-            <svg className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-6 p-4 rounded-xl bg-[var(--success-bg)] border border-[var(--success)]/30 text-[var(--success)] text-xs flex items-start gap-3">
+            <svg className="w-5 h-5 text-[var(--success)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <div className="flex-1 font-medium">{success}</div>
             <button
               type="button"
               onClick={() => setSuccess('')}
-              className="text-emerald-500 hover:text-emerald-700 cursor-pointer"
+              className="text-[var(--success)] hover:opacity-80 cursor-pointer"
               aria-label="Dismiss success message"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -528,7 +528,7 @@ const UploadPage = () => {
 
         {/* Ingestion Source Switcher Tabs */}
         <div className="flex items-center gap-2 mb-6">
-          <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200">
+          <div className="inline-flex p-1 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)]">
             <button
               type="button"
               onClick={() => {
@@ -538,11 +538,11 @@ const UploadPage = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                 ingestionTab === 'api'
-                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span>Truedata via API</span>
@@ -556,11 +556,11 @@ const UploadPage = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                 ingestionTab === 'file'
-                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <span>Direct File Upload</span>
@@ -586,9 +586,9 @@ const UploadPage = () => {
           />
         )}
 
-        {/* Option 2: File Upload Dropzone (Issue 6 resolved: non-nested interactive control) */}
+        {/* Option 2: File Upload Dropzone */}
         {ingestionTab === 'file' && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
+          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] shadow-xs p-6 sm:p-8">
             <div
               role="button"
               tabIndex={0}
@@ -604,10 +604,10 @@ const UploadPage = () => {
                   fileInputRef.current?.click();
                 }
               }}
-              className={`relative border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#24A1DD] ${
+              className={`relative border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] ${
                 dragActive
-                  ? 'border-[#24A1DD] bg-[#24A1DD]/5'
-                  : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                  ? 'border-[var(--primary)] bg-[var(--primary-soft)]'
+                  : 'border-[var(--border-strong)] hover:border-[var(--primary)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)]'
               }`}
             >
               <input
@@ -624,22 +624,22 @@ const UploadPage = () => {
                   <UploadSkeleton />
                 ) : (
                   <>
-                    <div className="w-12 h-12 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 shadow-2xs">
+                    <div className="w-12 h-12 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg flex items-center justify-center text-[var(--text-secondary)] shadow-2xs">
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
 
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-slate-800">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">
                         {file ? file.name : 'Choose an Excel package or drag and drop'}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[var(--text-secondary)]">
                         Supports Microsoft Excel workbooks (.xlsx, .xls, .xlsm)
                       </p>
                     </div>
 
-                    <span className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-all pointer-events-none inline-block select-none">
+                    <span className="px-4 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--bg-surface)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-semibold rounded-lg shadow-2xs transition-all pointer-events-none inline-block select-none">
                       Browse File
                     </span>
                   </>

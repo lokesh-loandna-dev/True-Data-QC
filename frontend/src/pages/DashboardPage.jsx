@@ -37,30 +37,30 @@ const PackageDetailedRowView = ({
     : '-';
 
   return (
-    <div className="bg-slate-50/95 border-y border-slate-200/90 transition-all overflow-hidden">
+    <div className="bg-[var(--bg-muted)] border-y border-[var(--border)] transition-all overflow-hidden">
       {/* Sticky container stays anchored left and matches exact visible table width */}
       <div
         className="sticky left-0 px-3.5 py-2 sm:px-4 sm:py-2.5 space-y-2 box-border"
         style={containerWidth ? { width: `${containerWidth}px` } : { width: '100%' }}
       >
         {/* Top Bar: Identity & Close */}
-        <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200/80">
+        <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-[var(--border)]">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <Link
               to={`/dashboard/package/${encodePackageId(pkg.id)}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-bold text-[#283245] hover:text-[#24A1DD] hover:underline truncate max-w-sm sm:max-w-md transition-colors cursor-pointer"
+              className="text-xs font-bold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline truncate max-w-sm sm:max-w-md transition-colors cursor-pointer"
               title={pkg.filename}
             >
               {pkg.filename}
             </Link>
             {pkg.loan_id && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700 font-mono text-[11px] font-semibold">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)] font-mono text-[11px] font-semibold">
                 Loan ID: {pkg.loan_id}
               </span>
             )}
-            <span className="text-[11px] text-slate-500 hidden sm:inline">
-              Uploaded by <strong className="text-slate-700 font-medium">{pkg.uploaded_by || 'System'}</strong>
+            <span className="text-[11px] text-[var(--text-secondary)] hidden sm:inline">
+              Uploaded by <strong className="text-[var(--text-primary)] font-medium">{pkg.uploaded_by || 'System'}</strong>
               {pkg.uploaded_email && ` (${pkg.uploaded_email})`} • {formattedDate}
             </span>
           </div>
@@ -72,7 +72,7 @@ const PackageDetailedRowView = ({
                 e.stopPropagation();
                 onCollapse();
               }}
-              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+              className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] rounded-md transition-colors cursor-pointer"
               title="Close details"
               aria-label="Close details"
             >
@@ -84,86 +84,86 @@ const PackageDetailedRowView = ({
         </div>
 
         {/* Unified Single Strip: Validation & Pending (5 items) + Divider + Action Breakdown (7 items) */}
-        <div className="bg-white rounded-lg border border-slate-200/90 shadow-2xs p-1.5 flex flex-col md:flex-row items-stretch gap-1.5">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border)] shadow-2xs p-1.5 flex flex-col md:flex-row items-stretch gap-1.5">
           {/* Validation & Pending Group (5 items - 42%) */}
           <div className="w-full md:w-[42%] grid grid-cols-5 gap-1.5 text-center">
-            <div className="bg-slate-50 py-1 px-1 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Total Fields</span>
-              <span className="font-mono text-xs font-bold text-slate-800">{pkg.total_fields ?? 0}</span>
+            <div className="bg-[var(--bg-elevated)] py-1 px-1 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Total Fields</span>
+              <span className="font-mono text-xs font-bold text-[var(--text-primary)]">{pkg.total_fields ?? 0}</span>
             </div>
-            <div className="bg-emerald-50/50 py-1 px-1 rounded border border-emerald-100/70 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-emerald-700 font-medium leading-tight">Final Valid</span>
-              <span className="font-mono text-xs font-bold text-emerald-600">{pkg.final_valid ?? 0}</span>
+            <div className="bg-[var(--success-bg)] py-1 px-1 rounded border border-[var(--success)]/30 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--success)] font-medium leading-tight">Final Valid</span>
+              <span className="font-mono text-xs font-bold text-[var(--success)]">{pkg.final_valid ?? 0}</span>
             </div>
-            <div className="bg-rose-50/50 py-1 px-1 rounded border border-rose-100/70 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-rose-700 font-medium leading-tight">Final Invalid</span>
-              <span className="font-mono text-xs font-bold text-rose-600">{pkg.final_invalid ?? 0}</span>
+            <div className="bg-[var(--error-bg)] py-1 px-1 rounded border border-[var(--error)]/30 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--error)] font-medium leading-tight">Final Invalid</span>
+              <span className="font-mono text-xs font-bold text-[var(--error)]">{pkg.final_invalid ?? 0}</span>
             </div>
-            <div className="bg-amber-50/50 py-1 px-1 rounded border border-amber-100/70 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-amber-700 font-medium leading-tight">Review Required</span>
-              <span className="font-mono text-xs font-bold text-amber-600">{pkg.review_required ?? 0}</span>
+            <div className="bg-[var(--warning-bg)] py-1 px-1 rounded border border-[var(--warning)]/30 flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--warning)] font-medium leading-tight">Review Required</span>
+              <span className="font-mono text-xs font-bold text-[var(--warning)]">{pkg.review_required ?? 0}</span>
             </div>
-            <div className="bg-amber-50 py-1 px-0.5 rounded border border-amber-200/80 flex flex-col justify-between min-h-[46px]">
+            <div className="bg-[var(--warning-bg)] py-1 px-0.5 rounded border border-[var(--warning)]/40 flex flex-col justify-between min-h-[46px]">
               <div className="flex items-center justify-center gap-0.5">
-                <span className="block text-[10px] text-amber-800 font-semibold leading-tight">Pending Action</span>
+                <span className="block text-[10px] text-[var(--warning)] font-semibold leading-tight">Pending Action</span>
                 <Tooltip text="Calculates only Invalid and Review Required" position="top">
-                  <span className="text-amber-600/70 hover:text-amber-800 cursor-help inline-flex items-center">
+                  <span className="text-[var(--warning)]/70 hover:text-[var(--warning)] cursor-help inline-flex items-center">
                     <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </span>
                 </Tooltip>
               </div>
-              <span className={`font-mono text-xs font-bold ${(pkg.yet_to_take_action ?? 0) > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+              <span className={`font-mono text-xs font-bold ${(pkg.yet_to_take_action ?? 0) > 0 ? 'text-[var(--warning)]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.yet_to_take_action ?? 0}
               </span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="hidden md:block w-px bg-slate-200 self-stretch my-0.5"></div>
+          <div className="hidden md:block w-px bg-[var(--border)] self-stretch my-0.5"></div>
 
           {/* Action Status Breakdown Group (7 items - 58%) */}
           <div className="w-full md:w-[58%] grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center">
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Corrected</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_corrected ?? 0) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Corrected</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_corrected ?? 0) > 0 ? 'text-[var(--success)]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_corrected ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Incorrect Status</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_incorrect_status ?? 0) > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Incorrect Status</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_incorrect_status ?? 0) > 0 ? 'text-[var(--error)]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_incorrect_status ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Not Applicable</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_not_applicable ?? 0) > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Not Applicable</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_not_applicable ?? 0) > 0 ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_not_applicable ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Need Review</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_need_review ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Need Review</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_need_review ?? 0) > 0 ? 'text-[var(--warning)]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_need_review ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Review Completed</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_review_completed ?? 0) > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Review Completed</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_review_completed ?? 0) > 0 ? 'text-[#2DD4BF]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_review_completed ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Out of Scope</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_out_of_scope ?? 0) > 0 ? 'text-purple-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Out of Scope</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_out_of_scope ?? 0) > 0 ? 'text-[#C084FC]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_out_of_scope ?? 0}
               </span>
             </div>
-            <div className="bg-slate-50/70 py-1 px-0.5 rounded border border-slate-100 flex flex-col justify-between min-h-[46px]">
-              <span className="block text-[10px] text-slate-600 font-medium leading-tight">Others</span>
-              <span className={`font-mono text-xs font-bold ${(pkg.action_others ?? 0) > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+            <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
+              <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Others</span>
+              <span className={`font-mono text-xs font-bold ${(pkg.action_others ?? 0) > 0 ? 'text-[#60A5FA]' : 'text-[var(--text-disabled)]'}`}>
                 {pkg.action_others ?? 0}
               </span>
             </div>
@@ -581,11 +581,11 @@ const DashboardPage = () => {
     if (selectedPackages.length <= 1) return null;
 
     return (
-      <div className="relative inline-flex items-center h-9 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs transition-all duration-200 animate-in fade-in zoom-in-95 pl-1.5 pr-1 gap-1.5 select-none shrink-0 overflow-hidden">
+      <div className="relative inline-flex items-center h-9 bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg shadow-2xs transition-all duration-200 animate-in fade-in zoom-in-95 pl-1.5 pr-1 gap-1.5 select-none shrink-0 overflow-hidden">
         {/* Subtle inline progress line along the bottom border */}
         {bulkDownloadLoading && (
           <div
-            className="absolute bottom-0 left-0 h-0.5 bg-emerald-500 transition-all duration-150 ease-out z-10"
+            className="absolute bottom-0 left-0 h-0.5 bg-[var(--success)] transition-all duration-150 ease-out z-10"
             style={{ width: `${bulkDownloadProgress}%` }}
           />
         )}
@@ -595,23 +595,23 @@ const DashboardPage = () => {
           type="button"
           onClick={handleBulkDownload}
           disabled={bulkDownloadLoading}
-          className="inline-flex items-center gap-2 px-2 h-7 rounded-md text-xs font-semibold text-slate-800 hover:text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100/70 disabled:opacity-85 disabled:pointer-events-none transition-all cursor-pointer whitespace-nowrap group"
+          className="inline-flex items-center gap-2 px-2 h-7 rounded-md text-xs font-semibold text-[var(--text-primary)] hover:text-[var(--success)] hover:bg-[var(--success-bg)] disabled:opacity-85 disabled:pointer-events-none transition-all cursor-pointer whitespace-nowrap group"
           title={`Download combined Result Sheet for ${selectedPackages.length} packages (${selectedTotalRows.toLocaleString()} total rows)`}
         >
           {bulkDownloadLoading ? (
-            <svg className="animate-spin w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin w-3.5 h-3.5 text-[var(--success)] shrink-0" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           ) : (
-            <svg className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform duration-150 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5 text-[var(--success)] group-hover:scale-110 transition-transform duration-150 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           )}
           <span>{bulkDownloadLoading ? `Downloading` : 'Bulk Download'}</span>
 
           {/* Inline Data / Percent Badge */}
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono text-[11px] font-bold tracking-tight">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success)]/40 font-mono text-[11px] font-bold tracking-tight">
             {bulkDownloadLoading ? `${bulkDownloadProgress}%` : `${selectedPackages.length} pkgs · ${selectedTotalRows.toLocaleString()} rows`}
           </span>
         </button>
@@ -619,7 +619,7 @@ const DashboardPage = () => {
         {isAnyAdmin && (
           <>
             {/* Vertical Divider */}
-            <div className="h-4 w-px bg-slate-200"></div>
+            <div className="h-4 w-px bg-[var(--border)]"></div>
 
             {/* Delete Selected Button */}
             <Tooltip text={`Delete ${selectedPackages.length} selected package(s)`} position="top">
@@ -627,16 +627,16 @@ const DashboardPage = () => {
                 type="button"
                 onClick={() => setShowDeleteSelectedModal(true)}
                 disabled={bulkDownloadLoading || bulkDeleteLoading}
-                className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md text-xs font-semibold text-[var(--error)] hover:bg-[var(--error-bg)] disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer whitespace-nowrap"
                 aria-label="Delete selected packages"
               >
                 {bulkDeleteLoading ? (
-                  <svg className="animate-spin w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin w-3.5 h-3.5 text-[var(--error)] shrink-0" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <svg className="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3.5 h-3.5 text-[var(--error)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 )}
@@ -647,7 +647,7 @@ const DashboardPage = () => {
         )}
 
         {/* Vertical Divider */}
-        <div className="h-4 w-px bg-slate-200"></div>
+        <div className="h-4 w-px bg-[var(--border)]"></div>
 
         {/* Clear Selection Icon Button */}
         <Tooltip text="Clear selection" position="top">
@@ -655,7 +655,7 @@ const DashboardPage = () => {
             type="button"
             onClick={() => setSelectedPackageIds(new Set())}
             disabled={bulkDownloadLoading}
-            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+            className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] rounded transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
             aria-label="Clear package selection"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -685,17 +685,17 @@ const DashboardPage = () => {
                 }}
                 checked={isAllSelected}
                 onChange={() => handleToggleSelectFiltered(visibleList)}
-                className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+                className="w-4 h-4 rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)]/30 cursor-pointer accent-[var(--primary)]"
                 title={isAllSelected ? "Deselect all visible packages" : "Select all visible packages"}
               />
-              <span className="font-semibold text-slate-700 select-none">S.No.</span>
+              <span className="font-semibold text-[var(--text-primary)] select-none">S.No.</span>
             </div>
           );
         },
         accessor: 'sno',
         sortable: false,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
-        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
+        cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[105px]',
         render: (pkg, index, globalIndexOffset = 0, isExpanded = false) => (
           <div className="flex items-center gap-2">
             <input
@@ -703,11 +703,11 @@ const DashboardPage = () => {
               checked={selectedPackageIds.has(pkg.id)}
               onChange={() => handleToggleSelectRow(pkg.id)}
               onClick={(e) => e.stopPropagation()}
-              className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+              className="w-4 h-4 rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)]/30 cursor-pointer accent-[var(--primary)]"
               title={`Select ${pkg.filename} (${pkg.total_fields || 0} rows)`}
             />
             <span
-              className={`p-1 rounded-md text-slate-400 group-hover:text-[#24A1DD] transition-all duration-200 ${isExpanded ? 'rotate-90 text-[#24A1DD] bg-[#24A1DD]/10' : ''
+              className={`p-1 rounded-md text-[var(--text-disabled)] group-hover:text-[var(--primary)] transition-all duration-200 ${isExpanded ? 'rotate-90 text-[var(--primary)] bg-[var(--primary-soft)]' : ''
                 }`}
               title={isExpanded ? 'Click to collapse row details' : 'Click to view row details'}
             >
@@ -715,7 +715,7 @@ const DashboardPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </span>
-            <span className="font-mono text-xs font-semibold text-slate-500">
+            <span className="font-mono text-xs font-semibold text-[var(--text-secondary)]">
               {globalIndexOffset + index + 1}
             </span>
           </div>
@@ -729,7 +729,7 @@ const DashboardPage = () => {
           <Link
             to={`/dashboard/package/${encodePackageId(pkg.id)}`}
             onClick={(e) => e.stopPropagation()}
-            className="font-semibold text-[#283245] hover:text-[#24A1DD] hover:underline max-w-xs truncate block cursor-pointer transition-colors"
+            className="font-semibold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline max-w-xs truncate block cursor-pointer transition-colors"
             title={pkg.filename}
           >
             {pkg.filename}
@@ -741,7 +741,7 @@ const DashboardPage = () => {
         accessor: 'loan_id',
         sortable: true,
         render: (pkg) => (
-          <span className="font-mono text-xs font-semibold text-slate-700">
+          <span className="font-mono text-xs font-semibold text-[var(--text-primary)]">
             {pkg.loan_id || '-'}
           </span>
         ),
@@ -755,11 +755,11 @@ const DashboardPage = () => {
         sortable: true,
         render: (pkg) => (
           <div className="flex flex-col">
-            <span className="font-semibold text-xs text-slate-700">
+            <span className="font-semibold text-xs text-[var(--text-primary)]">
               {pkg.uploaded_by || 'System'}
             </span>
             {pkg.uploader_role && (
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-[var(--text-disabled)]">
                 {pkg.uploader_role}
               </span>
             )}
@@ -798,7 +798,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const parsed = parseUtcDate(pkg.uploaded_at);
           return (
-            <span className="text-slate-500 text-xs">
+            <span className="text-[var(--text-secondary)] text-xs">
               {parsed && !isNaN(parsed.getTime()) ? parsed.toLocaleString() : '-'}
             </span>
           );
@@ -815,7 +815,7 @@ const DashboardPage = () => {
         sortable: true,
         align: 'center',
         render: (pkg) => (
-          <span className="font-mono font-semibold text-slate-700">
+          <span className="font-mono font-semibold text-[var(--text-primary)]">
             {pkg.total_fields ?? 0}
           </span>
         ),
@@ -827,7 +827,7 @@ const DashboardPage = () => {
         sortable: true,
         align: 'center',
         render: (pkg) => (
-          <span className="font-mono font-semibold text-emerald-600">
+          <span className="font-mono font-semibold text-[var(--success)]">
             {pkg.final_valid ?? 0}
           </span>
         ),
@@ -839,7 +839,7 @@ const DashboardPage = () => {
         sortable: true,
         align: 'center',
         render: (pkg) => (
-          <span className="font-mono font-semibold text-rose-600">
+          <span className="font-mono font-semibold text-[var(--error)]">
             {pkg.final_invalid ?? 0}
           </span>
         ),
@@ -852,7 +852,7 @@ const DashboardPage = () => {
         align: 'center',
         headerClassName: 'whitespace-nowrap min-w-[120px]',
         render: (pkg) => (
-          <span className="font-mono font-semibold text-amber-600">
+          <span className="font-mono font-semibold text-[var(--warning)]">
             {pkg.review_required ?? 0}
           </span>
         ),
@@ -868,7 +868,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.yet_to_take_action ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[var(--warning)]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -884,7 +884,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_corrected ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[var(--success)]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -900,7 +900,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_incorrect_status ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[var(--error)]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -916,7 +916,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_not_applicable ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -932,7 +932,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_need_review ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[var(--warning)]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -948,7 +948,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_review_completed ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[#2DD4BF]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -964,7 +964,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_out_of_scope ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-purple-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[#C084FC]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -980,7 +980,7 @@ const DashboardPage = () => {
         render: (pkg) => {
           const val = pkg.action_others ?? 0;
           return (
-            <span className={`font-mono font-semibold ${val > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`font-mono font-semibold ${val > 0 ? 'text-[#60A5FA]' : 'text-[var(--text-disabled)]'}`}>
               {val}
             </span>
           );
@@ -991,8 +991,8 @@ const DashboardPage = () => {
         accessor: 'actions',
         align: 'right',
         sortable: false,
-        headerClassName: 'sticky top-0 right-0 z-40 bg-slate-50 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        headerClassName: 'sticky top-0 right-0 z-40 bg-[var(--bg-elevated)] dark:bg-[#1B3A4F] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        cellClassName: 'sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[rgba(255,255,255,0.04)] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         render: (pkg) => (
           <div className="flex justify-end gap-1.5 whitespace-nowrap">
             <Tooltip text="Audit Details" position="top">
@@ -1002,7 +1002,7 @@ const DashboardPage = () => {
                   e.stopPropagation();
                   navigate(`/dashboard/package/${encodePackageId(pkg.id)}`);
                 }}
-                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--primary-soft)] text-[var(--primary)] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Audit Details"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1019,11 +1019,11 @@ const DashboardPage = () => {
                   handleExportRowPackage(pkg);
                 }}
                 disabled={rowExportLoadingId === pkg.id}
-                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 disabled:opacity-50 text-emerald-600 hover:text-emerald-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] disabled:opacity-50 text-[var(--success)] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Export to Excel"
               >
                 {rowExportLoadingId === pkg.id ? (
-                  <svg className="animate-spin w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin w-3.5 h-3.5 text-[var(--success)]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -1042,7 +1042,7 @@ const DashboardPage = () => {
                     e.stopPropagation();
                     handleDeletePackage(pkg.id, pkg.filename);
                   }}
-                  className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--error-bg)] text-[var(--error)] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                   aria-label="Delete Package"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1077,48 +1077,48 @@ const DashboardPage = () => {
     return (
       <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
         {/* Date Range Picker Container */}
-        <div className="inline-flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs h-9 px-2 gap-1.5 transition-colors shrink-0">
-          <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="inline-flex items-center bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg shadow-2xs h-9 px-2 gap-1.5 transition-colors shrink-0">
+          <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <div className="flex items-center text-xs text-slate-700">
+          <div className="flex items-center text-xs text-[var(--text-primary)]">
             <input
               id="dashboard-from-date"
               type="date"
               value={fromDate}
               onChange={handleFromDateChange}
               max={toDate || undefined}
-              className="bg-transparent border-0 p-0 text-xs font-mono text-slate-700 focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              className="bg-transparent border-0 p-0 text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
               title="From Date"
             />
-            <span className="text-slate-300 mx-1 select-none font-medium">→</span>
+            <span className="text-[var(--text-disabled)] mx-1 select-none font-medium">→</span>
             <input
               id="dashboard-to-date"
               type="date"
               value={toDate}
               onChange={handleToDateChange}
               min={fromDate || undefined}
-              className="bg-transparent border-0 p-0 text-xs font-mono text-slate-700 focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              className="bg-transparent border-0 p-0 text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
               title="To Date"
             />
           </div>
 
-          <div className="h-4 w-px bg-slate-200 mx-0.5"></div>
+          <div className="h-4 w-px bg-[var(--border)] mx-0.5"></div>
 
           {/* Quick Presets Dropdown */}
           <select
             value={selectedPreset}
             onChange={(e) => handlePresetSelect(e.target.value)}
-            className="bg-transparent border-0 py-0 pl-1 pr-5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-0 cursor-pointer"
+            className="bg-transparent border-0 py-0 pl-1 pr-5 text-xs font-medium text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer"
             aria-label="Date range quick presets"
           >
-            <option value="">All</option>
-            {selectedPreset === 'custom' && <option value="custom" disabled hidden>Custom</option>}
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="last7">Last 7 Days</option>
-            <option value="last30">Last 30 Days</option>
-            <option value="thisMonth">This Month</option>
+            <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">All</option>
+            {selectedPreset === 'custom' && <option value="custom" disabled hidden className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">Custom</option>}
+            <option value="today" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">Today</option>
+            <option value="yesterday" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">Yesterday</option>
+            <option value="last7" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">Last 7 Days</option>
+            <option value="last30" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">Last 30 Days</option>
+            <option value="thisMonth" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">This Month</option>
           </select>
 
           {/* Clear Filter Button */}
@@ -1127,7 +1127,7 @@ const DashboardPage = () => {
               <button
                 type="button"
                 onClick={handleClearDateFilter}
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                className="p-1 text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--error-bg)] rounded transition-colors cursor-pointer"
                 aria-label="Clear date filter"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1146,14 +1146,14 @@ const DashboardPage = () => {
               type="button"
               onClick={() => handleExportPackages(exportData)}
               disabled={loading || count === 0}
-              className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
+              className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)]/40 text-[var(--success)] disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
               aria-label="Export to Excel"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               {isFiltered && (
-                <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono text-[10px] font-bold">
+                <span className="px-1.5 py-0.2 rounded bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success)]/40 font-mono text-[10px] font-bold">
                   {count}
                 </span>
               )}
@@ -1166,7 +1166,7 @@ const DashboardPage = () => {
                 type="button"
                 onClick={() => setShowDeleteAllModal(true)}
                 disabled={loading || packages.length === 0}
-                className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
+                className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--error-bg)] hover:border-[var(--error)]/40 text-[var(--error)] disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
                 aria-label="Delete All Packages"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1182,7 +1182,7 @@ const DashboardPage = () => {
               type="button"
               onClick={fetchPackages}
               disabled={loading}
-              className="w-9 h-9 inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 text-slate-600 hover:text-slate-900 font-medium rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              className="w-9 h-9 inline-flex items-center justify-center border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] disabled:opacity-50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
               aria-label="Refresh Packages"
             >
               <svg className={`w-3.5 h-3.5 text-current ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1211,7 +1211,7 @@ const DashboardPage = () => {
   ]);
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 text-slate-900 overflow-hidden pt-[60px]">
+    <div className="h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden pt-[60px] transition-colors duration-200">
       <Header />
 
       <main className="flex-1 flex flex-col min-h-0 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -1219,10 +1219,10 @@ const DashboardPage = () => {
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="mb-4 flex-shrink-0 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Dashboard</h1>
               {(fromDate || toDate) && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#24A1DD]/10 text-[#24A1DD] border border-[#24A1DD]/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD]"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary)]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]"></span>
                   Date Filter Active
                 </span>
               )}
@@ -1242,13 +1242,13 @@ const DashboardPage = () => {
             emptyMessage={
               (fromDate || toDate) ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-4">
-                  <span className="text-slate-600 font-medium">
+                  <span className="text-[var(--text-secondary)] font-medium">
                     No packages found for the selected date range ({fromDate || 'Start'} to {toDate || 'End'}).
                   </span>
                   <button
                     type="button"
                     onClick={handleClearDateFilter}
-                    className="px-3 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                   >
                     Clear Date Filter
                   </button>
@@ -1277,20 +1277,20 @@ const DashboardPage = () => {
 
       {/* Delete All Confirmation Modal */}
       {showDeleteAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--border)] flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--error-bg)] text-[var(--error)] flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Delete All Loan Packages</h3>
-                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Delete All Loan Packages</h3>
+                <p className="text-xs text-[var(--text-secondary)]">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               Are you sure you want to delete all saved loan packages? All validation results, audited records, and package files will be permanently removed.
             </p>
             <div className="flex items-center justify-end gap-3 mt-2">
@@ -1298,7 +1298,7 @@ const DashboardPage = () => {
                 type="button"
                 onClick={() => setShowDeleteAllModal(false)}
                 disabled={deleteAllLoading}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer select-none"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border-strong)] rounded-xl transition-colors cursor-pointer select-none"
               >
                 Cancel
               </button>
@@ -1306,7 +1306,7 @@ const DashboardPage = () => {
                 type="button"
                 onClick={handleConfirmDeleteAll}
                 disabled={deleteAllLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer select-none"
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--error)] hover:opacity-90 disabled:opacity-50 rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer select-none"
               >
                 {deleteAllLoading && (
                   <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -1323,28 +1323,28 @@ const DashboardPage = () => {
 
       {/* Delete Selected Packages Confirmation Modal */}
       {showDeleteSelectedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--border)] flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--error-bg)] text-[var(--error)] flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Delete Selected Packages</h3>
-                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Delete Selected Packages</h3>
+                <p className="text-xs text-[var(--text-secondary)]">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600">
-              Are you sure you want to delete <span className="font-semibold text-slate-800">{selectedPackageIds.size}</span> selected loan package(s)? All corresponding validation records will be permanently removed.
+            <p className="text-sm text-[var(--text-secondary)]">
+              Are you sure you want to delete <span className="font-semibold text-[var(--text-primary)]">{selectedPackageIds.size}</span> selected loan package(s)? All corresponding validation records will be permanently removed.
             </p>
             <div className="flex items-center justify-end gap-3 mt-2">
               <button
                 type="button"
                 onClick={() => setShowDeleteSelectedModal(false)}
                 disabled={bulkDeleteLoading}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer select-none"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border-strong)] rounded-xl transition-colors cursor-pointer select-none"
               >
                 Cancel
               </button>
@@ -1352,7 +1352,7 @@ const DashboardPage = () => {
                 type="button"
                 onClick={handleConfirmDeleteSelected}
                 disabled={bulkDeleteLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer select-none"
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--error)] hover:opacity-90 disabled:opacity-50 rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer select-none"
               >
                 {bulkDeleteLoading && (
                   <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

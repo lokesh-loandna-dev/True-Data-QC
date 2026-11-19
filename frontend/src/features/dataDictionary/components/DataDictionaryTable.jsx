@@ -43,15 +43,15 @@ const DataDictionaryTable = () => {
       accessor: 'id',
       sortable: true,
       cellClassName: 'whitespace-nowrap',
-      render: (row) => <span className="text-slate-500 font-mono text-xs">#{row.id}</span>,
+      render: (row) => <span className="text-[var(--text-secondary)] font-mono text-xs">#{row.id}</span>,
     },
     {
       header: 'Field Name',
       accessor: 'field_name',
       sortable: true,
-      cellClassName: 'font-medium text-slate-900 break-words whitespace-normal max-w-xs min-w-[150px]',
+      cellClassName: 'font-medium text-[var(--text-primary)] break-words whitespace-normal max-w-xs min-w-[150px]',
       render: (row) => (
-        <div className="whitespace-normal break-words max-w-xs font-medium text-slate-900 leading-normal">
+        <div className="whitespace-normal break-words max-w-xs font-medium text-[var(--text-primary)] leading-normal">
           {row.field_name || '-'}
         </div>
       ),
@@ -60,9 +60,9 @@ const DataDictionaryTable = () => {
       header: 'Field Label',
       accessor: 'field_label',
       sortable: true,
-      cellClassName: 'text-slate-700 break-words whitespace-normal max-w-xs min-w-[150px]',
+      cellClassName: 'text-[var(--text-secondary)] break-words whitespace-normal max-w-xs min-w-[150px]',
       render: (row) => (
-        <div className="whitespace-normal break-words max-w-xs text-slate-700 leading-normal">
+        <div className="whitespace-normal break-words max-w-xs text-[var(--text-secondary)] leading-normal">
           {row.field_label || '-'}
         </div>
       ),
@@ -73,7 +73,7 @@ const DataDictionaryTable = () => {
       sortable: true,
       cellClassName: 'whitespace-nowrap',
       render: (row) => (
-        <span className="text-xs font-semibold text-slate-700 inline-block">
+        <span className="text-xs font-semibold text-[var(--text-primary)] inline-block">
           {row.data_type}
         </span>
       ),
@@ -82,9 +82,9 @@ const DataDictionaryTable = () => {
       header: 'Field Enumerations',
       accessor: 'field_enumerations',
       sortable: true,
-      cellClassName: 'text-slate-600 break-words whitespace-normal min-w-[200px]',
+      cellClassName: 'text-[var(--text-secondary)] break-words whitespace-normal min-w-[200px]',
       render: (row) => (
-        <div className="whitespace-normal break-words max-w-lg text-slate-600 leading-normal">
+        <div className="whitespace-normal break-words max-w-lg text-[var(--text-secondary)] leading-normal">
           {row.field_enumerations || '-'}
         </div>
       ),
@@ -246,9 +246,9 @@ const DataDictionaryTable = () => {
             .replace(/\b\w/g, (l) => l.toUpperCase()),
           accessor: key,
           sortable: true,
-          cellClassName: 'text-slate-600 break-words whitespace-normal min-w-[140px]',
+          cellClassName: 'text-[var(--text-secondary)] break-words whitespace-normal min-w-[140px]',
           render: (row) => (
-            <div className="whitespace-normal break-words text-slate-600 leading-normal">
+            <div className="whitespace-normal break-words text-[var(--text-secondary)] leading-normal">
               {row[key] !== null && row[key] !== undefined && row[key] !== '' ? String(row[key]) : '-'}
             </div>
           ),
@@ -355,16 +355,16 @@ const DataDictionaryTable = () => {
         <button
           type="button"
           onClick={handleOpenManageColumns}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-medium rounded-xl transition-all shadow-xs cursor-pointer"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border)] text-sm font-medium rounded-xl transition-all shadow-xs cursor-pointer"
           aria-label="Manage Columns"
         >
-          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
-          <span className="px-1.5 py-0.5 text-xs font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full inline-flex items-center justify-center min-w-[32px] h-5">
+          <span className="px-1.5 py-0.5 text-xs font-bold bg-[var(--primary-soft)] text-[var(--primary)] rounded-full inline-flex items-center justify-center min-w-[32px] h-5">
             {columnsLoading ? (
               <svg
-                className="animate-spin h-3 w-3 text-[#24A1DD]"
+                className="animate-spin h-3 w-3 text-[var(--primary)]"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -401,11 +401,11 @@ const DataDictionaryTable = () => {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || deleting}
-          className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none whitespace-nowrap"
+          className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--primary-soft)] hover:border-[var(--primary)]/30 text-[var(--primary)] hover:opacity-90 font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none whitespace-nowrap"
           aria-label="Upload Excel"
         >
           {uploading ? (
-            <svg className="animate-spin h-3.5 w-3.5 text-[#24A1DD]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-3.5 w-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -423,7 +423,7 @@ const DataDictionaryTable = () => {
             type="button"
             onClick={() => setShowConfirmModal(true)}
             disabled={loading || uploading || deleting || (totalRecords === 0 && data.length === 0)}
-            className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
+            className="h-9 px-2.5 inline-flex items-center justify-center gap-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--error-bg)] hover:border-[var(--error)]/40 text-[var(--error)] disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-lg text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none whitespace-nowrap"
             aria-label="Delete All Data Dictionary Records"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -482,33 +482,33 @@ const DataDictionaryTable = () => {
       >
         {/* Overlay Backdrop */}
         <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
           onClick={() => setShowManageColumnsModal(false)}
         />
 
         {/* Slide-over Right Panel */}
         <div
-          className={`fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm sm:max-w-md bg-white shadow-2xl transition-transform duration-300 ease-in-out transform flex flex-col ${
+          className={`fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm sm:max-w-md bg-[var(--bg-surface)] text-[var(--text-primary)] border-l border-[var(--border)] shadow-2xl transition-transform duration-300 ease-in-out transform flex flex-col ${
             showManageColumnsModal ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between p-5 border-b border-[var(--border)] bg-[var(--bg-elevated)]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#24A1DD]/10 text-[#24A1DD] flex items-center justify-center shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center shadow-xs">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 01-2-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Manage Columns</h3>
-                <p className="text-xs text-slate-500">Configure table column visibility</p>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Manage Columns</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Configure table column visibility</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setShowManageColumnsModal(false)}
-              className="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-200/60 transition-colors cursor-pointer"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
               title="Close sidebar"
             >
               ✕
@@ -516,17 +516,17 @@ const DataDictionaryTable = () => {
           </div>
 
           {/* Sidebar Controls (Search & Quick Actions) */}
-          <div className="p-5 pb-3 border-b border-slate-100 space-y-3 bg-white">
+          <div className="p-5 pb-3 border-b border-[var(--border)] space-y-3 bg-[var(--bg-surface)]">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search columns by name or key..."
                 value={columnSearch}
                 onChange={(e) => setColumnSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#24A1DD] focus:border-transparent transition-all bg-slate-50/50 focus:bg-white text-slate-800"
+                className="w-full pl-9 pr-8 py-2 text-xs border border-[var(--border-strong)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-transparent transition-all bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder-[var(--text-disabled)]"
               />
               <svg
-                className="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
+                className="w-4 h-4 text-[var(--text-secondary)] absolute left-3 top-2.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -537,19 +537,19 @@ const DataDictionaryTable = () => {
                 <button
                   type="button"
                   onClick={() => setColumnSearch('')}
-                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100"
+                  className="absolute right-2.5 top-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--bg-elevated)]"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pt-1">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={selectAllStagedColumns}
-                  className="text-[#24A1DD] hover:underline font-semibold cursor-pointer"
+                  className="text-[var(--primary)] hover:underline font-semibold cursor-pointer"
                 >
                   Select All
                 </button>
@@ -557,12 +557,12 @@ const DataDictionaryTable = () => {
                 <button
                   type="button"
                   onClick={resetStagedColumnsToDefault}
-                  className="text-slate-600 hover:underline font-medium cursor-pointer"
+                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:underline font-medium cursor-pointer"
                 >
                   Reset Default
                 </button>
               </div>
-              <span className="font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] inline-flex items-center justify-center min-w-[42px] h-5">
+              <span className="font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)] text-[11px] inline-flex items-center justify-center min-w-[42px] h-5">
                 {columnsLoading ? (
                   <svg
                     className="animate-spin h-3 w-3 text-slate-500"
@@ -592,7 +592,7 @@ const DataDictionaryTable = () => {
           </div>
 
           {/* Sidebar Scrollable Column Items */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-2 bg-slate-50/30">
+          <div className="flex-1 overflow-y-auto p-5 space-y-2 bg-[var(--bg-app)]">
             {filteredModalColumns.map((col) => {
               const isSelected = stagedColumnKeys.includes(col.accessor);
               return (
@@ -600,8 +600,8 @@ const DataDictionaryTable = () => {
                   key={col.accessor}
                   className={`flex items-center justify-between px-3.5 py-3 rounded-xl cursor-pointer transition-all border ${
                     isSelected
-                      ? 'bg-white border-[#24A1DD]/40 text-slate-900 shadow-xs ring-1 ring-[#24A1DD]/20'
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                      ? 'bg-[var(--bg-surface)] border-[var(--primary)] text-[var(--text-primary)] shadow-xs ring-1 ring-[var(--primary)]/30'
+                      : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-muted)]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -609,19 +609,19 @@ const DataDictionaryTable = () => {
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleStagedColumnKey(col.accessor)}
-                      className="w-4 h-4 rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD]/30 cursor-pointer accent-[#24A1DD]"
+                      className="w-4 h-4 rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)] cursor-pointer accent-[var(--primary)]"
                     />
-                    <span className="text-xs font-semibold text-slate-800 truncate">{col.header}</span>
+                    <span className="text-xs font-semibold text-[var(--text-primary)] truncate">{col.header}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)] bg-[var(--bg-muted)] px-1.5 py-0.5 rounded shrink-0">
                     {col.accessor}
                   </span>
                 </label>
               );
             })}
             {filteredModalColumns.length === 0 && (
-              <div className="py-12 text-center text-xs text-slate-400 space-y-2">
-                <svg className="w-8 h-8 mx-auto text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="py-12 text-center text-xs text-[var(--text-secondary)] space-y-2">
+                <svg className="w-8 h-8 mx-auto text-[var(--text-disabled)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <p>No columns match your search</p>
@@ -630,18 +630,18 @@ const DataDictionaryTable = () => {
           </div>
 
           {/* Sidebar Footer */}
-          <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-white">
+          <div className="flex items-center justify-between p-4 border-t border-[var(--border)] bg-[var(--bg-elevated)]">
             <button
               type="button"
               onClick={() => setShowManageColumnsModal(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleApplyColumns}
-              className="px-5 py-2 text-xs font-semibold text-white bg-[#24A1DD] hover:bg-[#1e88bb] rounded-xl transition-all shadow-sm shadow-[#24A1DD]/20 cursor-pointer flex items-center gap-1.5"
+              className="px-5 py-2 text-xs font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -654,20 +654,20 @@ const DataDictionaryTable = () => {
 
       {/* Delete All Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl max-w-md w-full p-6 shadow-xl border border-[var(--border)] flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--error-bg)] text-[var(--error)] flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Delete All Data Dictionary Records</h3>
-                <p className="text-xs text-slate-500 mt-0.5">This action cannot be undone.</p>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Delete All Data Dictionary Records</h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               Are you sure you want to delete all data dictionary entries? All saved rules and field mappings will be permanently removed.
             </p>
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -675,7 +675,7 @@ const DataDictionaryTable = () => {
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
                 disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border)] rounded-xl transition-all disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -683,7 +683,7 @@ const DataDictionaryTable = () => {
                 type="button"
                 onClick={handleDeleteAll}
                 disabled={deleting}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-all shadow-sm shadow-rose-600/20 disabled:opacity-70 cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[var(--error)] hover:opacity-90 rounded-xl transition-all shadow-sm shadow-red-600/20 disabled:opacity-70 cursor-pointer"
               >
                 {deleting ? (
                   <>

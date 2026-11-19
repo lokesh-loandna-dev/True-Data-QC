@@ -62,7 +62,7 @@ const RemarkCell = memo(({ value: initialValue, onChange }) => {
       onChange={(e) => setLocalVal(e.target.value)}
       onBlur={handleBlur}
       placeholder="Enter remark..."
-      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#24A1DD] focus:border-[#24A1DD] focus:outline-none transition-all resize-y min-h-[42px]"
+      className="w-full bg-white dark:bg-[var(--bg-elevated)] border border-slate-300 dark:border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-[var(--text-primary)] placeholder-slate-400 dark:placeholder-[var(--text-disabled)] focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[42px]"
     />
   );
 });
@@ -74,14 +74,14 @@ const ActionCell = memo(({ value, onChange }) => {
 
   const getActionColor = (val) => {
     switch (val) {
-      case 'Corrected': return 'text-emerald-700';
-      case 'Incorrect Status': return 'text-rose-700';
-      case 'Not Applicable': return 'text-slate-600';
-      case 'Need Review': return 'text-amber-700';
-      case 'Review Completed': return 'text-teal-700';
-      case 'Out of Scope': return 'text-purple-700';
-      case 'Others': return 'text-blue-700';
-      default: return 'text-slate-700';
+      case 'Corrected': return 'text-emerald-700 dark:text-[var(--success)]';
+      case 'Incorrect Status': return 'text-rose-700 dark:text-[var(--error)]';
+      case 'Not Applicable': return 'text-slate-600 dark:text-[var(--text-secondary)]';
+      case 'Need Review': return 'text-amber-700 dark:text-[var(--warning)]';
+      case 'Review Completed': return 'text-teal-700 dark:text-[#2DD4BF]';
+      case 'Out of Scope': return 'text-purple-700 dark:text-[#C084FC]';
+      case 'Others': return 'text-blue-700 dark:text-[var(--info)]';
+      default: return 'text-slate-700 dark:text-[var(--text-primary)]';
     }
   };
 
@@ -89,11 +89,11 @@ const ActionCell = memo(({ value, onChange }) => {
     <select
       value={normalized}
       onChange={(e) => onChange(e.target.value)}
-      className={`w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-2 focus:ring-[#24A1DD] focus:outline-none transition-colors cursor-pointer ${getActionColor(normalized)}`}
+      className={`w-full bg-white dark:bg-[var(--bg-elevated)] border border-slate-300 dark:border-[var(--border-strong)] rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-2 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer ${getActionColor(normalized)}`}
     >
-      <option value="">-- Select --</option>
+      <option value="" className="bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-[var(--text-primary)]">-- Select --</option>
       {ACTION_OPTIONS.map((opt) => (
-        <option key={opt} value={opt}>
+        <option key={opt} value={opt} className="bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-[var(--text-primary)]">
           {opt}
         </option>
       ))}
@@ -178,25 +178,25 @@ export const ValidationPreviewModal = ({
 
   // Helper: Status Badge
   const getStatusBadge = useCallback((status, wrap = false) => {
-    if (!status) return <span className="text-slate-400 whitespace-nowrap">-</span>;
+    if (!status) return <span className="text-slate-400 dark:text-[var(--text-disabled)] whitespace-nowrap">-</span>;
     const s = String(status);
     const textStyle = wrap
       ? "whitespace-normal break-words max-w-xs inline-block text-left leading-normal font-semibold text-xs"
       : "whitespace-nowrap inline-flex items-center font-semibold text-xs";
 
     if (s === 'TRUE' || s === 'Matched' || s === 'Valid' || s.startsWith('OK')) {
-      return <span className={`text-green-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-emerald-700 dark:text-[var(--success)] ${textStyle}`}>{s}</span>;
     }
     if (s === 'FALSE' || s === 'Unmatched' || s.startsWith('Invalid') || s.startsWith('FLAGGED')) {
-      return <span className={`text-red-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-rose-700 dark:text-[var(--error)] ${textStyle}`}>{s}</span>;
     }
     if (s.startsWith('TRUE -') || s.includes('variance') || s.includes('coerced') || s.includes('Review Required') || s.includes('partial')) {
-      return <span className={`text-amber-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-amber-700 dark:text-[var(--warning)] ${textStyle}`}>{s}</span>;
     }
     if (s.includes('Not Automated')) {
-      return <span className={`text-purple-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-purple-700 dark:text-[#C084FC] ${textStyle}`}>{s}</span>;
     }
-    return <span className={`text-slate-600 ${textStyle}`}>{s}</span>;
+    return <span className={`text-slate-600 dark:text-[var(--text-secondary)] ${textStyle}`}>{s}</span>;
   }, []);
 
   const handleActionChange = useCallback((record, val) => {
@@ -234,9 +234,9 @@ export const ValidationPreviewModal = ({
         header: 'Data Field',
         accessor: 'data_field',
         sortable: true,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        render: (r) => <span className="font-semibold text-slate-900">{r.data_field}</span>,
+        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 dark:bg-[#1B3A4F] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-slate-800 dark:text-[var(--text-primary)]',
+        cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        render: (r) => <span className="font-semibold text-slate-900 dark:text-[var(--text-primary)]">{r.data_field}</span>,
         category: 'Excel Column'
       },
       'loan_id': {
@@ -244,21 +244,21 @@ export const ValidationPreviewModal = ({
         accessor: 'loan_id',
         sortable: true,
         filterable: false,
-        render: (r) => <span className="whitespace-nowrap font-medium text-slate-600">{r.loan_id || '-'}</span>,
+        render: (r) => <span className="whitespace-nowrap font-medium text-slate-600 dark:text-[var(--text-secondary)]">{r.loan_id || '-'}</span>,
         category: 'Excel Column'
       },
       'data_label': {
         header: 'Data Label',
         accessor: 'data_label',
         sortable: true,
-        render: (r) => <span className="font-mono text-slate-500">{r.data_label}</span>,
+        render: (r) => <span className="font-mono text-slate-600 dark:text-[var(--text-secondary)]">{r.data_label}</span>,
         category: 'Excel Column'
       },
       'true_data': {
         header: 'True Data',
         accessor: 'true_data',
         sortable: true,
-        render: (r) => <span className="font-medium text-slate-900 break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.true_data || ''}</span>,
+        render: (r) => <span className="font-medium text-slate-900 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.true_data || ''}</span>,
         category: 'Excel Column'
       }
     };
@@ -290,7 +290,7 @@ export const ValidationPreviewModal = ({
             sortable: true,
             filterable: !isConstantField,
             render: (r) => (
-              <span className="text-slate-700 break-words whitespace-pre-wrap max-w-xs block leading-snug">
+              <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-xs block leading-snug">
                 {r.raw_data?.[colName] ?? r[colName] ?? ''}
               </span>
             ),
@@ -318,7 +318,7 @@ export const ValidationPreviewModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="font-mono text-xs font-semibold text-slate-700 whitespace-nowrap">
+          <span className="font-mono text-xs font-semibold text-slate-700 dark:text-[var(--text-primary)] whitespace-nowrap">
             {modalLoanId || '-'}
           </span>
         ),
@@ -330,7 +330,7 @@ export const ValidationPreviewModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+          <span className="text-xs font-semibold text-slate-700 dark:text-[var(--text-primary)] whitespace-nowrap">
             {user?.username || '-'}
           </span>
         ),
@@ -342,7 +342,7 @@ export const ValidationPreviewModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="text-xs text-slate-600 whitespace-nowrap">
+          <span className="text-xs text-slate-600 dark:text-[var(--text-secondary)] whitespace-nowrap">
             {user?.email || '-'}
           </span>
         ),
@@ -364,7 +364,7 @@ export const ValidationPreviewModal = ({
         },
         sortValue: (r) => r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '',
         render: (r) => (
-          <span className="text-slate-600 break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
+          <span className="text-slate-600 dark:text-[var(--text-secondary)] break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
             {r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? ''}
           </span>
         ),
@@ -387,10 +387,10 @@ export const ValidationPreviewModal = ({
           return (
             <div className="text-xs break-words whitespace-pre-wrap max-w-sm leading-relaxed space-y-1">
               {String(val).split('\n').map((line, i) => {
-                let badgeClass = 'text-slate-600';
-                if (line.includes('PASS')) badgeClass = 'text-emerald-700 font-medium';
-                else if (line.includes('FAIL')) badgeClass = 'text-rose-700 font-medium';
-                else if (line.includes('NOT CHECKED')) badgeClass = 'text-amber-700 font-medium';
+                let badgeClass = 'text-slate-600 dark:text-[var(--text-secondary)]';
+                if (line.includes('PASS')) badgeClass = 'text-emerald-700 dark:text-[var(--success)] font-medium';
+                else if (line.includes('FAIL')) badgeClass = 'text-rose-700 dark:text-[var(--error)] font-medium';
+                else if (line.includes('NOT CHECKED')) badgeClass = 'text-amber-700 dark:text-[var(--warning)] font-medium';
                 return <div key={i} className={badgeClass}>{line}</div>;
               })}
             </div>
@@ -402,7 +402,7 @@ export const ValidationPreviewModal = ({
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
-        headerClassName: 'whitespace-nowrap font-bold text-slate-800',
+        headerClassName: 'whitespace-nowrap font-bold text-slate-800 dark:text-[var(--text-primary)]',
         render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug font-bold">{getStatusBadge(r.final_result || r.result, true)}</span>,
         category: 'Validation'
       },
@@ -410,7 +410,7 @@ export const ValidationPreviewModal = ({
         header: 'Final Remarks',
         accessor: 'final_remarks',
         sortable: true,
-        render: (r) => <span className="text-slate-700 break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
+        render: (r) => <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
         category: 'Validation'
       },
       {
@@ -532,10 +532,10 @@ export const ValidationPreviewModal = ({
 
   const customModalHeader = (
     <div className="flex items-center gap-3">
-      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 transition-all select-none shadow-2xs">
+      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-[var(--text-primary)] bg-white dark:bg-[var(--bg-elevated)] border border-slate-200 dark:border-[var(--border)] px-3.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-[var(--bg-muted)] transition-all select-none shadow-2xs">
         <input
           type="checkbox"
-          className="rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD] h-4 w-4 cursor-pointer accent-[#24A1DD]"
+          className="rounded border-slate-300 dark:border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)] h-4 w-4 cursor-pointer accent-[var(--primary)]"
           checked={showAll}
           onChange={(e) => setShowAll(e.target.checked)}
         />
@@ -545,13 +545,13 @@ export const ValidationPreviewModal = ({
         <button
           type="button"
           onClick={() => setShowManageColumnsModal(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-2xs cursor-pointer select-none"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[var(--bg-elevated)] border border-slate-200 dark:border-[var(--border)] text-slate-700 dark:text-[var(--text-primary)] text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-[var(--bg-muted)] hover:border-slate-300 dark:hover:border-[var(--border-strong)] transition-all shadow-2xs cursor-pointer select-none"
           aria-label="Manage Columns"
         >
-          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-slate-500 dark:text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
-          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full border border-[#24A1DD]/20">
+          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[var(--primary)]/10 text-[var(--primary)] rounded-full border border-[var(--primary)]/20">
             {visibleValidationColumns.length}/{allAvailableColumns.length}
           </span>
         </button>
@@ -562,30 +562,30 @@ export const ValidationPreviewModal = ({
   if (!isOpen || !validationData) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
-      <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-slate-200">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
+      <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-[var(--border)]">
         {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shadow-2xs">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[var(--success-bg)] border border-emerald-200 dark:border-[var(--success)]/30 text-emerald-600 dark:text-[var(--success)] flex items-center justify-center shadow-2xs">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center flex-wrap gap-2">
-                Validation Preview: <span className="font-semibold text-slate-700">{validationData.filename}</span>
+              <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-2">
+                <span>Validation Preview:</span> <span className="font-semibold text-[var(--text-secondary)]">{validationData.filename}</span>
                 {modalLoanId && (
-                  <span className="font-semibold text-slate-600">
+                  <span className="font-semibold text-[var(--text-secondary)]">
                     (Loan Id - {modalLoanId})
                   </span>
                 )}
               </h2>
               {validationData.records && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-0.5">
                   <span>Total: <strong>{validationData.records.length}</strong> fields</span>
                   <span>•</span>
-                  <span className="text-slate-600 font-medium">
+                  <span className="text-[var(--text-secondary)] font-medium">
                     Showing {validationRecordsFiltered.length} {showAll ? '(All)' : '(Invalid only)'}
                   </span>
                 </div>
@@ -599,7 +599,7 @@ export const ValidationPreviewModal = ({
                 type="button"
                 onClick={onDownloadExcel}
                 disabled={saveLoading || !validationData}
-                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)]/40 text-[var(--success)] disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Download Excel Report"
               >
                 <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -611,7 +611,7 @@ export const ValidationPreviewModal = ({
               type="button"
               onClick={onClose}
               disabled={saveLoading}
-              className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="px-3.5 py-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
             >
               Close
             </button>
@@ -620,7 +620,7 @@ export const ValidationPreviewModal = ({
                 type="button"
                 onClick={onSave}
                 disabled={saveLoading}
-                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-500/70 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center gap-2 transition-all animate-fade-in cursor-pointer"
+                className="px-4 py-1.5 bg-[var(--success)] hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center gap-2 transition-all animate-fade-in cursor-pointer"
               >
                 {saveLoading && (
                   <svg className="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
@@ -635,10 +635,10 @@ export const ValidationPreviewModal = ({
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 bg-slate-100 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 bg-slate-100 dark:bg-[var(--bg-app)] flex flex-col min-h-0 overflow-hidden">
           {activeSheet === 'results' ? (
             /* SHEET 1: RESULTS TABLE */
-            <div className="flex-1 flex flex-col bg-white overflow-hidden p-3 pb-2 min-h-0">
+            <div className="flex-1 flex flex-col bg-white dark:bg-[var(--bg-surface)] overflow-hidden p-3 pb-2 min-h-0">
               <DataTable
                 data={validationRecordsFiltered}
                 columns={visibleValidationColumns}
@@ -656,7 +656,7 @@ export const ValidationPreviewModal = ({
             </div>
           ) : (
             /* SHEET 2: SUMMARY CARDS */
-            <div className="flex-1 bg-slate-50 p-6 sm:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
+            <div className="flex-1 bg-slate-50 dark:bg-[var(--bg-app)] p-6 sm:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
               <ValidationSummaryCards
                 summary={validationData.summary}
                 condSummary={condSummary}
@@ -666,18 +666,18 @@ export const ValidationPreviewModal = ({
         </div>
 
         {/* Bottom-docked Excel Worksheet Tab Selector */}
-        <div className="h-10 bg-slate-200/90 border-t border-slate-300 flex items-center px-4 flex-shrink-0 select-none backdrop-blur-xs">
+        <div className="h-10 bg-[var(--bg-header)] border-t border-[var(--border)] flex items-center px-4 flex-shrink-0 select-none">
           <div className="flex items-center h-full gap-1">
             <button
               type="button"
               onClick={() => setActiveSheet('results')}
               className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
                 activeSheet === 'results'
-                  ? 'bg-white text-slate-900 border-t-2 border-t-emerald-600 border-x border-slate-300 shadow-xs'
-                  : 'bg-slate-100/70 hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
+                  : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
               }`}
             >
-              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
               Result Sheet
@@ -688,11 +688,11 @@ export const ValidationPreviewModal = ({
               onClick={() => setActiveSheet('summary')}
               className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
                 activeSheet === 'summary'
-                  ? 'bg-white text-slate-900 border-t-2 border-t-emerald-600 border-x border-slate-300 shadow-xs'
-                  : 'bg-slate-100/70 hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
+                  : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
               }`}
             >
-              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               Summary Sheet

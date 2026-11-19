@@ -2,8 +2,15 @@
   position: relative;
   width: 100%;
   min-height: 100vh;
-  /* Gradient background */
+  /* Default light gradient */
   background: linear-gradient(135deg, #1f6f8b, #2ea3d6);
+  transition: background 0.3s ease;
+}
+
+/* Dark mode auth gradient */
+[data-theme="dark"] .auth-background,
+.dark .auth-background {
+  background: linear-gradient(135deg, #0B2A3A, #124E6E);
 }
 
 /* Common circle style */
@@ -11,6 +18,11 @@
   position: absolute;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .auth-circle,
+.dark .auth-circle {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* Left big circle */
@@ -29,7 +41,7 @@
   top: 200px;
 }
 
-/* Bottom white curve */
+/* Bottom curve */
 .auth-bottom-curve {
   position: absolute;
   bottom: -150px;
@@ -40,4 +52,10 @@
   background: #eaeaea;
   border-top-left-radius: 50% 100%;
   border-top-right-radius: 50% 100%;
+  transition: background 0.3s ease;
+}
+
+[data-theme="dark"] .auth-bottom-curve,
+.dark .auth-bottom-curve {
+  background: #091C26;
 }

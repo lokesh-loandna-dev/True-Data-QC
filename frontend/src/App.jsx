@@ -1,7 +1,9 @@
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AntdThemeBridge } from './utils/antdTheme';
 import ProtectedRoute from './components/ProtectedRoute';
 import { PageSkeleton } from './components/SkeletonLoader';
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
@@ -17,9 +19,11 @@ const UploadPage = lazy(() => import('./pages/UploadPage'));
 const ProhancePage = lazy(() => import('./pages/ProhancePage'));
 const PackageAuditPage = lazy(() => import('./pages/PackageAuditPage'));
 
-const App = () => {
+const AppRoutes = () => {
+  const { isDark } = useTheme();
+
   return (
-    <AuthProvider>
+    <AntdThemeBridge isDark={isDark}>
       <Toaster
         position="bottom-right"
         reverseOrder={false}
@@ -28,6 +32,11 @@ const App = () => {
           duration: 4000,
           style: {
             fontFamily: 'inherit',
+            backgroundColor: 'var(--bg-surface)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
           },
         }}
       />
@@ -102,9 +111,18 @@ const App = () => {
           </Routes>
         </Suspense>
       </Router>
-    </AuthProvider>
+    </AntdThemeBridge>
   );
 };
 
+const App = () => {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;

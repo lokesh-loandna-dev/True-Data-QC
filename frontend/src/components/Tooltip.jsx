@@ -128,7 +128,7 @@ export default function Tooltip({
             transform: getTransform(coords.effectivePos),
           }}
         >
-          <div className="bg-slate-900/95 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-xl border border-slate-700/60 whitespace-nowrap">
+          <div className="bg-[var(--bg-elevated)] text-[var(--text-primary)] text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-xl border border-[var(--border)] whitespace-nowrap">
             {text}
           </div>
         </div>,

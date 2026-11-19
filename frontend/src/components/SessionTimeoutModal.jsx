@@ -105,7 +105,7 @@ const SessionTimeoutModal = ({
   return (
     <div
       data-ui="modal"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="session-warning-title"
@@ -113,13 +113,13 @@ const SessionTimeoutModal = ({
     >
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md bg-white rounded-xl border border-slate-200/90 shadow-xl overflow-hidden font-creato"
+        className="relative w-full max-w-md bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-xl border border-[var(--border)] shadow-xl overflow-hidden font-creato"
       >
         {/* Real-time Elapsed Progress Line */}
-        <div className="h-1 w-full bg-slate-100">
+        <div className="h-1 w-full bg-[var(--bg-elevated)]">
           <div
             className={`h-full transition-[width,background-color] duration-500 ease-out ${
-              isUrgent ? 'bg-amber-500' : 'bg-[#24A1DD]'
+              isUrgent ? 'bg-[var(--warning)]' : 'bg-[var(--primary)]'
             }`}
             style={{ width: `${progressRatio}%` }}
           />
@@ -128,7 +128,7 @@ const SessionTimeoutModal = ({
         <div className="p-6 sm:p-7">
           {/* Header Row: Shield emblem & Alert Badge */}
           <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-700">
+            <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center text-[var(--text-primary)]">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -148,13 +148,13 @@ const SessionTimeoutModal = ({
             <div
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
                 isUrgent
-                  ? 'bg-amber-50 border-amber-200 text-amber-800'
-                  : 'bg-slate-100 border-slate-200 text-slate-700'
+                  ? 'bg-[var(--warning-bg)] border-[var(--warning)]/40 text-[var(--warning)]'
+                  : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)]'
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isUrgent ? 'bg-amber-500' : 'bg-[#24A1DD]'
+                  isUrgent ? 'bg-[var(--warning)]' : 'bg-[var(--primary)]'
                 }`}
                 aria-hidden="true"
               />
@@ -164,39 +164,39 @@ const SessionTimeoutModal = ({
 
           {/* Title & Identity Subtitle */}
           <div>
-            <h2 id="session-warning-title" className="text-lg font-bold text-slate-900 tracking-tight">
+            <h2 id="session-warning-title" className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
               Session Expiring Soon
             </h2>
             {userIdentifier ? (
-              <p className="mt-0.5 text-xs text-slate-500 truncate">
-                Active user: <span className="font-medium text-slate-700">{userIdentifier}</span>
+              <p className="mt-0.5 text-xs text-[var(--text-secondary)] truncate">
+                Active user: <span className="font-medium text-[var(--text-primary)]">{userIdentifier}</span>
               </p>
             ) : null}
           </div>
 
           {/* Description */}
-          <p id="session-warning-desc" className="mt-2.5 text-sm text-slate-600 leading-relaxed">
+          <p id="session-warning-desc" className="mt-2.5 text-sm text-[var(--text-secondary)] leading-relaxed">
             You have been inactive for an extended period. For data security, your session will be
             signed out unless you choose to stay logged in.
           </p>
 
           {/* Countdown Block with Tabular Typography */}
           <div
-            className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-between"
+            className="mt-4 p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-between"
             aria-live="polite"
           >
             <div>
-              <span className="block text-xs font-medium text-slate-500">
+              <span className="block text-xs font-medium text-[var(--text-secondary)]">
                 Time Remaining
               </span>
-              <span className="block text-[11px] text-slate-400 mt-0.5">
+              <span className="block text-[11px] text-[var(--text-disabled)] mt-0.5">
                 Unsaved edits will be discarded
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <svg
-                className={`w-4 h-4 ${isUrgent ? 'text-amber-600' : 'text-slate-400'}`}
+                className={`w-4 h-4 ${isUrgent ? 'text-[var(--warning)]' : 'text-[var(--text-secondary)]'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -211,7 +211,7 @@ const SessionTimeoutModal = ({
               </svg>
               <span
                 className={`text-2xl font-bold tracking-tight tabular-nums ${
-                  isUrgent ? 'text-amber-700' : 'text-slate-900'
+                  isUrgent ? 'text-[var(--warning)]' : 'text-[var(--text-primary)]'
                 }`}
               >
                 {formatTime(secondsRemaining)}
@@ -224,7 +224,7 @@ const SessionTimeoutModal = ({
             <button
               type="button"
               onClick={onSignOut}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 active:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer transition-[background-color,border-color]"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-primary)] text-sm font-semibold hover:bg-[var(--bg-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]/25 cursor-pointer transition-[background-color,border-color]"
             >
               Sign Out
             </button>
@@ -232,20 +232,20 @@ const SessionTimeoutModal = ({
               ref={primaryBtnRef}
               type="button"
               onClick={onStayLoggedIn}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#24A1DD] hover:bg-[#1b8ec5] active:bg-[#1678a7] text-white text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#24A1DD] cursor-pointer transition-[background-color]"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]/25 cursor-pointer transition-[background-color]"
             >
               Stay Signed In
             </button>
           </div>
 
           {/* Keyboard Navigation Tip */}
-          <div className="mt-3.5 flex items-center justify-center sm:justify-start gap-1 text-[11px] text-slate-400">
+          <div className="mt-3.5 flex items-center justify-center sm:justify-start gap-1 text-[11px] text-[var(--text-disabled)]">
             <span>Press</span>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 border border-slate-200 rounded text-slate-600">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-[var(--bg-elevated)] border border-[var(--border)] rounded text-[var(--text-secondary)]">
               Enter
             </kbd>
             <span>or</span>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 border border-slate-200 rounded text-slate-600">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-[var(--bg-elevated)] border border-[var(--border)] rounded text-[var(--text-secondary)]">
               Esc
             </kbd>
             <span>to keep working</span>

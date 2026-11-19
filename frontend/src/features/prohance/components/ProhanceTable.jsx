@@ -200,7 +200,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         accessor: 'id',
         sortable: false,
         render: (_, index, globalIndexOffset = 0) => (
-          <span className="text-slate-500 font-medium">
+          <span className="text-[var(--text-secondary)] font-medium">
             {globalIndexOffset + index + 1}
           </span>
         ),
@@ -209,11 +209,11 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         header: 'File Name',
         accessor: 'fileName',
         sortable: true,
-        cellClassName: 'font-medium text-slate-900',
+        cellClassName: 'font-medium text-[var(--text-primary)]',
         render: (row) => (
           <div className="flex items-center gap-2">
             <svg
-              className="w-4 h-4 text-[#24A1DD] flex-shrink-0"
+              className="w-4 h-4 text-[var(--primary)] flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -244,7 +244,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         accessor: 'userName',
         sortable: true,
         render: (row) => (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-[#1e9bd8]">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-soft)] text-[var(--primary)]">
             {row.userName}
           </span>
         ),
@@ -260,7 +260,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
               <button
                 type="button"
                 onClick={() => handleViewReport(row.id)}
-                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--primary-soft)] hover:border-[var(--primary)] text-[var(--primary)] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="View Report"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -273,7 +273,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
               <button
                 type="button"
                 onClick={() => handleDeleteClick(row)}
-                className="inline-flex items-center justify-center p-2 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--error-bg)] hover:border-[var(--error)] text-[var(--error)] rounded-xl text-xs shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                 aria-label="Delete Report"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,7 +299,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
       />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
           Prohance Dashboard
         </h2>
 
@@ -308,7 +308,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-sky-50 hover:border-[#24A1DD]/30 text-[#24A1DD] hover:text-[#1e88bb] font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--primary-soft)] hover:border-[var(--primary)] text-[var(--primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
               aria-label="Upload Prohance Report"
             >
               <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,7 +322,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
               <button
                 type="button"
                 onClick={() => setIsDeleteAllModalOpen(true)}
-                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 hover:text-rose-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--error-bg)] hover:border-[var(--error)] text-[var(--error)] disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Delete All Reports"
               >
                 <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -357,22 +357,22 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-4 text-rose-600 mb-4">
-              <div className="p-3 bg-rose-50 rounded-xl border border-rose-100">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl border border-[var(--border)] w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-4 text-[var(--error)] mb-4">
+              <div className="p-3 bg-[var(--error-bg)] rounded-xl border border-[var(--error)]/30">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Delete Report</h3>
-                <p className="text-xs text-slate-500">This action cannot be undone</p>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Delete Report</h3>
+                <p className="text-xs text-[var(--text-secondary)]">This action cannot be undone</p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-              Are you sure you want to delete report <strong className="text-slate-900">"{reportToDelete?.fileName}"</strong>? All processed data and associated summaries will be permanently deleted.
+            <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
+              Are you sure you want to delete report <strong className="text-[var(--text-primary)]">"{reportToDelete?.fileName}"</strong>? All processed data and associated summaries will be permanently deleted.
             </p>
 
             <div className="flex items-center justify-end gap-3">
@@ -380,7 +380,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}
                 disabled={deleting}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -388,7 +388,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--error)] hover:opacity-90 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {deleting ? (
                   <>
@@ -406,22 +406,22 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
 
       {/* Delete All Confirmation Modal */}
       {isDeleteAllModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-4 text-rose-600 mb-4">
-              <div className="p-3 bg-rose-50 rounded-xl border border-rose-100">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl border border-[var(--border)] w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-4 text-[var(--error)] mb-4">
+              <div className="p-3 bg-[var(--error-bg)] rounded-xl border border-[var(--error)]/30">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Delete All Reports</h3>
-                <p className="text-xs text-slate-500">This action cannot be undone</p>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Delete All Reports</h3>
+                <p className="text-xs text-[var(--text-secondary)]">This action cannot be undone</p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-              Are you sure you want to delete <strong className="text-slate-900">ALL ({data.length}) Prohance reports</strong>? All processed audit logs and summaries will be permanently deleted.
+            <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
+              Are you sure you want to delete <strong className="text-[var(--text-primary)]">ALL ({data.length}) Prohance reports</strong>? All processed audit logs and summaries will be permanently deleted.
             </p>
 
             <div className="flex items-center justify-end gap-3">
@@ -429,7 +429,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
                 type="button"
                 onClick={() => setIsDeleteAllModalOpen(false)}
                 disabled={deletingAll}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -437,7 +437,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
                 type="button"
                 onClick={handleConfirmDeleteAll}
                 disabled={deletingAll}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--error)] hover:opacity-90 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {deletingAll ? (
                   <>

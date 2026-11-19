@@ -78,13 +78,13 @@ const RegisterPage = () => {
       <AuthLayout title="Registration Received">
         <div className="w-full flex flex-col items-center text-center py-2">
           {/* Status Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-[#24A1DD] mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] border border-[var(--primary)]/30 flex items-center justify-center text-[var(--primary)] mb-4">
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
             </svg>
           </div>
 
-          <p className="text-sm text-slate-600 leading-relaxed mb-6 max-w-sm">
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6 max-w-sm">
             Your request has been logged and is awaiting administrator approval.
           </p>
 
@@ -106,7 +106,7 @@ const RegisterPage = () => {
                 setPassword('');
                 setConfirmPassword('');
               }}
-              className="w-full text-xs text-slate-500 hover:text-slate-800 py-1.5 transition-colors cursor-pointer"
+              className="w-full text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] py-1.5 transition-colors cursor-pointer"
             >
               Register another account
             </button>
@@ -121,7 +121,7 @@ const RegisterPage = () => {
       <form onSubmit={handleSubmit} className="w-full" noValidate>
         {/* Error Displays */}
         {displayError && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
+          <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 text-[var(--error)] px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
             {displayError}
           </div>
         )}
@@ -205,9 +205,9 @@ const RegisterPage = () => {
           </CustomButton>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500 font-normal">
+        <div className="mt-6 text-center text-sm text-[var(--text-secondary)] font-normal">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-500 hover:underline font-medium">
+          <Link to="/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] hover:underline font-medium">
             Log In
           </Link>
         </div>

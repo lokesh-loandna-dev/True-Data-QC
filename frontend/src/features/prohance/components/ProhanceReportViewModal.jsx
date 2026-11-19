@@ -78,21 +78,21 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
   // Helper: Status Badge
   const getStatusBadge = (status) => {
     if (status === null || status === undefined || status === '') {
-      return <span className="text-slate-400 whitespace-nowrap">-</span>;
+      return <span className="text-[var(--text-disabled)] whitespace-nowrap">-</span>;
     }
     const s = String(status);
-    const textStyle = "whitespace-nowrap inline-flex items-center font-semibold text-xs";
+    const textStyle = "whitespace-nowrap inline-flex items-center font-semibold text-xs px-2.5 py-0.5 rounded-full border";
 
     if (s === 'TRUE' || s === 'Matched' || s === 'Valid' || s.startsWith('OK')) {
-      return <span className={`text-green-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-[var(--success)] bg-[var(--success-bg)] border-[var(--success)]/40 ${textStyle}`}>{s}</span>;
     }
     if (s === 'FALSE' || s === 'Unmatched' || s.startsWith('Invalid') || s.startsWith('FLAGGED') || s.includes('Unmapped') || s.includes('Unverified')) {
-      return <span className={`text-red-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-[var(--error)] bg-[var(--error-bg)] border-[var(--error)]/40 ${textStyle}`}>{s}</span>;
     }
     if (s.includes('variance') || s.includes('Requires Review') || s.includes('review')) {
-      return <span className={`text-amber-700 ${textStyle}`}>{s}</span>;
+      return <span className={`text-[var(--warning)] bg-[var(--warning-bg)] border-[var(--warning)]/40 ${textStyle}`}>{s}</span>;
     }
-    return <span className={`text-slate-700 ${textStyle}`}>{s}</span>;
+    return <span className={`text-[var(--text-primary)] bg-[var(--bg-muted)] border-[var(--border)] ${textStyle}`}>{s}</span>;
   };
 
   const handleRecordChange = (recordToUpdate, field, value) => {
@@ -180,20 +180,20 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
       header: key,
       accessor: key,
       sortable: true,
-      cellClassName: key.toLowerCase().includes('file') ? 'font-semibold text-slate-900' : 'text-slate-700',
+      cellClassName: key.toLowerCase().includes('file') ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-secondary)]',
       render: (row) => {
         const val = row[key];
-        if (val === null || val === undefined) return <span className="text-slate-300">-</span>;
+        if (val === null || val === undefined) return <span className="text-[var(--text-disabled)]">-</span>;
         if (key === 'User Name') {
           return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border)]">
               {val}
             </span>
           );
         }
         if (key === 'Reason') {
           return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--warning-bg)] text-[var(--warning)] border border-[var(--warning)]/30">
               {val}
             </span>
           );
@@ -225,10 +225,10 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
         header: 'S.No',
         accessor: '_sno',
         sortable: false,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         render: (_, index, globalIndexOffset = 0) => (
-          <span className="text-slate-500 font-semibold">{globalIndexOffset + index + 1}</span>
+          <span className="text-[var(--text-secondary)] font-semibold">{globalIndexOffset + index + 1}</span>
         ),
       },
       ...visibleColumns,
@@ -238,16 +238,16 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
-      <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-slate-200">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
+      <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-[var(--border)]">
 
         {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-header)] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
+            <span className="w-2.5 h-2.5 bg-[var(--success)] rounded-full"></span>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                Prohance Audit Preview: <span className="font-semibold text-slate-600">{report?.original_filename || 'Loading...'}</span>
+              <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+                Prohance Audit Preview: <span className="font-semibold text-[var(--text-secondary)]">{report?.original_filename || 'Loading...'}</span>
               </h2>
             </div>
           </div>
@@ -258,13 +258,13 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
                 type="button"
                 onClick={() => setShowManageColumnsModal(true)}
                 disabled={loading || !report || allAvailableColumns.length === 0}
-                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 select-none"
+                className="px-3 py-1.5 bg-[var(--bg-surface)] border border-[var(--border)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 select-none"
                 aria-label="Manage Visible Columns"
               >
-                <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                 </svg>
-                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full border border-[#24A1DD]/20">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[var(--primary-soft)] text-[var(--primary)] rounded-full border border-[var(--primary)]/30">
                   {visibleColumns.length}/{allAvailableColumns.length}
                 </span>
               </button>
@@ -274,7 +274,7 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
                 type="button"
                 onClick={handleDownloadExcel}
                 disabled={loading || !report}
-                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)] text-[var(--success)] disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Download Excel Report"
               >
                 <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -285,7 +285,7 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="px-4 py-1.5 border border-[var(--border)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
             >
               Close
             </button>
@@ -294,25 +294,25 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
 
         {/* Feedback Banners */}
         {updateMessage && (
-          <div className="px-5 py-2 bg-green-50 border-b border-green-200 text-xs sm:text-sm text-green-800 font-semibold flex items-center justify-between animate-fade-in">
+          <div className="px-5 py-2 bg-[var(--success-bg)] border-b border-[var(--success)]/30 text-xs sm:text-sm text-[var(--success)] font-semibold flex items-center justify-between animate-fade-in">
             <span className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-[var(--success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               {updateMessage}
             </span>
-            <button onClick={() => setUpdateMessage('')} className="text-green-600 hover:text-green-800 text-xs font-bold cursor-pointer">✕</button>
+            <button onClick={() => setUpdateMessage('')} className="text-[var(--success)] hover:opacity-80 text-xs font-bold cursor-pointer">✕</button>
           </div>
         )}
         {updateError && (
-          <div className="px-5 py-2 bg-red-50 border-b border-red-200 text-xs sm:text-sm text-red-800 font-semibold flex items-center justify-between animate-fade-in">
+          <div className="px-5 py-2 bg-[var(--error-bg)] border-b border-[var(--error)]/30 text-xs sm:text-sm text-[var(--error)] font-semibold flex items-center justify-between animate-fade-in">
             <span className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-[var(--error)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {updateError}
             </span>
-            <button onClick={() => setUpdateError('')} className="text-red-600 hover:text-red-800 text-xs font-bold cursor-pointer">✕</button>
+            <button onClick={() => setUpdateError('')} className="text-[var(--error)] hover:opacity-80 text-xs font-bold cursor-pointer">✕</button>
           </div>
         )}
 
@@ -320,9 +320,9 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
         {loading ? (
           <ModalSkeleton />
         ) : (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-100">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[var(--bg-muted)]">
             {/* Sub-tab DataTable */}
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 bg-white">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 bg-[var(--bg-surface)]">
               <DataTable
                 data={subTabRows}
                 columns={subTabColumns}
@@ -339,7 +339,7 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
             </div>
 
             {/* Bottom-docked Excel Worksheet Tab Selector */}
-            <div className="h-10 bg-slate-200 border-t border-slate-300 flex items-center px-4 flex-shrink-0 select-none overflow-x-auto custom-scrollbar">
+            <div className="h-10 bg-[var(--bg-elevated)] border-t border-[var(--border)] flex items-center px-4 flex-shrink-0 select-none overflow-x-auto custom-scrollbar">
               <div className="flex items-center h-full gap-[1px]">
                 {REPORT_TABS.map((tab) => {
                   const isActive = activeSubTab === tab.id;
@@ -348,12 +348,12 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveSubTab(tab.id)}
-                      className={`px-5 h-full flex items-center gap-2 text-xs font-semibold border-r border-slate-300 transition-all rounded-t-sm whitespace-nowrap cursor-pointer ${isActive
-                        ? 'bg-white text-slate-900 border-t-2 border-t-[#24A1DD] border-x border-x-slate-300 shadow-xs'
-                        : 'bg-slate-100/70 hover:bg-slate-50 text-slate-600 hover:text-slate-800'
+                      className={`px-5 h-full flex items-center gap-2 text-xs font-semibold border-r border-[var(--border)] transition-all rounded-t-sm whitespace-nowrap cursor-pointer ${isActive
+                        ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-x-[var(--border)] shadow-xs'
+                        : 'bg-[var(--bg-muted)] hover:bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                     >
-                      <svg className="w-3.5 h-3.5 text-[#24A1DD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                       <span>{tab.label}</span>

@@ -91,27 +91,27 @@ const LoginPage = () => {
       <form onSubmit={handleSubmit} className="w-full" noValidate>
         {displayError && (
           displayError.toLowerCase().includes('approval') ? (
-            <div className="bg-amber-50 border border-amber-200/80 text-amber-800 px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
-              <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 text-[var(--warning)] px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
+              <svg className="w-4 h-4 text-[var(--warning)] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div>
-                <p className="font-semibold text-amber-900 mb-0.5">Account Pending Approval</p>
-                <p className="text-amber-700 leading-relaxed">{displayError}</p>
+                <p className="font-semibold text-[var(--text-primary)] mb-0.5">Account Pending Approval</p>
+                <p className="text-[var(--text-secondary)] leading-relaxed">{displayError}</p>
               </div>
             </div>
           ) : displayError.toLowerCase().includes('reject') ? (
-            <div className="bg-rose-50 border border-rose-200/80 text-rose-800 px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
-              <svg className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 text-[var(--error)] px-3.5 py-3 rounded-xl mb-4 text-xs font-normal text-left flex items-start gap-2.5 shadow-2xs">
+              <svg className="w-4 h-4 text-[var(--error)] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="font-semibold text-rose-900 mb-0.5">Registration Rejected</p>
-                <p className="text-rose-700 leading-relaxed">{displayError}</p>
+                <p className="font-semibold text-[var(--text-primary)] mb-0.5">Registration Rejected</p>
+                <p className="text-[var(--text-secondary)] leading-relaxed">{displayError}</p>
               </div>
             </div>
           ) : (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
+            <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 text-[var(--error)] px-4 py-2.5 rounded-lg mb-4 text-sm text-center font-medium animate-shake">
               {displayError}
             </div>
           )
@@ -155,7 +155,7 @@ const LoginPage = () => {
           <Link
             to="/forgot-password"
             state={{ email }}
-            className="text-sm text-blue-500 hover:underline font-medium"
+            className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] hover:underline font-medium"
           >
             Forgot password?
           </Link>
@@ -179,10 +179,10 @@ const LoginPage = () => {
             className="
               w-full h-11
               flex items-center justify-center gap-3
-              border border-[#0078D4]
+              border border-[var(--border-strong)]
               rounded-lg
-              bg-white
-              hover:bg-[#f5faff]
+              bg-[var(--bg-elevated)]
+              hover:bg-[var(--bg-muted)]
               transition
               cursor-pointer
             "
@@ -192,15 +192,15 @@ const LoginPage = () => {
               alt="Microsoft"
               className="w-5 h-5"
             />
-            <span className="text-base font-medium text-gray-800">
+            <span className="text-base font-medium text-[var(--text-primary)]">
               Microsoft
             </span>
           </button>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500 font-normal">
+        <div className="mt-6 text-center text-sm text-[var(--text-secondary)] font-normal">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-500 hover:underline font-medium">
+          <Link to="/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] hover:underline font-medium">
             Register
           </Link>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import { useState, memo } from 'react';
 
 const CustomInput = memo(({
   label,
@@ -32,8 +32,8 @@ const CustomInput = memo(({
   return (
     <div className={`${className} font-creato`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-          {required && <span className="text-red-500 mr-1">*</span>}
+        <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5 flex items-center">
+          {required && <span className="text-[var(--error)] mr-1">*</span>}
           {label}
         </label>
       )}
@@ -41,12 +41,12 @@ const CustomInput = memo(({
       <div className="relative flex items-center">
         {/* Leading Icon */}
         {icon && (
-          <div className="absolute left-3.5 text-gray-400 flex items-center justify-center pointer-events-none">
+          <div className="absolute left-3.5 text-[var(--text-secondary)] flex items-center justify-center pointer-events-none">
             {icon}
           </div>
         )}
 
-        {/* Input Field */}
+        {/* Input Field: background --bg-elevated, border --border-strong, focus border & ring --focus-ring, placeholder --text-disabled */}
         <input
           type={inputType}
           value={value}
@@ -54,14 +54,14 @@ const CustomInput = memo(({
           onBlur={onBlur}
           placeholder={placeholder}
           className={`
-            block w-full rounded-lg border text-base text-gray-800 placeholder-gray-400
-            transition-all duration-150 bg-white
+            block w-full rounded-lg border text-base text-[var(--text-primary)] placeholder-[var(--text-disabled)]
+            transition-all duration-150 bg-[var(--bg-elevated)]
             ${height}
             ${icon ? 'pl-11' : 'pl-3.5'}
             ${(rightIcon || isPassword || (allowClear && value)) ? 'pr-11' : 'pr-3.5'}
             ${error 
-              ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/25' 
-              : 'border-gray-300 focus:border-[#24A1DD] focus:ring-1 focus:ring-[#24A1DD]/25'
+              ? 'border-[var(--error)] focus:border-[var(--error)] focus:ring-1 focus:ring-[var(--error)]/25' 
+              : 'border-[var(--border-strong)] focus:border-[var(--focus-ring)] focus:ring-1 focus:ring-[var(--focus-ring)]/25'
             }
             focus:outline-none
           `}
@@ -69,13 +69,13 @@ const CustomInput = memo(({
         />
 
         {/* Action icons wrapper (right side) */}
-        <div className="absolute right-3.5 flex items-center gap-1.5 text-gray-400">
+        <div className="absolute right-3.5 flex items-center gap-1.5 text-[var(--text-secondary)]">
           {/* Clear Button */}
           {allowClear && value && !isPassword && (
             <button
               type="button"
               onClick={handleClear}
-              className="hover:text-gray-600 transition cursor-pointer flex items-center justify-center p-0.5 rounded-full hover:bg-gray-100"
+              className="hover:text-[var(--text-primary)] transition cursor-pointer flex items-center justify-center p-0.5 rounded-full hover:bg-[var(--bg-muted)]"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -88,7 +88,7 @@ const CustomInput = memo(({
             <button
               type="button"
               onClick={() => setPasswordVisible(!passwordVisible)}
-              className="hover:text-gray-600 transition cursor-pointer flex items-center justify-center"
+              className="hover:text-[var(--text-primary)] transition cursor-pointer flex items-center justify-center"
             >
               {passwordVisible ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,11 +103,11 @@ const CustomInput = memo(({
             </button>
           )}
 
-          {/* Custom Suffix Suffix Icon */}
+          {/* Optional Right Custom Icon */}
           {rightIcon && (
-            <div
+            <div 
               onClick={onRightIconClick}
-              className={`flex items-center justify-center ${onRightIconClick ? 'cursor-pointer hover:text-gray-600' : ''}`}
+              className={`flex items-center justify-center ${onRightIconClick ? 'cursor-pointer hover:text-[var(--text-primary)]' : ''}`}
             >
               {rightIcon}
             </div>
@@ -115,8 +115,14 @@ const CustomInput = memo(({
         </div>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <p className="mt-1 text-xs text-red-500">{error}</p>
+        <p className="mt-1.5 text-xs text-[var(--error)] flex items-center animate-fadeIn">
+          <svg className="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
       )}
     </div>
   );

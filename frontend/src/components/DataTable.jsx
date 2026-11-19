@@ -236,13 +236,13 @@ const ColumnFilterModal = ({
         left: `${coords.left}px`,
         zIndex: 99999,
       }}
-      className={`${isNumericCol ? 'w-72' : 'w-64'} bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-700 animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden`}
+      className={`${isNumericCol ? 'w-72' : 'w-64'} bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border)] text-[var(--text-primary)] animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Modal Header */}
-      <div className="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div className="px-3.5 py-2.5 bg-[var(--bg-elevated)] border-b border-[var(--border)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#24A1DD]/10 text-[#24A1DD] flex items-center justify-center">
+          <div className="w-6 h-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
             {isNumericCol ? (
               <span className="font-mono text-xs font-bold leading-none">#</span>
             ) : (
@@ -251,14 +251,14 @@ const ColumnFilterModal = ({
               </svg>
             )}
           </div>
-          <span className="font-semibold text-slate-800 text-xs truncate max-w-[150px]" title={`Filter ${headerText}`}>
+          <span className="font-semibold text-[var(--text-primary)] text-xs truncate max-w-[150px]" title={`Filter ${headerText}`}>
             Filter {headerText}
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="w-5 h-5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer text-xs font-bold"
+          className="w-5 h-5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] flex items-center justify-center transition-colors cursor-pointer text-xs font-bold"
         >
           ✕
         </button>
@@ -266,20 +266,20 @@ const ColumnFilterModal = ({
 
       {/* Tabs if column is numeric */}
       {isNumericCol && (
-        <div className="flex border-b border-slate-200 bg-slate-100/70 p-1 gap-1 text-xs font-semibold">
+        <div className="flex border-b border-[var(--border)] bg-[var(--bg-elevated)] p-1 gap-1 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setFilterMode('condition')}
             className={`flex-1 py-1 px-2 rounded-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
               filterMode === 'condition'
-                ? 'bg-white text-[#24A1DD] shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-[var(--bg-surface)] text-[var(--primary)] shadow-2xs font-bold border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'
             }`}
           >
             <span className="font-mono text-xs font-bold">≥</span>
             <span>Condition</span>
             {isNumericActive && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#24A1DD]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
             )}
           </button>
           <button
@@ -287,8 +287,8 @@ const ColumnFilterModal = ({
             onClick={() => setFilterMode('values')}
             className={`flex-1 py-1 px-2 rounded-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
               filterMode === 'values'
-                ? 'bg-white text-[#24A1DD] shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-[var(--bg-surface)] text-[var(--primary)] shadow-2xs font-bold border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'
             }`}
           >
             <svg className="w-3 h-3 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,7 +296,7 @@ const ColumnFilterModal = ({
             </svg>
             <span>Values</span>
             {selectedValues.length > 0 && (
-              <span className="bg-[#24A1DD] text-white text-[10px] px-1 rounded-full font-bold leading-none">
+              <span className="bg-[var(--primary)] text-white text-[10px] px-1 rounded-full font-bold leading-none">
                 {selectedValues.length}
               </span>
             )}
@@ -314,10 +314,10 @@ const ColumnFilterModal = ({
             <select
               value={numOperator}
               onChange={(e) => setNumOperator(e.target.value)}
-              className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] transition-all cursor-pointer"
+              className="w-full text-xs font-semibold bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]/20 focus:border-[var(--focus-ring)] transition-all cursor-pointer"
             >
               {NUMERIC_OPERATORS.map((op) => (
-                <option key={op.value} value={op.value}>
+                <option key={op.value} value={op.value} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                   {op.label}
                 </option>
               ))}
@@ -325,7 +325,7 @@ const ColumnFilterModal = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
               {numOperator === 'between' ? 'Range Values' : 'Target Value'}
             </label>
             {numOperator === 'between' ? (
@@ -336,7 +336,7 @@ const ColumnFilterModal = ({
                   onChange={(e) => setNumValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
                   placeholder="Min"
-                  className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                  className="w-full text-xs font-mono border border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]/20 focus:border-[var(--focus-ring)]"
                   autoFocus
                 />
                 <input
@@ -345,7 +345,7 @@ const ColumnFilterModal = ({
                   onChange={(e) => setNumValue2(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
                   placeholder="Max"
-                  className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                  className="w-full text-xs font-mono border border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]/20 focus:border-[var(--focus-ring)]"
                 />
               </div>
             ) : (
@@ -355,7 +355,7 @@ const ColumnFilterModal = ({
                 onChange={(e) => setNumValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyNumeric()}
                 placeholder="Enter number..."
-                className="w-full text-xs font-mono border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD]"
+                className="w-full text-xs font-mono border border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]/20 focus:border-[var(--focus-ring)]"
                 autoFocus
               />
             )}
@@ -370,28 +370,28 @@ const ColumnFilterModal = ({
               <button
                 type="button"
                 onClick={() => handleQuickPreset('>', 0)}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-[#161b22] hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 dark:text-[#c9d1d9] transition-colors border border-slate-200 dark:border-[#30363d] cursor-pointer"
               >
                 &gt; 0
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickPreset('=', 0)}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-[#161b22] hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 dark:text-[#c9d1d9] transition-colors border border-slate-200 dark:border-[#30363d] cursor-pointer"
               >
                 = 0
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickPreset('>=', 1)}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-[#161b22] hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 dark:text-[#c9d1d9] transition-colors border border-slate-200 dark:border-[#30363d] cursor-pointer"
               >
                 ≥ 1
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickPreset('>=', 5)}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 transition-colors border border-slate-200 cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-[#161b22] hover:bg-[#24A1DD]/10 hover:text-[#24A1DD] text-slate-600 dark:text-[#c9d1d9] transition-colors border border-slate-200 dark:border-[#30363d] cursor-pointer"
               >
                 ≥ 5
               </button>
@@ -399,7 +399,7 @@ const ColumnFilterModal = ({
           </div>
 
           {/* Footer for condition mode */}
-          <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+          <div className="pt-2 border-t border-slate-200 dark:border-[#30363d] flex items-center justify-between gap-2">
             {isNumericActive ? (
               <button
                 type="button"
@@ -415,7 +415,7 @@ const ColumnFilterModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
+                className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-[#c9d1d9] hover:bg-slate-100 dark:hover:bg-[#21262d] rounded-lg cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -434,14 +434,14 @@ const ColumnFilterModal = ({
         /* Mode 2: Values Multi-select List */
         <>
           {/* Search Input Box */}
-          <div className="p-2.5 bg-slate-50/50 border-b border-slate-100">
+          <div className="p-2.5 bg-slate-50/50 dark:bg-[#0d1117]/30 border-b border-slate-100 dark:border-[#21262d]">
             <div className="relative flex items-center">
               <input
                 type="text"
                 value={modalSearch}
                 onChange={(e) => setModalSearch(e.target.value)}
                 placeholder={`Search ${headerText}...`}
-                className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#24A1DD]/20 focus:border-[#24A1DD] bg-white text-slate-800 transition-all"
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-[var(--border-strong)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]/20 focus:border-[var(--focus-ring)] bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] transition-all"
                 autoFocus
               />
               <svg
@@ -456,7 +456,7 @@ const ColumnFilterModal = ({
                 <button
                   type="button"
                   onClick={() => setModalSearch('')}
-                  className="absolute right-2 text-slate-400 hover:text-slate-600 text-[10px] font-bold p-0.5"
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-[#f0f6fc] text-[10px] font-bold p-0.5"
                 >
                   ✕
                 </button>
@@ -468,7 +468,7 @@ const ColumnFilterModal = ({
           <div className="max-h-52 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
             {/* Select All Row */}
             {filteredOptions.length > 0 && (
-              <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100/70 rounded-lg cursor-pointer text-xs font-semibold text-slate-800 border-b border-slate-100 transition-colors">
+              <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100/70 dark:hover:bg-[#21262d]/70 rounded-lg cursor-pointer text-xs font-semibold text-slate-800 dark:text-[#c9d1d9] border-b border-slate-100 dark:border-[#21262d] transition-colors">
                 <input
                   type="checkbox"
                   checked={isAllFilteredSelected}
@@ -490,8 +490,8 @@ const ColumnFilterModal = ({
                 return (
                   <label
                     key={idx}
-                    className={`flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg cursor-pointer text-xs transition-colors ${
-                      isChecked ? 'bg-[#24A1DD]/5 font-medium text-[#24A1DD]' : 'text-slate-600'
+                    className={`flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-[#21262d] rounded-lg cursor-pointer text-xs transition-colors ${
+                      isChecked ? 'bg-[#24A1DD]/5 dark:bg-[#24A1DD]/10 font-medium text-[#24A1DD] dark:text-[#58a6ff]' : 'text-slate-600 dark:text-[#c9d1d9]'
                     }`}
                   >
                     <input
@@ -508,10 +508,10 @@ const ColumnFilterModal = ({
           </div>
 
           {/* Footer Info */}
-          <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="px-3 py-2 bg-slate-50 dark:bg-[#161b22] border-t border-slate-200 dark:border-[#30363d] flex items-center justify-between text-[11px] text-slate-500 dark:text-[#8b949e]">
             <span>
               {selectedValues.length > 0 ? (
-                <strong className="text-[#24A1DD] font-semibold">{selectedValues.length} selected</strong>
+                <strong className="text-[#24A1DD] dark:text-[#58a6ff] font-semibold">{selectedValues.length} selected</strong>
               ) : (
                 `${filteredOptions.length} of ${options.length} options`
               )}
@@ -1027,7 +1027,7 @@ export const DataTable = ({
                   placeholder="Search all columns..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-9 pr-8 ${density === 'compact' ? 'h-8 text-xs' : 'h-9 text-xs'} bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs focus:outline-none focus:border-[#24A1DD] focus:ring-2 focus:ring-[#24A1DD]/20 transition-all`}
+                  className={`w-full pl-9 pr-8 ${density === 'compact' ? 'h-8 text-xs' : 'h-9 text-xs'} bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] rounded-lg shadow-2xs focus:outline-none focus:border-[var(--focus-ring)] focus:ring-2 focus:ring-[var(--focus-ring)]/20 transition-all`}
                 />
                 <svg
                   className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -1040,7 +1040,7 @@ export const DataTable = ({
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-0.5 cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-[#f0f6fc] text-xs font-bold p-0.5 cursor-pointer"
                     title="Clear search"
                   >
                     ✕
@@ -1055,7 +1055,7 @@ export const DataTable = ({
               <button
                 type="button"
                 onClick={handleClearAllFilters}
-                className={`inline-flex items-center gap-1.5 ${density === 'compact' ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-xs'} text-rose-600 hover:text-rose-700 bg-rose-50/70 hover:bg-rose-50 rounded-lg transition-colors font-medium cursor-pointer border border-rose-200/80 shadow-2xs whitespace-nowrap shrink-0`}
+                className={`inline-flex items-center gap-1.5 ${density === 'compact' ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-xs'} text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-50/70 dark:bg-rose-950/40 hover:bg-rose-50 dark:hover:bg-rose-900/50 rounded-lg transition-colors font-medium cursor-pointer border border-rose-200/80 dark:border-rose-800/80 shadow-2xs whitespace-nowrap shrink-0`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -1077,20 +1077,20 @@ export const DataTable = ({
 
       {/* Table */}
       <div
-        className={`bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0 overflow-hidden ${
+        className={`bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border)] flex flex-col min-h-0 overflow-hidden ${
           maxHeight === '100%' ? 'flex-1 h-full' : 'h-auto'
         }`}
         style={maxHeight && maxHeight !== '100%' && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight } : {}}
       >
         {error && (
-          <div className="p-4 bg-red-50 border-b border-red-100 text-red-600 text-sm flex-shrink-0">
+          <div className="p-4 bg-[var(--error-bg)] border-b border-[var(--error)]/20 text-[var(--error)] text-sm flex-shrink-0">
             {error}
           </div>
         )}
         <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain">
           <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead className="sticky top-0 z-20 bg-slate-50 shadow-xs">
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+            <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-[#1B3A4F] shadow-xs">
+              <tr className="bg-slate-50 dark:bg-[#1B3A4F] text-slate-700 dark:text-[var(--text-primary)] text-sm border-b border-slate-200 dark:border-[var(--border)]">
                 {columns.map((col, index) => {
                   const key = getColumnKey(col, index);
                   const filterable = isColumnFilterable(col);
@@ -1137,17 +1137,17 @@ export const DataTable = ({
                       onDragLeave={handleHeaderDragLeave}
                       onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
                       onDragEnd={handleHeaderDragEnd}
-                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-medium transition-colors bg-slate-50 ${showColumnBorders ? 'border-r border-slate-200 last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-slate-200/60' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-[#24A1DD] bg-sky-50/70' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-[#24A1DD] bg-sky-50/70' : ''} ${col.headerClassName || ''}`}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-medium transition-colors bg-slate-50 dark:bg-[#1B3A4F] text-slate-700 dark:text-[var(--text-primary)] dark:hover:bg-[#21475F] ${showColumnBorders ? 'border-r border-slate-200 dark:border-[var(--border)] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-slate-200/60 dark:bg-zinc-700/60' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-[var(--primary)] bg-[var(--primary-soft)]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-[var(--primary)] bg-[var(--primary-soft)]' : ''} ${col.headerClassName || ''}`}
                       style={{ width: col.width || 'auto', ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
                         <div 
-                          className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-slate-800' : ''}`}
+                          className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-slate-800 dark:hover:text-white' : ''}`}
                           onClick={() => col.sortable && col.accessor ? handleSort(col.accessor) : null}
                         >
                           {isColReorderable && (
                             <span
-                              className="text-slate-300 hover:text-slate-600 opacity-0 group-hover/th:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 -ml-1 flex-shrink-0"
+                              className="text-slate-300 dark:text-[var(--text-disabled)] hover:text-slate-600 dark:hover:text-[var(--text-primary)] opacity-0 group-hover/th:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 -ml-1 flex-shrink-0"
                               title="Drag column to change order"
                               data-no-drag="false"
                             >
@@ -1165,7 +1165,7 @@ export const DataTable = ({
                             <Tooltip text={col.headerTooltip || col.tooltip} position="top">
                               <span
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center justify-center text-slate-400 hover:text-[#24A1DD] transition-colors cursor-help p-0.5"
+                                className="inline-flex items-center justify-center text-slate-400 hover:text-[var(--primary)] transition-colors cursor-help p-0.5"
                                 aria-label="Information"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1176,8 +1176,8 @@ export const DataTable = ({
                           )}
                           {col.sortable && (
                             <div className="flex flex-col text-[10px] leading-none opacity-50 ml-0.5 flex-shrink-0">
-                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-[#24A1DD] opacity-100 font-bold' : ''}>▲</span>
-                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'desc' ? 'text-[#24A1DD] opacity-100 font-bold' : ''}>▼</span>
+                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-[var(--primary)] opacity-100 font-bold' : ''}>▲</span>
+                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'desc' ? 'text-[var(--primary)] opacity-100 font-bold' : ''}>▼</span>
                             </div>
                           )}
                         </div>
@@ -1194,8 +1194,8 @@ export const DataTable = ({
                               }}
                               className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
                                 hasFilter
-                                  ? 'bg-[#24A1DD] text-white shadow-xs hover:bg-[#1e88bb]'
-                                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/60'
+                                  ? 'bg-[var(--primary)] text-white shadow-xs hover:opacity-90'
+                                  : 'text-slate-400 dark:text-[var(--text-secondary)] hover:text-slate-600 dark:hover:text-[var(--text-primary)] hover:bg-slate-200/60 dark:hover:bg-[#21475F]'
                               }`}
                               title={
                                 hasFilter
@@ -1211,7 +1211,7 @@ export const DataTable = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                               </svg>
                               {hasFilter && badgeContent !== null && (
-                                <span className="text-[10px] font-bold bg-white text-[#24A1DD] px-1 rounded-full leading-none min-w-[14px] text-center font-mono">
+                                <span className="text-[10px] font-bold bg-[var(--bg-surface)] text-[var(--primary)] px-1 rounded-full leading-none min-w-[14px] text-center font-mono">
                                   {badgeContent}
                                 </span>
                               )}
@@ -1238,7 +1238,7 @@ export const DataTable = ({
                 })}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-[var(--border)] bg-[var(--bg-surface)]">
               {loading && data.length === 0 ? (
                 <TableSkeleton
                   rows={Math.min(defaultItemsPerPage || 5, 8)}
@@ -1256,20 +1256,24 @@ export const DataTable = ({
                       <tr
                         onClick={(e) => handleRowClick(row, rowIndex, e)}
                         className={`group transition-colors duration-150 ${
-                          isExpanded ? 'bg-sky-50/40 border-b-0' : 'hover:bg-[#24A1DD]/[0.03]'
+                          rowIndex % 2 === 1 ? 'dark:bg-[var(--bg-muted)]' : 'dark:bg-[var(--bg-surface)]'
+                        } ${
+                          isExpanded
+                            ? 'bg-sky-50/40 dark:bg-[var(--primary-soft)] border-b-0'
+                            : 'hover:bg-[#24A1DD]/[0.03] dark:hover:bg-[rgba(255,255,255,0.04)]'
                         } ${(expandOnRowClick || onRowClick) ? 'cursor-pointer' : ''}`}
                       >
                         {columns.map((col, colIndex) => (
                           <td
                             key={colIndex}
-                            className={`${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} align-middle break-words ${showColumnBorders ? 'border-r border-slate-200/60 last:border-r-0' : ''} ${col.cellClassName || 'text-slate-600'} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                            className={`${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] ${showColumnBorders ? 'border-r border-slate-200/60 dark:border-[var(--border)]/60 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                           >
                             {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded) : row[col.accessor]}
                           </td>
                         ))}
                       </tr>
                       {isExpanded && renderExpandedRow && (
-                        <tr key={`${currentKey}-expanded`} className="bg-slate-50/70 border-b border-slate-200">
+                        <tr key={`${currentKey}-expanded`} className="bg-slate-50/70 dark:bg-[var(--bg-muted)] border-b border-slate-200 dark:border-[var(--border)]">
                           <td colSpan={columns.length} className="p-0">
                             {renderExpandedRow(row, rowIndex, () => handleRowExpandToggle(currentKey, row, rowIndex), containerWidth)}
                           </td>
@@ -1280,14 +1284,14 @@ export const DataTable = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500 text-sm">
+                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500 dark:text-[var(--text-secondary)] text-sm">
                     {totalActiveFilters > 0 ? (
                       <div className="flex flex-col items-center justify-center gap-2 py-4">
-                        <span className="text-slate-600 font-medium">No records match the current filters.</span>
+                        <span className="text-slate-600 dark:text-[var(--text-primary)] font-medium">No records match the current filters.</span>
                         <button
                           type="button"
                           onClick={handleClearAllFilters}
-                          className="px-3 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          className="px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                         >
                           Clear All Filters
                         </button>
@@ -1304,13 +1308,13 @@ export const DataTable = ({
 
         {/* Pagination */}
         {pagination && totalEntries > 0 && (
-          <div className={`px-4 sm:px-6 ${density === 'compact' ? 'py-2 text-xs' : 'py-3 text-sm'} border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between bg-slate-50 gap-3 flex-shrink-0`}>
-            <div className="flex items-center gap-2 text-sm text-slate-600">
+          <div className={`px-4 sm:px-6 ${density === 'compact' ? 'py-2 text-xs' : 'py-3 text-sm'} border-t border-slate-200 dark:border-[var(--border)] flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-[var(--bg-elevated)] gap-3 flex-shrink-0 text-slate-600 dark:text-[var(--text-primary)]`}>
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-[var(--text-secondary)]">
               <span>Show</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                className="border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-[#24A1DD] bg-white text-sm cursor-pointer"
+                className="border border-[var(--border-strong)] rounded px-2 py-1 focus:outline-none focus:border-[var(--focus-ring)] bg-[var(--bg-elevated)] text-[var(--text-primary)] text-sm cursor-pointer"
               >
                 {itemsPerPageOptions.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -1320,7 +1324,7 @@ export const DataTable = ({
             </div>
             
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 dark:text-[var(--text-secondary)]">
                 Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries} entries
               </span>
               <div className="flex items-center gap-1.5">
@@ -1329,7 +1333,7 @@ export const DataTable = ({
                     type="button"
                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="p-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
                     aria-label="Previous page"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1337,7 +1341,7 @@ export const DataTable = ({
                     </svg>
                   </button>
                 </Tooltip>
-                <div className="flex items-center justify-center min-w-[32px] h-8 px-2 rounded-lg bg-[#24A1DD] text-white text-xs sm:text-sm font-semibold shadow-xs">
+                <div className="flex items-center justify-center min-w-[32px] h-8 px-2 rounded-lg bg-[var(--primary)] text-white text-xs sm:text-sm font-semibold shadow-xs">
                   {currentPage}
                 </div>
                 <Tooltip text="Next page" position="top">
@@ -1345,7 +1349,7 @@ export const DataTable = ({
                     type="button"
                     onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage >= totalPages}
-                    className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="p-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
                     aria-label="Next page"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

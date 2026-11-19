@@ -1,29 +1,36 @@
-import React from 'react';
 import toast from 'react-hot-toast';
 
-// Custom SVG Icons with vibrant, modern design
+// Custom SVG Icons with vibrant, modern design with soft status background
 const WarningIcon = () => (
-  <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
+  <div className="p-1 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  </div>
 );
 
 const InfoIcon = () => (
-  <svg className="w-5 h-5 text-sky-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
+  <div className="p-1 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  </div>
 );
 
 const ErrorIcon = () => (
-  <svg className="w-5 h-5 text-rose-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
+  <div className="p-1 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--error-bg)', color: 'var(--error)' }}>
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  </div>
 );
 
 const SuccessIcon = () => (
-  <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
+  <div className="p-1 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  </div>
 );
 
 // Helper methods for Warning, Info, Error, and Success toasts
@@ -32,14 +39,14 @@ export const showWarning = (message, options = {}) => {
     icon: <WarningIcon />,
     duration: options.duration || 4000,
     style: {
-      border: '1px solid #fde68a',
+      border: '1px solid var(--border)',
       padding: '12px 16px',
-      color: '#92400e',
-      backgroundColor: '#fffbeb',
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-surface)',
       borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '500',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
       maxWidth: '450px',
       ...options.style,
     },
@@ -52,14 +59,14 @@ export const showInfo = (message, options = {}) => {
     icon: <InfoIcon />,
     duration: options.duration || 4000,
     style: {
-      border: '1px solid #bae6fd',
+      border: '1px solid var(--border)',
       padding: '12px 16px',
-      color: '#075985',
-      backgroundColor: '#f0f9ff',
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-surface)',
       borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '500',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
       maxWidth: '450px',
       ...options.style,
     },
@@ -72,14 +79,14 @@ export const showError = (message, options = {}) => {
     icon: <ErrorIcon />,
     duration: options.duration || 5000,
     style: {
-      border: '1px solid #fecdd3',
+      border: '1px solid var(--border)',
       padding: '12px 16px',
-      color: '#9f1239',
-      backgroundColor: '#fff1f2',
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-surface)',
       borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '500',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
       maxWidth: '450px',
       ...options.style,
     },
@@ -92,14 +99,14 @@ export const showSuccess = (message, options = {}) => {
     icon: <SuccessIcon />,
     duration: options.duration || 4000,
     style: {
-      border: '1px solid #a7f3d0',
+      border: '1px solid var(--border)',
       padding: '12px 16px',
-      color: '#065f46',
-      backgroundColor: '#ecfdf5',
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-surface)',
       borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '500',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
       maxWidth: '450px',
       ...options.style,
     },
@@ -111,14 +118,14 @@ export const showLoading = (message, options = {}) => {
   return toast.loading(message, {
     duration: options.duration || Infinity,
     style: {
-      border: '1px solid #e2e8f0',
+      border: '1px solid var(--border)',
       padding: '12px 16px',
-      color: '#334155',
-      backgroundColor: '#ffffff',
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-surface)',
       borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '500',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
       maxWidth: '450px',
       ...options.style,
     },

@@ -164,25 +164,25 @@ export const ManageColumnsModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200 max-h-[88vh]">
+    <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in">
+      <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-[var(--border)] max-h-[88vh]">
         {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-3.5 border-b border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <svg className="w-5 h-5 text-[#24A1DD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
               </svg>
               Manage & Reorder Columns
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Customize column order and visibility ({stagedKeys.length} of {allColumns.length} visible)
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -191,7 +191,7 @@ export const ManageColumnsModal = ({
         </div>
 
         {/* Tab Selection */}
-        <div className="px-5 pt-3 pb-0 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 pt-3 pb-0 bg-[var(--bg-elevated)] border-b border-[var(--border)] flex items-center justify-between flex-shrink-0">
           <div className="flex gap-2">
             <button
               type="button"
@@ -199,7 +199,7 @@ export const ManageColumnsModal = ({
               className={`pb-2.5 px-3 text-xs font-semibold border-b-2 flex items-center gap-1.5 cursor-pointer transition-colors ${
                 activeTab === 'order'
                   ? 'border-[#24A1DD] text-[#24A1DD]'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-slate-500 dark:text-[#8b949e] hover:text-slate-700 dark:hover:text-[#f0f6fc]'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,7 +218,7 @@ export const ManageColumnsModal = ({
               className={`pb-2.5 px-3 text-xs font-semibold border-b-2 flex items-center gap-1.5 cursor-pointer transition-colors ${
                 activeTab === 'visibility'
                   ? 'border-[#24A1DD] text-[#24A1DD]'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-slate-500 dark:text-[#8b949e] hover:text-slate-700 dark:hover:text-[#f0f6fc]'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,7 +237,7 @@ export const ManageColumnsModal = ({
           <button
             type="button"
             onClick={handleResetToDefault}
-            className="text-xs text-slate-500 hover:text-slate-800 pb-2.5 font-medium hover:underline cursor-pointer"
+            className="text-xs text-slate-500 dark:text-[#8b949e] hover:text-slate-800 dark:hover:text-[#f0f6fc] pb-2.5 font-medium hover:underline cursor-pointer"
           >
             Reset Default
           </button>
@@ -275,28 +275,28 @@ export const ManageColumnsModal = ({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center justify-between px-3 py-2 bg-white rounded-xl border text-xs transition-all select-none ${
+                      className={`flex items-center justify-between px-3 py-2 bg-[var(--bg-elevated)] rounded-xl border text-xs transition-all select-none ${
                         isDragging
-                          ? 'opacity-40 border-dashed border-[#24A1DD] bg-sky-50/40'
+                          ? 'opacity-40 border-dashed border-[var(--primary)] bg-[var(--primary-soft)]'
                           : isOver
-                          ? 'border-[#24A1DD] ring-2 ring-[#24A1DD]/20 bg-sky-50/50 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 hover:shadow-xs'
+                          ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20 bg-[var(--primary-soft)] shadow-sm'
+                          : 'border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-xs'
                       }`}
                     >
                       {/* Left: Drag grip, Position Number, Header Title */}
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span
-                          className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 p-0.5 -ml-1"
+                          className="cursor-grab active:cursor-grabbing text-[var(--text-disabled)] hover:text-[var(--text-primary)] p-0.5 -ml-1"
                           title="Drag to reorder"
                         >
                           <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M7 2a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm6-12a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4z" />
                           </svg>
                         </span>
-                        <span className="font-mono text-[11px] font-bold text-slate-400 w-5 text-right">
+                        <span className="font-mono text-[11px] font-bold text-[var(--text-disabled)] w-5 text-right">
                           #{index + 1}
                         </span>
-                        <span className="font-semibold text-slate-800 truncate" title={col.header || col.accessor}>
+                        <span className="font-semibold text-[var(--text-primary)] truncate" title={col.header || col.accessor}>
                           {col.header || col.accessor}
                         </span>
                         {col.category && (
@@ -355,9 +355,9 @@ export const ManageColumnsModal = ({
         {activeTab === 'visibility' && (
           <div className="flex-1 flex flex-col min-h-0">
             {/* Search & Actions Bar */}
-            <div className="p-4 border-b border-slate-100 bg-white space-y-3 flex-shrink-0">
+            <div className="p-4 border-b border-[var(--border)] bg-[var(--bg-surface)] space-y-3 flex-shrink-0">
               <div className="relative">
-                <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 text-[var(--text-disabled)] absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -365,29 +365,29 @@ export const ManageColumnsModal = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search column header or key..."
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#24A1DD] transition-all"
+                  className="w-full pl-9 pr-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl text-xs text-[var(--text-primary)] placeholder-[var(--text-disabled)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] transition-all"
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
+              <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pt-1">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleSelectAll}
-                    className="text-[#24A1DD] hover:underline font-medium cursor-pointer"
+                    className="text-[var(--primary)] hover:underline font-medium cursor-pointer"
                   >
                     Select All
                   </button>
-                  <span className="text-slate-300">|</span>
+                  <span className="text-[var(--border)]">|</span>
                   <button
                     type="button"
                     onClick={handleDeselectAll}
-                    className="text-slate-500 hover:text-slate-700 hover:underline cursor-pointer"
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:underline cursor-pointer"
                   >
                     Clear All
                   </button>
                 </div>
-                <span className="text-slate-400 text-[11px]">
+                <span className="text-[var(--text-disabled)] text-[11px]">
                   {stagedKeys.length} of {allColumns.length} selected
                 </span>
               </div>
@@ -409,8 +409,8 @@ export const ManageColumnsModal = ({
                       key={col.accessor}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors border ${
                         isChecked
-                          ? 'bg-sky-50/60 border-sky-200/80 text-slate-900'
-                          : 'bg-white border-transparent hover:bg-slate-50 text-slate-600'
+                          ? 'bg-[var(--primary-soft)] border-[var(--primary)]/40 text-[var(--text-primary)]'
+                          : 'bg-[var(--bg-surface)] border-transparent hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -429,7 +429,7 @@ export const ManageColumnsModal = ({
                           </span>
                         )}
                         {col.category && (
-                          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-700 text-slate-500 dark:text-[#8b949e]">
                             {col.category}
                           </span>
                         )}
@@ -443,22 +443,22 @@ export const ManageColumnsModal = ({
         )}
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-shrink-0">
-          <div className="text-xs text-slate-500 font-medium">
+        <div className="px-5 py-3 border-t border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-between gap-3 flex-shrink-0">
+          <div className="text-xs text-[var(--text-secondary)] font-medium">
             {stagedKeys.length} columns will be displayed
           </div>
           <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-xs rounded-xl transition-all cursor-pointer"
+              className="px-4 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-strong)] font-medium text-xs rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleApply}
-              className="px-4 py-2 bg-[#24A1DD] hover:bg-[#1e88bb] text-white font-medium text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium text-xs rounded-xl shadow-xs transition-all cursor-pointer"
             >
               Apply Changes
             </button>

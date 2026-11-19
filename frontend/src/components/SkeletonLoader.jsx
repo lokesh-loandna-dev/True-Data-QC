@@ -2,6 +2,7 @@ import React from 'react';
 
 /**
  * Base atomic Skeleton block with smooth shimmer effect
+ * In dark mode, shimmers between #1F2630 and #2A323D (handled in index.css)
  */
 export const Skeleton = ({
   className = '',
@@ -36,7 +37,12 @@ export const TableSkeleton = ({
   return (
     <>
       {rowArray.map((_, rIdx) => (
-        <tr key={`skel-row-${rIdx}`} className="border-b border-slate-100 bg-white">
+        <tr
+          key={`skel-row-${rIdx}`}
+          className={`border-b border-[var(--border)] ${
+            rIdx % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-muted)]'
+          }`}
+        >
           {colArray.map((_, cIdx) => {
             const widthClass = widthPresets[(rIdx + cIdx) % widthPresets.length];
             return (
@@ -45,7 +51,7 @@ export const TableSkeleton = ({
                 className={`${
                   density === 'compact' ? 'px-3 py-3' : 'px-6 py-4'
                 } ${
-                  showBorders ? 'border-r border-slate-200/60 last:border-r-0' : ''
+                  showBorders ? 'border-r border-[var(--border)]/60 last:border-r-0' : ''
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -77,7 +83,7 @@ export const CardSkeleton = ({ count = 4 }) => {
       {cards.map((_, idx) => (
         <div
           key={`skel-card-${idx}`}
-          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3"
+          className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3 transition-colors"
         >
           <div className="flex items-center justify-between">
             <Skeleton width="w-24" height="h-3" />
@@ -96,9 +102,9 @@ export const CardSkeleton = ({ count = 4 }) => {
  */
 export const ModalSkeleton = () => {
   return (
-    <div className="p-6 bg-slate-50 space-y-6 animate-fade-in flex-1 flex flex-col min-h-0">
+    <div className="p-6 bg-[var(--bg-app)] space-y-6 animate-fade-in flex-1 flex flex-col min-h-0">
       {/* Header bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between">
+      <div className="bg-[var(--bg-surface)] rounded-2xl p-4 border border-[var(--border)] shadow-xs flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton width="w-48" height="h-5" />
           <Skeleton width="w-32" height="h-3" />
@@ -110,7 +116,7 @@ export const ModalSkeleton = () => {
       </div>
 
       {/* Tabs bar */}
-      <div className="flex gap-3 border-b border-slate-200 pb-2">
+      <div className="flex gap-3 border-b border-[var(--border)] pb-2">
         <Skeleton width="w-28" height="h-7" rounded="rounded-lg" />
         <Skeleton width="w-28" height="h-7" rounded="rounded-lg" />
       </div>
@@ -118,7 +124,7 @@ export const ModalSkeleton = () => {
       {/* Content cards / table */}
       <CardSkeleton count={4} />
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 flex-1">
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border)] p-4 space-y-3 flex-1">
         <div className="flex justify-between items-center mb-4">
           <Skeleton width="w-36" height="h-4" />
           <Skeleton width="w-44" height="h-8" rounded="rounded-lg" />
@@ -138,7 +144,7 @@ export const ModalSkeleton = () => {
  */
 export const UploadSkeleton = () => {
   return (
-    <div className="bg-white rounded-3xl border-2 border-dashed border-[#24A1DD]/30 p-8 flex flex-col items-center justify-center space-y-4 text-center">
+    <div className="bg-[var(--bg-surface)] rounded-3xl border-2 border-dashed border-[var(--primary)]/30 p-8 flex flex-col items-center justify-center space-y-4 text-center">
       <Skeleton width="w-16" height="h-16" rounded="rounded-full" />
       <Skeleton width="w-56" height="h-5" />
       <Skeleton width="w-80" height="h-3.5" />
@@ -158,9 +164,9 @@ export const UploadSkeleton = () => {
  */
 export const PageSkeleton = () => {
   return (
-    <div className="h-screen flex flex-col bg-slate-50 overflow-hidden pt-[60px]">
+    <div className="h-screen flex flex-col bg-[var(--bg-app)] overflow-hidden pt-[60px]">
       {/* Header skeleton */}
-      <div className="w-full h-[60px] bg-white border-b border-[#e8e8e8] shadow-sm flex items-center px-6 justify-between fixed top-0 left-0 z-50">
+      <div className="w-full h-[60px] bg-[var(--bg-header)] border-b border-[var(--border)] shadow-sm flex items-center px-6 justify-between fixed top-0 left-0 z-50">
         <div className="flex items-center space-x-8">
           <Skeleton width="w-32" height="h-7" rounded="rounded-lg" />
           <div className="hidden md:flex space-x-6">
@@ -178,21 +184,28 @@ export const PageSkeleton = () => {
       {/* Main content skeleton */}
       <main className="flex-1 flex flex-col min-h-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="flex justify-between items-center flex-shrink-0">
-          <Skeleton width="w-44" height="h-8" rounded="rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton width="w-48" height="h-7" rounded="rounded-lg" />
+            <Skeleton width="w-72" height="h-4" />
+          </div>
           <div className="flex gap-2">
             <Skeleton width="w-24" height="h-9" rounded="rounded-xl" />
-            <Skeleton width="w-24" height="h-9" rounded="rounded-xl" />
+            <Skeleton width="w-32" height="h-9" rounded="rounded-xl" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4 flex-1 flex flex-col min-h-0">
-          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-            <Skeleton width="w-64" height="h-8" rounded="rounded-xl" />
-            <Skeleton width="w-32" height="h-8" rounded="rounded-xl" />
+        {/* Content body skeleton */}
+        <div className="flex-1 min-h-0 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border)] p-4 shadow-sm flex flex-col space-y-3">
+          <div className="flex justify-between items-center pb-2 border-b border-[var(--border)]">
+            <Skeleton width="w-64" height="h-9" rounded="rounded-xl" />
+            <div className="flex gap-2">
+              <Skeleton width="w-20" height="h-8" rounded="rounded-lg" />
+              <Skeleton width="w-20" height="h-8" rounded="rounded-lg" />
+            </div>
           </div>
-          <div className="flex-1 space-y-3 pt-2">
+          <div className="flex-1 space-y-2 pt-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={`page-skel-${i}`} width="w-full" height="h-10" rounded="rounded-lg" />
+              <Skeleton key={`page-skel-line-${i}`} width="w-full" height="h-10" rounded="rounded-lg" />
             ))}
           </div>
         </div>

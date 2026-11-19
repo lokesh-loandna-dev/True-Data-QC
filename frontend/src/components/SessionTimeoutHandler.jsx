@@ -197,20 +197,18 @@ const SessionTimeoutHandler = () => {
       aria-modal="true"
       aria-labelledby="sto-title"
       aria-describedby="sto-desc"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: 'rgba(15,23,42,0.55)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
     >
       {/* ── Card ─────────────────────────────────────────────────────────────── */}
       <div
         data-modal-layer="true"
-        className="relative w-full max-w-[400px] bg-white overflow-hidden"
-        style={{ borderRadius: '12px' }}
+        className="relative w-full max-w-[400px] bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xl overflow-hidden rounded-2xl"
       >
 
         {/* ── Top accent bar ──────────────────────────────────────────────────── */}
         <div
           className="h-[3px] w-full"
-          style={{ background: isExpired ? '#ef4444' : (isUrgent ? '#f59e0b' : '#1e9bd8') }}
+          style={{ background: isExpired ? 'var(--error)' : (isUrgent ? 'var(--warning)' : 'var(--primary)') }}
         />
 
         {/* ── Body ────────────────────────────────────────────────────────────── */}
@@ -224,11 +222,10 @@ const SessionTimeoutHandler = () => {
               {isExpired ? (
                 /* Expired — static red ring with ✕ */
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ background: '#fef2f2', border: '2px solid #fca5a5' }}
+                  className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--error-bg)] border-2 border-[var(--error)]"
                 >
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <path d="M6 6l8 8M14 6l-8 8" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"/>
+                    <path d="M6 6l8 8M14 6l-8 8" stroke="var(--error)" strokeWidth="2.2" strokeLinecap="round"/>
                   </svg>
                 </div>
               ) : (
@@ -238,14 +235,14 @@ const SessionTimeoutHandler = () => {
                   <circle
                     cx="24" cy="24" r={RADIUS}
                     fill="none"
-                    stroke={isUrgent ? '#fef3c7' : '#e0f2fe'}
+                    stroke={isUrgent ? 'var(--warning-bg)' : 'var(--primary-soft)'}
                     strokeWidth="4"
                   />
                   {/* Progress arc */}
                   <circle
                     cx="24" cy="24" r={RADIUS}
                     fill="none"
-                    stroke={isUrgent ? '#f59e0b' : '#1e9bd8'}
+                    stroke={isUrgent ? 'var(--warning)' : 'var(--primary)'}
                     strokeWidth="4"
                     strokeLinecap="round"
                     strokeDasharray={CIRCUMFERENCE}
@@ -258,7 +255,7 @@ const SessionTimeoutHandler = () => {
                     x="24" y="24"
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fill={isUrgent ? '#d97706' : '#1e9bd8'}
+                    fill={isUrgent ? 'var(--warning)' : 'var(--primary)'}
                     fontSize="13"
                     fontWeight="700"
                     fontFamily="inherit"
@@ -273,14 +270,14 @@ const SessionTimeoutHandler = () => {
             <div className="flex-1 min-w-0">
               <h2
                 id="sto-title"
-                className="text-[17px] font-bold text-gray-900 leading-snug"
+                className="text-[17px] font-bold text-[var(--text-primary)] leading-snug"
                 style={{ letterSpacing: '-0.01em' }}
               >
                 {isExpired ? 'Session Expired' : 'Session Expiring Soon'}
               </h2>
               {userLabel && (
-                <p className="text-[12px] text-gray-400 mt-0.5 truncate">
-                  Signed in as <span className="text-gray-600 font-medium">{userLabel}</span>
+                <p className="text-[12px] text-[var(--text-secondary)] mt-0.5 truncate">
+                  Signed in as <span className="text-[var(--text-primary)] font-medium">{userLabel}</span>
                 </p>
               )}
             </div>
@@ -289,7 +286,7 @@ const SessionTimeoutHandler = () => {
           {/* ── Description ─────────────────────────────────────────────────── */}
           <p
             id="sto-desc"
-            className="text-[14px] text-gray-600 leading-relaxed mb-5"
+            className="text-[14px] text-[var(--text-secondary)] leading-relaxed mb-5"
             style={{ maxWidth: '31ch' }}
           >
             {isExpired
@@ -302,16 +299,17 @@ const SessionTimeoutHandler = () => {
             <div
               className="flex items-center justify-between px-4 py-3 mb-5"
               style={{
-                background: isUrgent ? '#fffbeb' : '#f0f9ff',
+                background: isUrgent ? 'var(--warning-bg)' : 'var(--primary-soft)',
+                border: isUrgent ? '1px solid rgba(251,191,36,0.3)' : '1px solid rgba(36,161,221,0.3)',
                 borderRadius: '8px',
               }}
               aria-live="polite"
               aria-atomic="true"
             >
-              <span className="text-[13px] text-gray-500 font-medium">Time remaining</span>
+              <span className="text-[13px] text-[var(--text-secondary)] font-medium">Time remaining</span>
               <span
                 className="text-[22px] font-bold tabular-nums"
-                style={{ color: isUrgent ? '#d97706' : '#1e9bd8', letterSpacing: '-0.03em' }}
+                style={{ color: isUrgent ? 'var(--warning)' : 'var(--primary)', letterSpacing: '-0.03em' }}
               >
                 {String(Math.floor(countdown / 60)).padStart(2, '0')}:
                 {String(countdown % 60).padStart(2, '0')}
@@ -325,13 +323,7 @@ const SessionTimeoutHandler = () => {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex-1 py-2.5 text-[14px] font-semibold text-gray-700 bg-white transition-colors cursor-pointer"
-              style={{
-                border: '1.5px solid #d1d5db',
-                borderRadius: '8px',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+              className="flex-1 py-2.5 text-[14px] font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] border border-[var(--border-strong)] rounded-lg transition-colors cursor-pointer"
             >
               Sign out
             </button>
@@ -342,14 +334,7 @@ const SessionTimeoutHandler = () => {
                 ref={primaryBtnRef}
                 type="button"
                 onClick={handleExtendSession}
-                className="flex-1 py-2.5 text-[14px] font-semibold text-white transition-colors cursor-pointer"
-                style={{
-                  background: '#1e9bd8',
-                  borderRadius: '8px',
-                  border: '1.5px solid #1e9bd8',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#1480b8'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#1e9bd8'; }}
+                className="flex-1 py-2.5 text-[14px] font-semibold text-white bg-[var(--primary)] hover:opacity-90 rounded-lg transition-colors cursor-pointer"
               >
                 Keep working
               </button>
@@ -358,18 +343,16 @@ const SessionTimeoutHandler = () => {
 
           {/* ── Keyboard hint (warning state only) ──────────────────────────── */}
           {!isExpired && (
-            <p className="text-center text-[11px] text-gray-400 mt-3">
+            <p className="text-center text-[11px] text-[var(--text-secondary)] mt-3">
               Press{' '}
               <kbd
-                className="text-[10px] text-gray-500 bg-gray-100 px-1 py-0.5 font-medium"
-                style={{ borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                className="text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] border border-[var(--border)] px-1.5 py-0.5 rounded font-medium"
               >
                 Esc
               </kbd>
               {' '}or{' '}
               <kbd
-                className="text-[10px] text-gray-500 bg-gray-100 px-1 py-0.5 font-medium"
-                style={{ borderRadius: '4px', border: '1px solid #e5e7eb' }}
+                className="text-[10px] text-[var(--text-primary)] bg-[var(--bg-elevated)] border border-[var(--border)] px-1.5 py-0.5 rounded font-medium"
               >
                 Enter
               </kbd>

@@ -154,7 +154,7 @@ export const PackageAuditModal = ({
 
   // Helper: Status Badge
   const getStatusBadge = (status, wrap = false) => {
-    if (!status) return <span className="text-slate-400 whitespace-nowrap">-</span>;
+    if (!status) return <span className="text-slate-400 dark:text-[var(--text-disabled)] whitespace-nowrap">-</span>;
     const s = String(status);
     const textStyle = wrap
       ? "whitespace-normal break-words max-w-xs inline-block text-left leading-normal font-semibold text-xs"
@@ -162,34 +162,34 @@ export const PackageAuditModal = ({
 
     if (s === 'TRUE' || s === 'Matched' || s === 'Valid' || s.startsWith('OK')) {
       return (
-        <span className={`text-green-700 ${textStyle}`}>
+        <span className={`text-emerald-700 dark:text-[var(--success)] ${textStyle}`}>
           {s}
         </span>
       );
     }
     if (s === 'FALSE' || s === 'Unmatched' || s.startsWith('Invalid') || s.startsWith('FLAGGED')) {
       return (
-        <span className={`text-red-700 ${textStyle}`}>
+        <span className={`text-rose-700 dark:text-[var(--error)] ${textStyle}`}>
           {s}
         </span>
       );
     }
     if (s.startsWith('TRUE -') || s.includes('variance') || s.includes('coerced') || s.includes('Review Required') || s.includes('partial')) {
       return (
-        <span className={`text-amber-700 ${textStyle}`}>
+        <span className={`text-amber-700 dark:text-[var(--warning)] ${textStyle}`}>
           {s}
         </span>
       );
     }
     if (s.includes('Not Automated')) {
       return (
-        <span className={`text-purple-700 ${textStyle}`}>
+        <span className={`text-purple-700 dark:text-[#C084FC] ${textStyle}`}>
           {s}
         </span>
       );
     }
     return (
-      <span className={`text-slate-600 ${textStyle}`}>
+      <span className={`text-slate-600 dark:text-[var(--text-secondary)] ${textStyle}`}>
         {s}
       </span>
     );
@@ -313,9 +313,9 @@ export const PackageAuditModal = ({
         header: 'Data Field',
         accessor: 'data_field',
         sortable: true,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        cellClassName: 'sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
-        render: (r) => <span className="font-semibold text-slate-900">{r.data_field}</span>,
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        render: (r) => <span className="font-semibold text-[var(--text-primary)]">{r.data_field}</span>,
         category: 'Excel Column'
       },
       'loan_id': {
@@ -323,21 +323,21 @@ export const PackageAuditModal = ({
         accessor: 'loan_id',
         sortable: true,
         filterable: false,
-        render: (r) => <span className="whitespace-nowrap font-medium text-slate-600">{r.loan_id || '-'}</span>,
+        render: (r) => <span className="whitespace-nowrap font-medium text-slate-600 dark:text-[var(--text-secondary)]">{r.loan_id || '-'}</span>,
         category: 'Excel Column'
       },
       'data_label': {
         header: 'Data Label',
         accessor: 'data_label',
         sortable: true,
-        render: (r) => <span className="font-mono text-slate-500">{r.data_label}</span>,
+        render: (r) => <span className="font-mono text-slate-600 dark:text-[var(--text-secondary)]">{r.data_label}</span>,
         category: 'Excel Column'
       },
       'true_data': {
         header: 'True Data',
         accessor: 'true_data',
         sortable: true,
-        render: (r) => <span className="font-medium text-slate-900 break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.true_data || ''}</span>,
+        render: (r) => <span className="font-medium text-slate-900 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-xs block leading-snug">{r.true_data || ''}</span>,
         category: 'Excel Column'
       }
     };
@@ -369,7 +369,7 @@ export const PackageAuditModal = ({
             sortable: true,
             filterable: !isConstantField,
             render: (r) => (
-              <span className="text-slate-700 break-words whitespace-pre-wrap max-w-xs block leading-snug">
+              <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-xs block leading-snug">
                 {r.raw_data?.[colName] ?? r[colName] ?? ''}
               </span>
             ),
@@ -398,7 +398,7 @@ export const PackageAuditModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="font-mono text-xs font-semibold text-slate-700 whitespace-nowrap">
+          <span className="font-mono text-xs font-semibold text-slate-700 dark:text-[var(--text-primary)] whitespace-nowrap">
             {loanId || '-'}
           </span>
         ),
@@ -410,7 +410,7 @@ export const PackageAuditModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+          <span className="text-xs font-semibold text-slate-700 dark:text-[var(--text-primary)] whitespace-nowrap">
             {packageUsername || '-'}
           </span>
         ),
@@ -422,7 +422,7 @@ export const PackageAuditModal = ({
         sortable: false,
         filterable: false,
         render: () => (
-          <span className="text-xs text-slate-600 whitespace-nowrap">
+          <span className="text-xs text-slate-600 dark:text-[var(--text-secondary)] whitespace-nowrap">
             {packageEmail || '-'}
           </span>
         ),
@@ -444,7 +444,7 @@ export const PackageAuditModal = ({
         },
         sortValue: (r) => r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '',
         render: (r) => (
-          <span className="text-slate-600 break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
+          <span className="text-slate-600 dark:text-[var(--text-secondary)] break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
             {r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? ''}
           </span>
         ),
@@ -467,10 +467,10 @@ export const PackageAuditModal = ({
           return (
             <div className="text-xs break-words whitespace-pre-wrap max-w-sm leading-relaxed space-y-1">
               {String(val).split('\n').map((line, i) => {
-                let badgeClass = 'text-slate-600';
-                if (line.includes('PASS')) badgeClass = 'text-emerald-700 font-medium';
-                else if (line.includes('FAIL')) badgeClass = 'text-rose-700 font-medium';
-                else if (line.includes('NOT CHECKED')) badgeClass = 'text-amber-700 font-medium';
+                let badgeClass = 'text-slate-600 dark:text-[var(--text-secondary)]';
+                if (line.includes('PASS')) badgeClass = 'text-emerald-700 dark:text-[var(--success)] font-medium';
+                else if (line.includes('FAIL')) badgeClass = 'text-rose-700 dark:text-[var(--error)] font-medium';
+                else if (line.includes('NOT CHECKED')) badgeClass = 'text-amber-700 dark:text-[var(--warning)] font-medium';
                 return <div key={i} className={badgeClass}>{line}</div>;
               })}
             </div>
@@ -482,7 +482,7 @@ export const PackageAuditModal = ({
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
-        headerClassName: 'whitespace-nowrap font-bold text-slate-800',
+        headerClassName: 'whitespace-nowrap font-bold text-slate-800 dark:text-[var(--text-primary)]',
         render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug font-bold">{getStatusBadge(r.final_result || r.result, true)}</span>,
         category: 'Validation'
       },
@@ -490,7 +490,7 @@ export const PackageAuditModal = ({
         header: 'Final Remarks',
         accessor: 'final_remarks',
         sortable: true,
-        render: (r) => <span className="text-slate-700 break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
+        render: (r) => <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
         category: 'Validation'
       },
       {
@@ -516,25 +516,17 @@ export const PackageAuditModal = ({
           <select
             value={r.action || ''}
             onChange={(e) => handleRecordChange(r, 'action', e.target.value)}
-            className={`w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-2 focus:ring-[#24A1DD] focus:outline-none transition-colors cursor-pointer ${r.action === 'Corrected' ? 'text-emerald-700' :
-                r.action === 'Incorrect Status' ? 'text-rose-700' :
-                  r.action === 'Not Applicable' ? 'text-slate-600' :
-                    r.action === 'Need Review' ? 'text-amber-700' :
-                      (r.action === 'Review completed' || r.action === 'Review Completed') ? 'text-teal-700' :
-                        r.action === 'Out of Scope' ? 'text-purple-700' :
-                          r.action === 'Others' ? 'text-blue-700' :
-                            'text-slate-700'
-              }`}
+            className={`w-full bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-2 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer text-[var(--text-primary)]`}
           >
-            <option value="">-- Select --</option>
-            <option value="Corrected">Corrected</option>
-            <option value="Incorrect Status">Incorrect Status</option>
-            <option value="Not Applicable">Not Applicable</option>
-            <option value="Need Review">Need Review</option>
-            <option value="Review completed">Review completed</option>
-            {r.action === 'Review Completed' && <option value="Review Completed">Review Completed</option>}
-            <option value="Out of Scope">Out of Scope</option>
-            <option value="Others">Others</option>
+            <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">-- Select --</option>
+            <option value="Corrected" className="bg-[var(--bg-elevated)] text-[var(--success)]">Corrected</option>
+            <option value="Incorrect Status" className="bg-[var(--bg-elevated)] text-[var(--error)]">Incorrect Status</option>
+            <option value="Not Applicable" className="bg-[var(--bg-elevated)] text-[var(--text-secondary)]">Not Applicable</option>
+            <option value="Need Review" className="bg-[var(--bg-elevated)] text-[var(--warning)]">Need Review</option>
+            <option value="Review completed" className="bg-[var(--bg-elevated)] text-[var(--primary)]">Review completed</option>
+            {r.action === 'Review Completed' && <option value="Review Completed" className="bg-[var(--bg-elevated)] text-[var(--primary)]">Review Completed</option>}
+            <option value="Out of Scope" className="bg-[var(--bg-elevated)] text-[var(--text-secondary)]">Out of Scope</option>
+            <option value="Others" className="bg-[var(--bg-elevated)] text-[var(--info)]">Others</option>
           </select>
         ),
         category: 'Audit'
@@ -550,7 +542,7 @@ export const PackageAuditModal = ({
             value={r.remark || ''}
             onChange={(e) => handleRecordChange(r, 'remark', e.target.value)}
             placeholder="Enter remark..."
-            className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-[#24A1DD] focus:border-[#24A1DD] focus:outline-none transition-all resize-y min-h-[42px]"
+            className="w-full bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-disabled)] focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[42px]"
           />
         ),
         category: 'Audit'
@@ -586,10 +578,10 @@ export const PackageAuditModal = ({
 
   const customModalHeader = (
     <div className="flex items-center gap-3">
-      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 transition-all select-none shadow-2xs">
+      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-surface)] border border-[var(--border)] px-3.5 py-1.5 rounded-xl hover:bg-[var(--bg-elevated)] transition-all select-none shadow-2xs">
         <input
           type="checkbox"
-          className="rounded border-slate-300 text-[#24A1DD] focus:ring-[#24A1DD] h-4 w-4 cursor-pointer accent-[#24A1DD]"
+          className="rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)] h-4 w-4 cursor-pointer accent-[var(--primary)]"
           checked={showAll}
           onChange={(e) => setShowAll(e.target.checked)}
         />
@@ -599,13 +591,13 @@ export const PackageAuditModal = ({
         <button
           type="button"
           onClick={() => setShowManageColumnsModal(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-2xs cursor-pointer select-none"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold rounded-xl hover:bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] transition-all shadow-2xs cursor-pointer select-none"
           aria-label="Manage Columns"
         >
-          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
-          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#24A1DD]/10 text-[#24A1DD] rounded-full border border-[#24A1DD]/20">
+          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[var(--primary-soft)] text-[var(--primary)] rounded-full border border-[var(--primary)]/30">
             {visibleAuditColumns.length}/{allAvailableAuditColumns.length}
           </span>
         </button>
@@ -617,10 +609,10 @@ export const PackageAuditModal = ({
   if (!selectedPackageId) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
-      <div className="bg-white rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-slate-200">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3">
+      <div className="bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-2xl shadow-2xl w-[98vw] max-w-[98vw] h-[94vh] flex flex-col overflow-hidden animate-fade-in border border-[var(--border)]">
         {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shadow-2xs">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -628,19 +620,19 @@ export const PackageAuditModal = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center flex-wrap gap-2">
-                Package Audit Preview: <span className="font-semibold text-slate-700">{packageDetails?.package?.filename || 'Loading...'}</span>
+              <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-2">
+                Package Audit Preview: <span className="font-semibold text-[var(--text-secondary)]">{packageDetails?.package?.filename || 'Loading...'}</span>
                 {loanId && (
-                  <span className="font-semibold text-slate-600">
+                  <span className="font-semibold text-[var(--text-secondary)]">
                     (Loan Id - {loanId})
                   </span>
                 )}
               </h2>
               {localRecords.length > 0 && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-0.5">
                   <span>Total: <strong>{localRecords.length}</strong> fields</span>
                   <span>•</span>
-                  <span className="text-slate-600 font-medium">
+                  <span className="text-[var(--text-secondary)] font-medium">
                     Showing {modalRecordsFiltered.length} {showAll ? '(All)' : '(Invalid only)'}
                   </span>
                 </div>
@@ -654,7 +646,7 @@ export const PackageAuditModal = ({
                 type="button"
                 onClick={handleDownloadExcel}
                 disabled={detailsLoading || !packageDetails}
-                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 hover:text-emerald-700 disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)] text-[var(--success)] disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Download Excel Report"
               >
                 <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -666,7 +658,7 @@ export const PackageAuditModal = ({
               type="button"
               onClick={handleDiscard}
               disabled={updateLoading || detailsLoading}
-              className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="px-3.5 py-1.5 border border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] disabled:opacity-50 text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
             >
               Discard
             </button>
@@ -674,7 +666,7 @@ export const PackageAuditModal = ({
               type="button"
               onClick={handleUpdate}
               disabled={updateLoading || detailsLoading}
-              className="px-4 py-1.5 bg-[#24A1DD] hover:bg-[#1e88bb] disabled:bg-[#24A1DD]/60 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center gap-2 transition-all cursor-pointer"
             >
               {updateLoading && (
                 <svg className="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
@@ -688,7 +680,7 @@ export const PackageAuditModal = ({
               type="button"
               onClick={onClose}
               disabled={updateLoading}
-              className="px-3.5 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="px-3.5 py-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
             >
               Close
             </button>
@@ -740,7 +732,7 @@ export const PackageAuditModal = ({
             /* Main spreadsheets display */
             activeSheet === 'results' ? (
               /* TAB 1: RESULT SHEET DATATABLE */
-              <div className="flex-1 flex flex-col bg-white overflow-hidden p-3 pb-2 min-h-0">
+              <div className="flex-1 flex flex-col bg-[var(--bg-surface)] overflow-hidden p-3 pb-2 min-h-0">
                 <DataTable
                   data={modalRecordsFiltered}
                   columns={visibleAuditColumns}
@@ -758,28 +750,28 @@ export const PackageAuditModal = ({
               </div>
             ) : (
               /* TAB 2: SUMMARY SHEET */
-              <div className="flex-1 bg-slate-50 p-6 sm:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
+              <div className="flex-1 bg-[var(--bg-muted)] p-6 sm:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
                 <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
                   {/* General Summary Card */}
-                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">General Statistics</h3>
+                  <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-6">General Statistics</h3>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-slate-900">{packageDetails.summary["Total Fields"]}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-semibold">Total Fields</div>
+                      <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-4 text-center">
+                        <div className="text-3xl font-extrabold text-[var(--text-primary)]">{packageDetails.summary["Total Fields"]}</div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1 font-semibold">Total Fields</div>
                       </div>
-                      <div className="bg-green-50/50 border border-green-100 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-green-700">{packageDetails.summary["Final Valid"]}</div>
-                        <div className="text-xs text-green-600 mt-1 font-semibold">Final Valid</div>
+                      <div className="bg-[var(--success-bg)] border border-[var(--success)]/30 rounded-2xl p-4 text-center">
+                        <div className="text-3xl font-extrabold text-[var(--success)]">{packageDetails.summary["Final Valid"]}</div>
+                        <div className="text-xs text-[var(--success)] mt-1 font-semibold">Final Valid</div>
                       </div>
-                      <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-red-700">{packageDetails.summary["Final Invalid"]}</div>
-                        <div className="text-xs text-red-600 mt-1 font-semibold">Final Invalid</div>
+                      <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 rounded-2xl p-4 text-center">
+                        <div className="text-3xl font-extrabold text-[var(--error)]">{packageDetails.summary["Final Invalid"]}</div>
+                        <div className="text-xs text-[var(--error)] mt-1 font-semibold">Final Invalid</div>
                       </div>
-                      <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-amber-700">{packageDetails.summary["Review Required"] ?? 0}</div>
-                        <div className="text-xs text-amber-600 mt-1 font-semibold">Review Required</div>
+                      <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 rounded-2xl p-4 text-center">
+                        <div className="text-3xl font-extrabold text-[var(--warning)]">{packageDetails.summary["Review Required"] ?? 0}</div>
+                        <div className="text-xs text-[var(--warning)] mt-1 font-semibold">Review Required</div>
                       </div>
                     </div>
                   </div>
@@ -787,68 +779,68 @@ export const PackageAuditModal = ({
                   {/* Detailed Analysis Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Dictionary Matches */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-150 pb-2">Dictionary Match Checks ({packageDetails.summary["Total Fields"] ?? 0} Total)</h4>
+                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">Dictionary Match Checks ({packageDetails.summary["Total Fields"] ?? 0} Total)</h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Matched Fields</span>
-                          <span className="font-bold text-green-600">{packageDetails.summary["Matched"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Matched Fields</span>
+                          <span className="font-bold text-[var(--success)]">{packageDetails.summary["Matched"]}</span>
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full transition-all duration-500" style={{ width: `${(packageDetails.summary["Matched"] / packageDetails.summary["Total Fields"]) * 100}%` }}></div>
+                        <div className="w-full bg-[var(--bg-muted)] rounded-full h-2">
+                          <div className="bg-[var(--success)] h-2 rounded-full transition-all duration-500" style={{ width: `${(packageDetails.summary["Matched"] / packageDetails.summary["Total Fields"]) * 100}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center text-sm pt-2">
-                          <span className="text-slate-600 font-semibold">Unmatched Fields</span>
-                          <span className="font-bold text-red-600">{packageDetails.summary["Unmatched"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Unmatched Fields</span>
+                          <span className="font-bold text-[var(--error)]">{packageDetails.summary["Unmatched"]}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Data Type Checks */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-150 pb-2">Data Type Validation ({((packageDetails.summary["Type Pass"] ?? 0) + (packageDetails.summary["Type Fail"] ?? 0) + (packageDetails.summary["Blank Values"] ?? 0))} Total)</h4>
+                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">Data Type Validation ({((packageDetails.summary["Type Pass"] ?? 0) + (packageDetails.summary["Type Fail"] ?? 0) + (packageDetails.summary["Blank Values"] ?? 0))} Total)</h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Type Check Pass</span>
-                          <span className="font-bold text-green-600">{packageDetails.summary["Type Pass"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Type Check Pass</span>
+                          <span className="font-bold text-[var(--success)]">{packageDetails.summary["Type Pass"]}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Type Check Fail</span>
-                          <span className="font-bold text-red-600">{packageDetails.summary["Type Fail"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Type Check Fail</span>
+                          <span className="font-bold text-[var(--error)]">{packageDetails.summary["Type Fail"]}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Blank Values (N/A)</span>
-                          <span className="font-bold text-slate-500">{packageDetails.summary["Blank Values"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Blank Values (N/A)</span>
+                          <span className="font-bold text-[var(--text-disabled)]">{packageDetails.summary["Blank Values"]}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Enum Checks */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-150 pb-2">Enumeration Checks ({packageDetails.summary["Total Enum"]} Total)</h4>
+                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">Enumeration Checks ({packageDetails.summary["Total Enum"]} Total)</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Enum Valid</span>
-                          <span className="font-bold text-green-600">{packageDetails.summary["Enum Pass"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Enum Valid</span>
+                          <span className="font-bold text-[var(--success)]">{packageDetails.summary["Enum Pass"]}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Format Variance (Warnings)</span>
-                          <span className="font-bold text-amber-600">{packageDetails.summary["Enum Format Variance"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Format Variance (Warnings)</span>
+                          <span className="font-bold text-[var(--warning)]">{packageDetails.summary["Enum Format Variance"]}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Enum Fail</span>
-                          <span className="font-bold text-red-600">{packageDetails.summary["Enum Fail"]}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Enum Fail</span>
+                          <span className="font-bold text-[var(--error)]">{packageDetails.summary["Enum Fail"]}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-600 font-semibold">Enum No List</span>
-                          <span className="font-bold text-slate-500">{packageDetails.summary["Enum No List"] ?? 0}</span>
+                          <span className="text-[var(--text-secondary)] font-semibold">Enum No List</span>
+                          <span className="font-bold text-[var(--text-disabled)]">{packageDetails.summary["Enum No List"] ?? 0}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Condition Validation */}
                     {condSummary && (
-                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4 md:col-span-3">
+                      <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4 md:col-span-3">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-150 pb-2">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Condition Validation ({condSummary.condRulesApplied} Rules Applied)
@@ -940,18 +932,18 @@ export const PackageAuditModal = ({
 
         {/* Bottom-docked Excel Worksheet Tab Selector */}
         {!detailsLoading && !detailsError && packageDetails && (
-          <div className="h-10 bg-slate-200/90 border-t border-slate-300 flex items-center px-4 flex-shrink-0 select-none backdrop-blur-xs">
+          <div className="h-10 bg-[var(--bg-elevated)] border-t border-[var(--border)] flex items-center px-4 flex-shrink-0 select-none backdrop-blur-xs">
             <div className="flex items-center h-full gap-1">
               {/* Excel Result Sheet Tab */}
               <button
                 type="button"
                 onClick={() => setActiveSheet('results')}
                 className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${activeSheet === 'results'
-                  ? 'bg-white text-slate-900 border-t-2 border-t-emerald-600 border-x border-slate-300 shadow-xs'
-                  : 'bg-slate-100/70 hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
+                  : 'bg-[var(--bg-muted)] hover:bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
               >
-                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 Result Sheet
@@ -962,11 +954,11 @@ export const PackageAuditModal = ({
                 type="button"
                 onClick={() => setActiveSheet('summary')}
                 className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${activeSheet === 'summary'
-                  ? 'bg-white text-slate-900 border-t-2 border-t-emerald-600 border-x border-slate-300 shadow-xs'
-                  : 'bg-slate-100/70 hover:bg-slate-50 text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
+                  : 'bg-[var(--bg-muted)] hover:bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
               >
-                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Summary Sheet
