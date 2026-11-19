@@ -551,6 +551,9 @@ export const DataTable = ({
   density = "normal",
   maxHeight = "calc(100vh - 220px)",
   showColumnBorders = true,
+  // Column reordering props
+  enableColumnReorder = true,
+  onColumnOrderChange = null,
   // Server-side props
   serverSide = false,
   totalCount,
@@ -579,6 +582,78 @@ export const DataTable = ({
   const filterBtnRefs = useRef({});
   const tableContainerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(null);
+
+  // Column reorder drag & drop state
+  const [draggedHeaderIdx, setDraggedHeaderIdx] = useState(null);
+  const [dragOverHeaderIdx, setDragOverHeaderIdx] = useState(null);
+  const [dragOverSide, setDragOverSide] = useState(null); // 'left' | 'right'
+
+  const handleHeaderDragStart = (e, index) => {
+    if (e.target.closest('button, input, select, textarea, [data-no-drag="true"]')) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedHeaderIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleHeaderDragOver = (e, index, col) => {
+    if (draggedHeaderIdx === null || draggedHeaderIdx === index) return;
+    if (col.draggable === false || col.accessor === 'sno' || col.accessor === 'selection') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isRightHalf = e.clientX > rect.left + rect.width / 2;
+    const side = isRightHalf ? 'right' : 'left';
+
+    setDragOverHeaderIdx(index);
+    setDragOverSide(side);
+  };
+
+  const handleHeaderDragLeave = (e) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    setDragOverHeaderIdx(null);
+    setDragOverSide(null);
+  };
+
+  const handleHeaderDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedHeaderIdx === null || draggedHeaderIdx === targetIndex) {
+      setDraggedHeaderIdx(null);
+      setDragOverHeaderIdx(null);
+      setDragOverSide(null);
+      return;
+    }
+
+    const fromIndex = draggedHeaderIdx;
+    let toIndex = targetIndex;
+    if (dragOverSide === 'left') {
+      toIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    } else {
+      toIndex = fromIndex < targetIndex ? targetIndex : targetIndex + 1;
+    }
+    toIndex = Math.max(0, Math.min(columns.length - 1, toIndex));
+
+    setDraggedHeaderIdx(null);
+    setDragOverHeaderIdx(null);
+    setDragOverSide(null);
+
+    if (fromIndex !== toIndex && onColumnOrderChange) {
+      const nextCols = [...columns];
+      const [removed] = nextCols.splice(fromIndex, 1);
+      nextCols.splice(toIndex, 0, removed);
+      const newKeys = nextCols.map((c, i) => c.accessor || c.id || c.key || `col_${i}`);
+      onColumnOrderChange(newKeys, nextCols);
+    }
+  };
+
+  const handleHeaderDragEnd = () => {
+    setDraggedHeaderIdx(null);
+    setDragOverHeaderIdx(null);
+    setDragOverSide(null);
+  };
 
   useLayoutEffect(() => {
     if (!tableContainerRef.current) return;
@@ -1049,11 +1124,20 @@ export const DataTable = ({
                   };
 
                   const badgeContent = getFilterBadge();
+                  const isColReorderable = Boolean(onColumnOrderChange && enableColumnReorder && col.draggable !== false && col.accessor !== 'sno' && col.accessor !== 'selection');
+                  const isDraggingThis = draggedHeaderIdx === index;
+                  const isOverThis = dragOverHeaderIdx === index;
 
                   return (
                     <th 
-                      key={index} 
-                      className={`sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-medium transition-colors bg-slate-50 ${showColumnBorders ? 'border-r border-slate-200 last:border-r-0' : ''} ${col.headerClassName || ''}`}
+                      key={key} 
+                      draggable={isColReorderable}
+                      onDragStart={(e) => isColReorderable && handleHeaderDragStart(e, index)}
+                      onDragOver={(e) => isColReorderable && handleHeaderDragOver(e, index, col)}
+                      onDragLeave={handleHeaderDragLeave}
+                      onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
+                      onDragEnd={handleHeaderDragEnd}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-medium transition-colors bg-slate-50 ${showColumnBorders ? 'border-r border-slate-200 last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-slate-200/60' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-[#24A1DD] bg-sky-50/70' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-[#24A1DD] bg-sky-50/70' : ''} ${col.headerClassName || ''}`}
                       style={{ width: col.width || 'auto', ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
@@ -1061,6 +1145,17 @@ export const DataTable = ({
                           className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-slate-800' : ''}`}
                           onClick={() => col.sortable && col.accessor ? handleSort(col.accessor) : null}
                         >
+                          {isColReorderable && (
+                            <span
+                              className="text-slate-300 hover:text-slate-600 opacity-0 group-hover/th:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 -ml-1 flex-shrink-0"
+                              title="Drag column to change order"
+                              data-no-drag="false"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M7 2a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm6-12a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4zm0 6a2 2 0 100 4 2 2 0 000-4z" />
+                              </svg>
+                            </span>
+                          )}
                           <span className="truncate">
                             {typeof col.header === 'function'
                               ? col.header({ data, filteredData, sortedData, paginatedData })

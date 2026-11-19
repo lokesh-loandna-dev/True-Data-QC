@@ -261,12 +261,22 @@ const DataDictionaryTable = () => {
 
   // Active columns visible in table
   const visibleColumns = useMemo(() => {
-    const active = allAvailableColumns.filter((col) =>
-      selectedColumnKeys.includes(col.accessor)
-    );
+    const colMap = new Map(allAvailableColumns.map((col) => [col.accessor, col]));
+    const active = selectedColumnKeys.map((key) => colMap.get(key)).filter(Boolean);
     // If none selected, fallback to default columns
     return active.length > 0 ? active : DEFAULT_COLUMNS;
   }, [allAvailableColumns, selectedColumnKeys, DEFAULT_COLUMNS]);
+
+  const handleColumnOrderChange = async (newOrderedKeys) => {
+    setSelectedColumnKeys(newOrderedKeys);
+    try {
+      localStorage.setItem('dd_selected_columns', JSON.stringify(newOrderedKeys));
+      await dataDictionaryService.saveColumnPreferences(newOrderedKeys);
+      notify.success('Column order updated');
+    } catch (err) {
+      console.error('Failed to save column preferences to DB:', err);
+    }
+  };
 
   // Handle ESC key press to close sidebar
   useEffect(() => {
@@ -461,6 +471,7 @@ const DataDictionaryTable = () => {
           setFilters(newFilters);
           setPage(1);
         }}
+        onColumnOrderChange={handleColumnOrderChange}
       />
 
       {/* Manage Columns Sidebar (Right Drawer) */}

@@ -466,8 +466,19 @@ export const ValidationPreviewModal = ({
     const activeKeys = (selectedColumnKeys && selectedColumnKeys.length > 0)
       ? selectedColumnKeys
       : DEFAULT_SELECTED_COLUMNS;
-    return allAvailableColumns.filter(c => activeKeys.includes(c.accessor));
+    const colMap = new Map(allAvailableColumns.map((c) => [c.accessor, c]));
+    return activeKeys.map((k) => colMap.get(k)).filter(Boolean);
   }, [allAvailableColumns, selectedColumnKeys]);
+
+  const handleColumnOrderChange = async (newOrderedKeys) => {
+    setSelectedColumnKeys(newOrderedKeys);
+    try {
+      await userPreferencesService.saveColumnPreferences('validation_preview', newOrderedKeys);
+      notify.success('Column order updated');
+    } catch (e) {
+      console.error('Failed to save reordered columns:', e);
+    }
+  };
 
   const validationRecordsFiltered = useMemo(() => {
     if (!validationData?.records) return [];
@@ -640,6 +651,7 @@ export const ValidationPreviewModal = ({
                 density="compact"
                 maxHeight="100%"
                 className="flex flex-col min-h-0 h-full flex-1"
+                onColumnOrderChange={handleColumnOrderChange}
               />
             </div>
           ) : (

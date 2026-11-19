@@ -570,8 +570,19 @@ export const PackageAuditModal = ({
     const activeKeys = (selectedColumnKeys && selectedColumnKeys.length > 0)
       ? selectedColumnKeys
       : DEFAULT_SELECTED_COLUMNS;
-    return allAvailableAuditColumns.filter(c => activeKeys.includes(c.accessor));
+    const colMap = new Map(allAvailableAuditColumns.map((c) => [c.accessor, c]));
+    return activeKeys.map((k) => colMap.get(k)).filter(Boolean);
   }, [allAvailableAuditColumns, selectedColumnKeys]);
+
+  const handleColumnOrderChange = async (newOrderedKeys) => {
+    setSelectedColumnKeys(newOrderedKeys);
+    try {
+      await userPreferencesService.saveColumnPreferences('package_audit', newOrderedKeys);
+      notify.success('Column order updated');
+    } catch (e) {
+      console.error('Failed to save reordered columns:', e);
+    }
+  };
 
   const customModalHeader = (
     <div className="flex items-center gap-3">
@@ -742,6 +753,7 @@ export const PackageAuditModal = ({
                   density="compact"
                   maxHeight="100%"
                   className="flex flex-col min-h-0 h-full flex-1"
+                  onColumnOrderChange={handleColumnOrderChange}
                 />
               </div>
             ) : (
