@@ -1,0 +1,14 @@
+From: QC Reviewer <qc-team@example.com>
+To: reviewer@example.com
+Date: Wed, 7 Oct 2026 11:30:00 +0000
+Subject: QC Feedback - Loan 802608249025
+Content-Type: text/plain; charset="utf-8"
+
+Loan Number: 802608249025
+Date Received: 10/7/2026
+
+QC Feedback:
+1. Borrower Expense Factor was blank. All Business Bank Statement loans require an expense factor be entered. Please review the Guideline for expense factor requirements.
+2. Qualifying FICO Method was Lowest Mid Score, corrected to Primary Wage Earner Mid Score as required on the Matrix
+3. Delinquent Credit History Meets G/L Requirements was N/A. For this review we must answer Yes or No. Corrected to Yes.
+4. Primary Mortgage or Current Rent History was 0, corrected to 12. Matrix required a 12-month mortgage history. Please review the Matrix while you are underwriting to verify the Matrix requirements. Corrected to 12 payment pgs 186-192.
