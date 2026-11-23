@@ -1,0 +1,4 @@
+# QC Feedback Extraction Dependencies
+openpyxl>=3.1.2
+python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
