@@ -1089,8 +1089,8 @@ export const DataTable = ({
         )}
         <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain">
           <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-[#1B3A4F] shadow-xs">
-              <tr className="bg-slate-50 dark:bg-[#1B3A4F] text-slate-700 dark:text-[var(--text-primary)] text-sm border-b border-slate-200 dark:border-[var(--border)]">
+            <thead className="sticky top-0 z-20 bg-[#24a1dd] shadow-xs">
+              <tr className="bg-[#24a1dd] text-white text-sm border-b border-[#1b8ec5]">
                 {columns.map((col, index) => {
                   const key = getColumnKey(col, index);
                   const filterable = isColumnFilterable(col);
@@ -1137,17 +1137,17 @@ export const DataTable = ({
                       onDragLeave={handleHeaderDragLeave}
                       onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
                       onDragEnd={handleHeaderDragEnd}
-                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-medium transition-colors bg-slate-50 dark:bg-[#1B3A4F] text-slate-700 dark:text-[var(--text-primary)] dark:hover:bg-[#21475F] ${showColumnBorders ? 'border-r border-slate-200 dark:border-[var(--border)] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-slate-200/60 dark:bg-zinc-700/60' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-[var(--primary)] bg-[var(--primary-soft)]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-[var(--primary)] bg-[var(--primary-soft)]' : ''} ${col.headerClassName || ''}`}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#1b8ec5] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
                       style={{ width: col.width || 'auto', ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
                         <div 
-                          className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-slate-800 dark:hover:text-white' : ''}`}
+                          className={`flex items-center gap-1 truncate ${col.sortable ? 'cursor-pointer select-none hover:text-white/80' : ''}`}
                           onClick={() => col.sortable && col.accessor ? handleSort(col.accessor) : null}
                         >
                           {isColReorderable && (
                             <span
-                              className="text-slate-300 dark:text-[var(--text-disabled)] hover:text-slate-600 dark:hover:text-[var(--text-primary)] opacity-0 group-hover/th:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 -ml-1 flex-shrink-0"
+                              className="text-white/60 hover:text-white opacity-0 group-hover/th:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 -ml-1 flex-shrink-0"
                               title="Drag column to change order"
                               data-no-drag="false"
                             >
@@ -1165,7 +1165,7 @@ export const DataTable = ({
                             <Tooltip text={col.headerTooltip || col.tooltip} position="top">
                               <span
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center justify-center text-slate-400 hover:text-[var(--primary)] transition-colors cursor-help p-0.5"
+                                className="inline-flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-help p-0.5"
                                 aria-label="Information"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1175,9 +1175,9 @@ export const DataTable = ({
                             </Tooltip>
                           )}
                           {col.sortable && (
-                            <div className="flex flex-col text-[10px] leading-none opacity-50 ml-0.5 flex-shrink-0">
-                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-[var(--primary)] opacity-100 font-bold' : ''}>▲</span>
-                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'desc' ? 'text-[var(--primary)] opacity-100 font-bold' : ''}>▼</span>
+                            <div className="flex flex-col text-[10px] leading-none opacity-70 ml-0.5 flex-shrink-0">
+                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'asc' ? 'text-white opacity-100 font-bold' : 'text-white/50'}>▲</span>
+                              <span className={sortConfig.key === col.accessor && sortConfig.direction === 'desc' ? 'text-white opacity-100 font-bold' : 'text-white/50'}>▼</span>
                             </div>
                           )}
                         </div>
@@ -1194,8 +1194,8 @@ export const DataTable = ({
                               }}
                               className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1 ${
                                 hasFilter
-                                  ? 'bg-[var(--primary)] text-white shadow-xs hover:opacity-90'
-                                  : 'text-slate-400 dark:text-[var(--text-secondary)] hover:text-slate-600 dark:hover:text-[var(--text-primary)] hover:bg-slate-200/60 dark:hover:bg-[#21475F]'
+                                  ? 'bg-white text-[#24a1dd] shadow-xs hover:bg-white/90'
+                                  : 'text-white/80 hover:text-white hover:bg-white/20'
                               }`}
                               title={
                                 hasFilter
@@ -1211,7 +1211,7 @@ export const DataTable = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                               </svg>
                               {hasFilter && badgeContent !== null && (
-                                <span className="text-[10px] font-bold bg-[var(--bg-surface)] text-[var(--primary)] px-1 rounded-full leading-none min-w-[14px] text-center font-mono">
+                                <span className="text-[10px] font-bold bg-[#24a1dd] text-white px-1 rounded-full leading-none min-w-[14px] text-center font-mono">
                                   {badgeContent}
                                 </span>
                               )}

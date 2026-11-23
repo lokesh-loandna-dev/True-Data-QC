@@ -234,7 +234,7 @@ export const ValidationPreviewModal = ({
         header: 'Data Field',
         accessor: 'data_field',
         sortable: true,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-slate-50 dark:bg-[#1B3A4F] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-slate-800 dark:text-[var(--text-primary)]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-[#1b8ec5] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white',
         cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         render: (r) => <span className="font-semibold text-slate-900 dark:text-[var(--text-primary)]">{r.data_field}</span>,
         category: 'Excel Column'
@@ -402,7 +402,7 @@ export const ValidationPreviewModal = ({
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
-        headerClassName: 'whitespace-nowrap font-bold text-slate-800 dark:text-[var(--text-primary)]',
+        headerClassName: 'whitespace-nowrap font-bold text-white',
         render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug font-bold">{getStatusBadge(r.final_result || r.result, true)}</span>,
         category: 'Validation'
       },

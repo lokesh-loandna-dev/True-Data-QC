@@ -225,7 +225,7 @@ export const ProhanceReportViewModal = ({ isOpen, onClose, report, loading }) =>
         header: 'S.No',
         accessor: '_sno',
         sortable: false,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-[#1b8ec5] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white',
         cellClassName: 'sticky left-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] border-r border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
         render: (_, index, globalIndexOffset = 0) => (
           <span className="text-[var(--text-secondary)] font-semibold">{globalIndexOffset + index + 1}</span>

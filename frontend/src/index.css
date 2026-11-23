@@ -32,7 +32,7 @@
 
 /* ── Color Tokens (Light & Dark) ─────────────────────────────────────────── */
 :root {
-  --bg-app: #FFFFFF;
+  --bg-app: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-elevated: #F9FAFB;
   --bg-muted: #F8FAFC;
@@ -407,8 +407,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   --ag-foreground-color: var(--text-primary);
   --ag-border-color: var(--border);
   --ag-secondary-border-color: var(--border);
-  --ag-header-background-color: #1B3A4F;
-  --ag-header-foreground-color: var(--text-primary);
+  --ag-header-background-color: #24A1DD;
+  --ag-header-foreground-color: #ffffff;
   --ag-row-hover-color: rgba(255, 255, 255, 0.04);
   --ag-selected-row-background-color: var(--primary-soft);
   --ag-odd-row-background-color: var(--bg-muted);
@@ -416,30 +416,30 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 [data-theme="dark"] .ag-theme-alpine .ag-header,
 .dark .ag-theme-alpine .ag-header {
-  background-color: #1B3A4F !important;
-  color: var(--text-primary) !important;
+  background-color: #24A1DD !important;
+  color: white !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine .ag-header-row,
 .dark .ag-theme-alpine .ag-header-row {
-  background-color: #1B3A4F !important;
+  background-color: #24A1DD !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine .ag-header-cell,
 .dark .ag-theme-alpine .ag-header-cell {
-  background-color: #1B3A4F !important;
-  color: var(--text-primary) !important;
+  background-color: #24A1DD !important;
+  color: white !important;
   transition: background-color 0.15s ease;
 }
 
 [data-theme="dark"] .ag-theme-alpine .ag-header-cell:hover,
 .dark .ag-theme-alpine .ag-header-cell:hover {
-  background-color: #21475F !important;
+  background-color: #1e8ec5 !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine .ag-header-cell-text,
 .dark .ag-theme-alpine .ag-header-cell-text {
-  color: var(--text-primary) !important;
+  color: white !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine .ag-row,
