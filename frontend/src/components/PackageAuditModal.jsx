@@ -519,7 +519,7 @@ export const PackageAuditModal = ({
           <select
             value={r.action || ''}
             onChange={(e) => handleRecordChange(r, 'action', e.target.value)}
-            className={`w-full bg-[var(--bg-elevated)] border border-black/20 dark:border-[var(--border-strong)] rounded-md px-2 py-1 h-[30px] text-xs font-semibold focus:ring-1 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer text-[var(--text-primary)]`}
+            className={`w-full bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] dark:border-[var(--border-strong)] rounded-md px-2 py-1 h-[30px] text-xs font-semibold focus:ring-1 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer text-[var(--text-primary)]`}
           >
             <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">-- Select --</option>
             <option value="Corrected" className="bg-[var(--bg-elevated)] text-[var(--success)]">Corrected</option>
@@ -546,7 +546,7 @@ export const PackageAuditModal = ({
             value={r.remark || ''}
             onChange={(e) => handleRecordChange(r, 'remark', e.target.value)}
             placeholder="Enter remark..."
-            className="w-full bg-[var(--bg-elevated)] border border-black/20 dark:border-[var(--border-strong)] rounded-md px-2 py-1 text-xs text-[var(--text-primary)] placeholder-[var(--text-disabled)] focus:ring-1 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[30px] leading-tight"
+            className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] dark:border-[var(--border-strong)] rounded-md px-2 py-1 text-xs text-[var(--text-primary)] placeholder-[var(--text-disabled)] focus:ring-1 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[30px] leading-tight"
           />
         ),
         category: 'Audit'
@@ -584,22 +584,51 @@ export const PackageAuditModal = ({
       fixedEndCols.push({
         ...baseActionCol,
         draggable: false,
-        headerClassName: `sticky top-0 z-30 bg-[#24a1dd] text-white border-l border-black/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.headerClassName || ''}`,
-        cellClassName: `sticky z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] border-l border-black/20 dark:border-white/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.cellClassName || ''}`,
-        style: { right: `${rightOffset}px`, width: '140px', minWidth: '140px', maxWidth: '140px' },
-        cellStyle: { right: `${rightOffset}px`, width: '140px', minWidth: '140px', maxWidth: '140px' }
+        headerClassName: `sticky top-0 z-30 bg-[#24a1dd] text-white border-l border-[#136691] border-r border-[#1a8bc0] whitespace-nowrap min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.headerClassName || ''}`,
+        cellClassName: `sticky z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] border-l border-[var(--border-strong)] border-r border-[var(--border)] border-b border-[var(--border)] min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.cellClassName || ''}`,
+        style: {
+          right: `${rightOffset}px`,
+          width: '140px',
+          minWidth: '140px',
+          maxWidth: '140px',
+          boxShadow: '-4px 0 6px -2px rgba(0, 0, 0, 0.12)'
+        },
+        cellStyle: {
+          right: `${rightOffset}px`,
+          width: '140px',
+          minWidth: '140px',
+          maxWidth: '140px',
+          boxShadow: '-4px 0 6px -2px rgba(0, 0, 0, 0.08)'
+        }
       });
     }
 
     if (isRemarkVisible && colMap.has('remark')) {
       const baseRemarkCol = colMap.get('remark');
+      const isRemarkLeftmostSticky = !isActionVisible;
       fixedEndCols.push({
         ...baseRemarkCol,
         draggable: false,
-        headerClassName: `sticky top-0 right-0 z-30 bg-[#24a1dd] text-white border-l border-black/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.headerClassName || ''}`,
-        cellClassName: `sticky right-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] border-l border-black/20 dark:border-white/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.cellClassName || ''}`,
-        style: { right: '0px', width: '200px', minWidth: '200px', maxWidth: '200px' },
-        cellStyle: { right: '0px', width: '200px', minWidth: '200px', maxWidth: '200px' }
+        headerClassName: `sticky top-0 right-0 z-30 bg-[#24a1dd] text-white ${
+          isRemarkLeftmostSticky ? 'border-l border-[#136691]' : ''
+        } border-r border-[#1a8bc0] whitespace-nowrap min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.headerClassName || ''}`,
+        cellClassName: `sticky right-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-muted)] ${
+          isRemarkLeftmostSticky ? 'border-l border-[var(--border-strong)]' : ''
+        } border-r border-[var(--border)] border-b border-[var(--border)] min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.cellClassName || ''}`,
+        style: {
+          right: '0px',
+          width: '200px',
+          minWidth: '200px',
+          maxWidth: '200px',
+          ...(isRemarkLeftmostSticky ? { boxShadow: '-4px 0 6px -2px rgba(0, 0, 0, 0.12)' } : {})
+        },
+        cellStyle: {
+          right: '0px',
+          width: '200px',
+          minWidth: '200px',
+          maxWidth: '200px',
+          ...(isRemarkLeftmostSticky ? { boxShadow: '-4px 0 6px -2px rgba(0, 0, 0, 0.08)' } : {})
+        }
       });
     }
 

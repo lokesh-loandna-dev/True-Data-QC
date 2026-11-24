@@ -1392,7 +1392,7 @@ export const DataTable = ({
           {/* ═══════════════════════════════════════════════════════════
               DESKTOP & LAPTOP TABLE VIEW (>= md breakpoints)
              ═══════════════════════════════════════════════════════════ */}
-          <table className="hidden md:table w-full text-left border-collapse border-b border-black/15 dark:border-white/15 min-w-[720px] sm:min-w-[850px] lg:min-w-[950px]">
+          <table className="hidden md:table w-full text-left border-separate border-spacing-0 border-b border-[var(--border)] min-w-[720px] sm:min-w-[850px] lg:min-w-[950px]">
             <thead className="sticky top-0 z-20 bg-[#24a1dd] shadow-xs">
               <tr className="bg-[#24a1dd] text-white text-xs sm:text-sm border-b border-[#1b8ec5]">
                 {columns.map((col, index) => {
@@ -1441,7 +1441,7 @@ export const DataTable = ({
                       onDragLeave={handleHeaderDragLeave}
                       onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
                       onDragEnd={handleHeaderDragEnd}
-                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#167cae] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#1a8bc0]' : ''} border-b border-[#1b8ec5] ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
                       style={{ width: col.width || 'auto', ...(col.style || {}), ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
@@ -1559,7 +1559,7 @@ export const DataTable = ({
                     <React.Fragment key={currentKey}>
                       <tr
                         onClick={(e) => handleRowClick(row, rowIndex, e)}
-                        className={`group transition-colors duration-150 border-b border-black/10 dark:border-white/10 ${
+                        className={`group transition-colors duration-150 border-b border-[var(--border)] ${
                           rowIndex % 2 === 1 ? 'dark:bg-[var(--bg-muted)]' : 'dark:bg-[var(--bg-surface)]'
                         } ${
                           isExpanded
@@ -1570,7 +1570,7 @@ export const DataTable = ({
                         {columns.map((col, colIndex) => (
                           <td
                             key={colIndex}
-                            className={`${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] leading-normal ${showColumnBorders ? 'border-r border-black/15 dark:border-white/15 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                            className={`${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] leading-normal border-b border-[var(--border)] ${showColumnBorders ? 'border-r border-[var(--border)]' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                             style={col.cellStyle || col.style || undefined}
                           >
                             {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded) : row[col.accessor]}
@@ -1578,8 +1578,8 @@ export const DataTable = ({
                         ))}
                       </tr>
                       {isExpanded && renderExpandedRow && (
-                        <tr key={`${currentKey}-expanded`} className="bg-slate-50/70 dark:bg-[var(--bg-muted)] border-b border-slate-200 dark:border-[var(--border)]">
-                          <td colSpan={columns.length} className="p-0">
+                        <tr key={`${currentKey}-expanded`} className="bg-slate-50/70 dark:bg-[var(--bg-muted)]">
+                          <td colSpan={columns.length} className="p-0 border-b border-[var(--border)]">
                             {renderExpandedRow(row, rowIndex, () => handleRowExpandToggle(currentKey, row, rowIndex), containerWidth)}
                           </td>
                         </tr>
@@ -1589,7 +1589,7 @@ export const DataTable = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500 dark:text-[var(--text-secondary)] text-sm">
+                  <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500 dark:text-[var(--text-secondary)] text-sm border-b border-[var(--border)]">
                     {totalActiveFilters > 0 ? (
                       <div className="flex flex-col items-center justify-center gap-2 py-4">
                         <span className="text-slate-600 dark:text-[var(--text-primary)] font-medium">No records match the current filters.</span>
