@@ -595,6 +595,32 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   animation: shake 0.4s ease-in-out;
 }
 
+@keyframes slideDrawerIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slideDrawerIn {
+  animation: slideDrawerIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-backdropFadeIn {
+  animation: backdropFadeIn 0.2s ease-out forwards;
+}
+
 /* ── Premium Delete Confirmation Modal ── */
 .premium-delete-modal {
   width: 340px !important;

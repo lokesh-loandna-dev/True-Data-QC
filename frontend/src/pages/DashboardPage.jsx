@@ -86,7 +86,7 @@ const PackageDetailedRowView = ({
         {/* Unified Single Strip: Validation & Pending (5 items) + Divider + Action Breakdown (7 items) */}
         <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border)] shadow-2xs p-1.5 flex flex-col md:flex-row items-stretch gap-1.5">
           {/* Validation & Pending Group (5 items - 42%) */}
-          <div className="w-full md:w-[42%] grid grid-cols-5 gap-1.5 text-center">
+          <div className="w-full md:w-[42%] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 text-center">
             <div className="bg-[var(--bg-elevated)] py-1 px-1 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
               <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Total Fields</span>
               <span className="font-mono text-xs font-bold text-[var(--text-primary)]">{pkg.total_fields ?? 0}</span>
@@ -124,7 +124,7 @@ const PackageDetailedRowView = ({
           <div className="hidden md:block w-px bg-[var(--border)] self-stretch my-0.5"></div>
 
           {/* Action Status Breakdown Group (7 items - 58%) */}
-          <div className="w-full md:w-[58%] grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center">
+          <div className="w-full md:w-[58%] grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5 text-center">
             <div className="bg-[var(--bg-elevated)] py-1 px-0.5 rounded border border-[var(--border)] flex flex-col justify-between min-h-[46px]">
               <span className="block text-[10px] text-[var(--text-secondary)] font-medium leading-tight">Corrected</span>
               <span className={`font-mono text-xs font-bold ${(pkg.action_corrected ?? 0) > 0 ? 'text-[var(--success)]' : 'text-[var(--text-disabled)]'}`}>
@@ -725,11 +725,12 @@ const DashboardPage = () => {
         header: 'File Name',
         accessor: 'filename',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[160px]',
         render: (pkg) => (
           <Link
             to={`/dashboard/package/${encodePackageId(pkg.id)}`}
             onClick={(e) => e.stopPropagation()}
-            className="font-semibold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline max-w-xs truncate block cursor-pointer transition-colors"
+            className="font-semibold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline max-w-[140px] sm:max-w-xs truncate block cursor-pointer transition-colors"
             title={pkg.filename}
           >
             {pkg.filename}
@@ -740,8 +741,9 @@ const DashboardPage = () => {
         header: 'Loan ID',
         accessor: 'loan_id',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[100px]',
         render: (pkg) => (
-          <span className="font-mono text-xs font-semibold text-[var(--text-primary)]">
+          <span className="font-mono text-xs font-semibold text-[var(--text-primary)] whitespace-nowrap">
             {pkg.loan_id || '-'}
           </span>
         ),
@@ -991,8 +993,8 @@ const DashboardPage = () => {
         accessor: 'actions',
         align: 'right',
         sortable: false,
-        headerClassName: 'sticky top-0 right-0 z-40 bg-[#24a1dd] border-l border-[#1b8ec5] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white',
-        cellClassName: 'sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[var(--bg-elevated)] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        headerClassName: 'sticky top-0 right-0 z-40 bg-[#24a1dd] border-l border-[#1b8ec5] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white whitespace-nowrap min-w-[110px]',
+        cellClassName: 'sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-muted)] dark:group-hover:bg-[var(--bg-elevated)] border-l border-[var(--border)] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] whitespace-nowrap min-w-[110px]',
         render: (pkg) => (
           <div className="flex justify-end gap-1.5 whitespace-nowrap">
             <Tooltip text="Audit Details" position="top">
@@ -1075,9 +1077,9 @@ const DashboardPage = () => {
     const count = exportData?.length || 0;
 
     return (
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
         {/* Date Range Picker Container */}
-        <div className="inline-flex items-center bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg shadow-2xs h-9 px-2 gap-1.5 transition-colors shrink-0">
+        <div className="inline-flex items-center bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg shadow-2xs h-9 px-2 gap-1 sm:gap-1.5 transition-colors shrink-0 max-w-full overflow-x-auto">
           <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
@@ -1088,17 +1090,17 @@ const DashboardPage = () => {
               value={fromDate}
               onChange={handleFromDateChange}
               max={toDate || undefined}
-              className="bg-transparent border-0 p-0 text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              className="bg-transparent border-0 p-0 text-[11px] sm:text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[100px] sm:w-[118px]"
               title="From Date"
             />
-            <span className="text-[var(--text-disabled)] mx-1 select-none font-medium">→</span>
+            <span className="text-[var(--text-disabled)] mx-0.5 sm:mx-1 select-none font-medium">→</span>
             <input
               id="dashboard-to-date"
               type="date"
               value={toDate}
               onChange={handleToDateChange}
               min={fromDate || undefined}
-              className="bg-transparent border-0 p-0 text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[118px]"
+              className="bg-transparent border-0 p-0 text-[11px] sm:text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:ring-0 cursor-pointer w-[100px] sm:w-[118px]"
               title="To Date"
             />
           </div>
@@ -1211,15 +1213,15 @@ const DashboardPage = () => {
   ]);
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden pt-[60px] transition-colors duration-200">
+    <div className="h-[100dvh] flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden pt-[60px] transition-colors duration-200">
       <Header />
 
-      <main className="flex-1 flex flex-col min-h-0 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 flex flex-col min-h-0 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6">
         {/* Dashboard Main Area / Saved Packages DataTable */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="mb-4 flex-shrink-0 flex items-center justify-between gap-3">
+          <div className="mb-3 sm:mb-4 flex-shrink-0 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Dashboard</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] tracking-tight">Dashboard</h1>
               {(fromDate || toDate) && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary)]/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]"></span>

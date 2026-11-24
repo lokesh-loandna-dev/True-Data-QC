@@ -212,6 +212,8 @@ export const UserManagementTable = () => {
       accessor: 'id',
       sortable: false,
       filterable: false,
+      headerClassName: 'whitespace-nowrap min-w-[65px]',
+      cellClassName: 'whitespace-nowrap',
       render: (_, index, globalIndexOffset = 0) => (
         <span className="text-slate-500">{globalIndexOffset + index + 1}</span>
       ),
@@ -220,17 +222,22 @@ export const UserManagementTable = () => {
       header: 'Username',
       accessor: 'username',
       sortable: true,
-      cellClassName: 'font-medium text-slate-900',
+      headerClassName: 'whitespace-nowrap min-w-[120px]',
+      cellClassName: 'font-medium text-slate-900 dark:text-[var(--text-primary)] whitespace-nowrap',
     },
     {
       header: 'Email',
       accessor: 'email',
       sortable: true,
+      headerClassName: 'whitespace-nowrap min-w-[160px]',
+      cellClassName: 'whitespace-nowrap',
     },
     {
       header: 'Role',
       accessor: 'role',
       sortable: true,
+      headerClassName: 'whitespace-nowrap min-w-[130px]',
+      cellClassName: 'whitespace-nowrap',
       render: (u) => {
         if (editingId === u.id) {
           const isCurrentSelected = selectedRole === '--selected--' || !selectedRole;
@@ -329,6 +336,8 @@ export const UserManagementTable = () => {
       header: 'Status',
       accessor: 'status',
       sortable: true,
+      headerClassName: 'whitespace-nowrap min-w-[130px]',
+      cellClassName: 'whitespace-nowrap',
       render: (u) => {
         if (editingId === u.id) {
           return (
@@ -377,6 +386,8 @@ export const UserManagementTable = () => {
       header: 'Actions',
       accessor: 'actions',
       align: 'right',
+      headerClassName: 'whitespace-nowrap min-w-[160px]',
+      cellClassName: 'whitespace-nowrap',
       render: (u) => {
         if (editingId === u.id) {
           return (

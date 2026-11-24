@@ -318,8 +318,8 @@ const PackageAuditPage = () => {
         header: 'Data Field',
         accessor: 'data_field',
         sortable: true,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-[#1b8ec5] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white',
-        cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]',
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-[#1b8ec5] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white whitespace-nowrap min-w-[120px] sm:min-w-[150px]',
+        cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] whitespace-nowrap min-w-[120px] sm:min-w-[150px]',
         render: (r) => <span className="font-semibold text-slate-900 dark:text-[var(--text-primary)]">{r.data_field}</span>,
         category: 'Excel Column'
       },
@@ -483,7 +483,7 @@ const PackageAuditPage = () => {
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
-        headerClassName: 'whitespace-nowrap font-bold text-white',
+        headerClassName: 'whitespace-nowrap font-bold text-white min-w-[110px]',
         render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug font-bold">{getStatusBadge(r.final_result || r.result, true)}</span>,
         category: 'Validation'
       },
@@ -491,6 +491,7 @@ const PackageAuditPage = () => {
         header: 'Final Remarks',
         accessor: 'final_remarks',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[160px]',
         render: (r) => <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
         category: 'Validation'
       },
@@ -621,14 +622,14 @@ const PackageAuditPage = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden pt-[60px] transition-colors duration-200">
+    <div className="h-[100dvh] flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden pt-[60px] transition-colors duration-200">
       <Header />
 
       {/* Main Page Container */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Top Control Bar */}
-        <div className="px-4 sm:px-6 py-2.5 border-b border-[var(--border)] bg-[var(--bg-header)] flex items-center justify-between flex-shrink-0 shadow-2xs z-10">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="px-3 sm:px-6 py-2 sm:py-2.5 border-b border-[var(--border)] bg-[var(--bg-header)] flex items-center justify-between flex-shrink-0 shadow-2xs z-10 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
@@ -648,11 +649,11 @@ const PackageAuditPage = () => {
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-2 truncate">
+              <h1 className="text-xs sm:text-base font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-1.5 sm:gap-2 min-w-0">
                 <span>Package Audit:</span>
-                <span className="font-semibold text-[var(--text-primary)] truncate">{packageDetails?.package?.filename || (detailsLoading ? 'Loading...' : 'Package')}</span>
+                <span className="font-semibold text-[var(--text-primary)] max-w-[120px] sm:max-w-[260px] md:max-w-none truncate">{packageDetails?.package?.filename || (detailsLoading ? 'Loading...' : 'Package')}</span>
                 {loanId && (
-                  <span className="font-semibold text-[var(--text-secondary)] text-xs sm:text-sm">
+                  <span className="font-semibold text-[var(--text-secondary)] text-[11px] sm:text-sm">
                     (Loan Id - {loanId})
                   </span>
                 )}

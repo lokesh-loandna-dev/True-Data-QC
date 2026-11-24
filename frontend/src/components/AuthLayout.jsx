@@ -7,7 +7,7 @@ const AuthLayout = ({ children, title = "", subtitle }) => {
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div className="auth-background flex items-center justify-center font-creato py-6 sm:py-10 relative">
+    <div className="auth-background flex items-center justify-center font-creato py-4 sm:py-10 px-3 sm:px-0 relative min-h-[100dvh]">
       {/* Top right theme toggle for Auth screens */}
       <div className="absolute top-4 right-4 z-20">
         <button
@@ -37,8 +37,8 @@ const AuthLayout = ({ children, title = "", subtitle }) => {
       </div>
 
       {/* Content card */}
-      <div className="relative z-10 w-full max-w-md px-4 sm:px-0 my-auto">
-        <div className="bg-[var(--bg-surface)] backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden p-6 sm:p-8 w-full border border-[var(--border)] transition-colors duration-200">
+      <div className="relative z-10 w-full max-w-md px-2 sm:px-0 my-auto">
+        <div className="bg-[var(--bg-surface)] backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden p-5 sm:p-8 w-full border border-[var(--border)] transition-colors duration-200">
           <div className="flex justify-center mb-6">
             <img
               src={isDark ? logoLight : logoDark}

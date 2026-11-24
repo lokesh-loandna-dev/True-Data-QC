@@ -199,6 +199,8 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         header: 'S.No',
         accessor: 'id',
         sortable: false,
+        headerClassName: 'whitespace-nowrap min-w-[65px]',
+        cellClassName: 'whitespace-nowrap',
         render: (_, index, globalIndexOffset = 0) => (
           <span className="text-[var(--text-secondary)] font-medium">
             {globalIndexOffset + index + 1}
@@ -209,6 +211,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         header: 'File Name',
         accessor: 'fileName',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[160px]',
         cellClassName: 'font-medium text-[var(--text-primary)]',
         render: (row) => (
           <div className="flex items-center gap-2">
@@ -225,7 +228,7 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <span className="truncate">{row.fileName}</span>
+            <span className="truncate max-w-[150px] sm:max-w-xs">{row.fileName}</span>
           </div>
         ),
       },
@@ -233,16 +236,22 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         header: 'Upload Date',
         accessor: 'uploadDate',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[120px]',
+        cellClassName: 'whitespace-nowrap',
       },
       {
         header: 'Time',
         accessor: 'time',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[90px]',
+        cellClassName: 'whitespace-nowrap',
       },
       {
         header: 'User Name',
         accessor: 'userName',
         sortable: true,
+        headerClassName: 'whitespace-nowrap min-w-[120px]',
+        cellClassName: 'whitespace-nowrap',
         render: (row) => (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-soft)] text-[var(--primary)]">
             {row.userName}
@@ -254,6 +263,8 @@ export const ProhanceTable = ({ registerFileInputRef }) => {
         accessor: 'actions',
         align: 'right',
         sortable: false,
+        headerClassName: 'whitespace-nowrap min-w-[110px]',
+        cellClassName: 'whitespace-nowrap',
         render: (row) => (
           <div className="flex items-center justify-end gap-1.5">
             <Tooltip text="View Report" position="top">

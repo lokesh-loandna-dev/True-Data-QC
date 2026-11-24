@@ -471,10 +471,10 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] flex flex-col pt-[60px] transition-colors duration-200">
+    <div className="min-h-[100dvh] bg-[var(--bg-app)] text-[var(--text-primary)] flex flex-col pt-[60px] transition-colors duration-200">
       <Header />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
         {/* Page Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--border)]">
           <div>
@@ -527,8 +527,8 @@ const UploadPage = () => {
         )}
 
         {/* Ingestion Source Switcher Tabs */}
-        <div className="flex items-center gap-2 mb-6">
-          <div className="inline-flex p-1 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)]">
+        <div className="flex items-center gap-2 mb-6 w-full">
+          <div className="inline-flex p-1 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)] w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -536,13 +536,13 @@ const UploadPage = () => {
                 setApiError('');
                 setError('');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                 ingestionTab === 'api'
                   ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg className="w-4 h-4 text-[var(--text-secondary)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span>Truedata via API</span>
@@ -554,7 +554,7 @@ const UploadPage = () => {
                 setApiError('');
                 setError('');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                 ingestionTab === 'file'
                   ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'

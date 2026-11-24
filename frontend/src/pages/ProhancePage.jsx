@@ -24,9 +24,9 @@ const ProhancePage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] pt-[60px] pb-6 transition-colors duration-200">
+    <div className="min-h-[100dvh] flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] pt-[60px] pb-6 transition-colors duration-200">
       <Header />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-4">
         {/* Main Content: Dashboard table with S.No, File Name, Upload Date, Time, User Name */}
         <div className="w-full">
           <ProhanceTable />

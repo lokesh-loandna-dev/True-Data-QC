@@ -49,7 +49,7 @@ export const TableSkeleton = ({
               <td
                 key={`skel-cell-${rIdx}-${cIdx}`}
                 className={`${
-                  density === 'compact' ? 'px-3 py-3' : 'px-6 py-4'
+                  density === 'compact' ? 'px-2.5 sm:px-3 py-2 sm:py-3' : 'px-3 sm:px-4 lg:px-6 py-2.5 sm:py-4'
                 } ${
                   showBorders ? 'border-r border-[var(--border)]/60 last:border-r-0' : ''
                 }`}

@@ -112,7 +112,7 @@ const ColumnFilterModal = ({
     const updatePosition = () => {
       if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
-      const modalWidth = isNumericCol ? 280 : 256;
+      const modalWidth = Math.min(isNumericCol ? 280 : 256, window.innerWidth - 24);
       let left = isLastColumn ? rect.right - modalWidth : rect.left;
       
       if (left + modalWidth > window.innerWidth - 12) {
@@ -122,9 +122,15 @@ const ColumnFilterModal = ({
         left = 12;
       }
 
+      let top = rect.bottom + 6;
+      const modalEstHeight = 350;
+      if (top + modalEstHeight > window.innerHeight - 12) {
+        top = Math.max(12, rect.top - modalEstHeight - 6);
+      }
+
       setCoords({
-        top: rect.bottom + 6,
-        left: left,
+        top: Math.max(12, top),
+        left: Math.max(12, left),
       });
     };
 
@@ -236,7 +242,7 @@ const ColumnFilterModal = ({
         left: `${coords.left}px`,
         zIndex: 99999,
       }}
-      className={`${isNumericCol ? 'w-72' : 'w-64'} bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border)] text-[var(--text-primary)] animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden`}
+      className={`${isNumericCol ? 'w-72 max-w-[calc(100vw-24px)]' : 'w-64 max-w-[calc(100vw-24px)]'} bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border)] text-[var(--text-primary)] animate-in fade-in slide-in-from-top-1 duration-150 font-normal overflow-hidden`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Modal Header */}
@@ -1087,10 +1093,14 @@ export const DataTable = ({
             {error}
           </div>
         )}
-        <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain">
-          <table className="w-full text-left border-collapse min-w-[600px]">
+        <div
+          ref={tableContainerRef}
+          className="overflow-x-auto overflow-y-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <table className="w-full text-left border-collapse min-w-[720px] sm:min-w-[850px] lg:min-w-[950px]">
             <thead className="sticky top-0 z-20 bg-[#24a1dd] shadow-xs">
-              <tr className="bg-[#24a1dd] text-white text-sm border-b border-[#1b8ec5]">
+              <tr className="bg-[#24a1dd] text-white text-xs sm:text-sm border-b border-[#1b8ec5]">
                 {columns.map((col, index) => {
                   const key = getColumnKey(col, index);
                   const filterable = isColumnFilterable(col);
@@ -1137,7 +1147,7 @@ export const DataTable = ({
                       onDragLeave={handleHeaderDragLeave}
                       onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
                       onDragEnd={handleHeaderDragEnd}
-                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#1b8ec5] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs' : 'px-3 sm:px-4 lg:px-6 py-2 sm:py-3.5 text-xs sm:text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#1b8ec5] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
                       style={{ width: col.width || 'auto', ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
@@ -1266,7 +1276,7 @@ export const DataTable = ({
                         {columns.map((col, colIndex) => (
                           <td
                             key={colIndex}
-                            className={`${density === 'compact' ? 'px-3 py-2 text-xs' : 'px-6 py-3.5 text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] ${showColumnBorders ? 'border-r border-slate-200/60 dark:border-[var(--border)]/60 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                            className={`${density === 'compact' ? 'px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs' : 'px-3 sm:px-4 lg:px-6 py-2 sm:py-3.5 text-xs sm:text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] leading-normal ${showColumnBorders ? 'border-r border-slate-200/60 dark:border-[var(--border)]/60 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                           >
                             {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded) : row[col.accessor]}
                           </td>
@@ -1308,13 +1318,13 @@ export const DataTable = ({
 
         {/* Pagination */}
         {pagination && totalEntries > 0 && (
-          <div className={`px-4 sm:px-6 ${density === 'compact' ? 'py-2 text-xs' : 'py-3 text-sm'} border-t border-slate-200 dark:border-[var(--border)] flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-[var(--bg-elevated)] gap-3 flex-shrink-0 text-slate-600 dark:text-[var(--text-primary)]`}>
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-[var(--text-secondary)]">
+          <div className={`px-3 sm:px-6 ${density === 'compact' ? 'py-1.5 sm:py-2 text-xs' : 'py-2.5 sm:py-3 text-xs sm:text-sm'} border-t border-slate-200 dark:border-[var(--border)] flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-[var(--bg-elevated)] gap-2.5 sm:gap-3 flex-shrink-0 text-slate-600 dark:text-[var(--text-primary)]`}>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
               <span>Show</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                className="border border-[var(--border-strong)] rounded px-2 py-1 focus:outline-none focus:border-[var(--focus-ring)] bg-[var(--bg-elevated)] text-[var(--text-primary)] text-sm cursor-pointer"
+                className="border border-[var(--border-strong)] rounded px-2 py-1 focus:outline-none focus:border-[var(--focus-ring)] bg-[var(--bg-elevated)] text-[var(--text-primary)] text-xs sm:text-sm cursor-pointer"
               >
                 {itemsPerPageOptions.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -1323,8 +1333,8 @@ export const DataTable = ({
               <span>entries</span>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <span className="text-sm text-slate-600 dark:text-[var(--text-secondary)]">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+              <span className="text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
                 Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries} entries
               </span>
               <div className="flex items-center gap-1.5">

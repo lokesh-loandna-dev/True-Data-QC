@@ -13,7 +13,7 @@ export const ApiIngestionCard = ({
   onSubmit,
 }) => {
   return (
-    <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] shadow-xs p-6 sm:p-8">
+    <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] shadow-xs p-4 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--border)] mb-6">
         <div>
           <h2 className="text-base font-semibold text-[var(--text-primary)]">
