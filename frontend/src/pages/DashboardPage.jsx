@@ -37,11 +37,11 @@ const PackageDetailedRowView = ({
     : '-';
 
   return (
-    <div className="bg-[var(--bg-muted)] border-y border-[var(--border)] transition-all overflow-hidden">
-      {/* Sticky container stays anchored left and matches exact visible table width */}
+    <div className="bg-[var(--bg-muted)] border-y border-[var(--border)] transition-all overflow-hidden rounded-lg">
+      {/* Container adapts to card width on mobile or table width on desktop */}
       <div
-        className="sticky left-0 px-3.5 py-2 sm:px-4 sm:py-2.5 space-y-2 box-border"
-        style={containerWidth ? { width: `${containerWidth}px` } : { width: '100%' }}
+        className="px-2.5 sm:px-4 py-2 space-y-2 box-border max-w-full"
+        style={containerWidth ? { maxWidth: '100%', width: `${containerWidth}px` } : { width: '100%' }}
       >
         {/* Top Bar: Identity & Close */}
         <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-[var(--border)]">

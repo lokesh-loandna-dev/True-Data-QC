@@ -318,8 +318,9 @@ const PackageAuditPage = () => {
         header: 'Data Field',
         accessor: 'data_field',
         sortable: true,
-        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-[#1b8ec5] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] text-white whitespace-nowrap min-w-[120px] sm:min-w-[150px]',
-        cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-r border-slate-200 dark:border-[var(--border)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] whitespace-nowrap min-w-[120px] sm:min-w-[150px]',
+        draggable: false,
+        headerClassName: 'sticky top-0 left-0 z-40 bg-[#24a1dd] border-r border-black/20 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)] text-white whitespace-nowrap min-w-[120px] sm:min-w-[140px]',
+        cellClassName: 'sticky left-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-r border-black/20 dark:border-white/20 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[120px] sm:min-w-[140px]',
         render: (r) => <span className="font-semibold text-slate-900 dark:text-[var(--text-primary)]">{r.data_field}</span>,
         category: 'Excel Column'
       },
@@ -437,7 +438,7 @@ const PackageAuditPage = () => {
         header: 'Condition Text',
         accessor: 'condition_text',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[240px]',
+        headerClassName: 'whitespace-nowrap min-w-[180px] max-w-[280px]',
         filterType: 'text',
         filterValue: (r) => {
           const val = r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '';
@@ -445,7 +446,7 @@ const PackageAuditPage = () => {
         },
         sortValue: (r) => r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? '',
         render: (r) => (
-          <span className="text-slate-600 dark:text-[var(--text-secondary)] break-words whitespace-pre-wrap max-w-sm block leading-relaxed text-xs">
+          <span className="text-slate-600 dark:text-[var(--text-secondary)] break-words whitespace-pre-wrap max-w-sm block leading-snug text-xs">
             {r.condition_text ?? r['Condition Text'] ?? r.raw_data?.['Condition Text'] ?? ''}
           </span>
         ),
@@ -455,7 +456,7 @@ const PackageAuditPage = () => {
         header: 'Condition Outcome',
         accessor: 'condition_outcome',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[220px]',
+        headerClassName: 'whitespace-nowrap min-w-[160px] max-w-[240px]',
         filterType: 'text',
         filterValue: (r) => {
           const val = r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '';
@@ -466,7 +467,7 @@ const PackageAuditPage = () => {
           const val = r.condition_outcome ?? r['Condition Outcome'] ?? r.raw_data?.['Condition Outcome'] ?? '';
           if (!val) return null;
           return (
-            <div className="text-xs break-words whitespace-pre-wrap max-w-sm leading-relaxed space-y-1">
+            <div className="text-xs break-words whitespace-pre-wrap max-w-sm leading-snug space-y-0.5">
               {String(val).split('\n').map((line, i) => {
                 let badgeClass = 'text-slate-600 dark:text-[var(--text-secondary)]';
                 if (line.includes('PASS')) badgeClass = 'text-emerald-700 dark:text-[var(--success)] font-medium';
@@ -483,7 +484,7 @@ const PackageAuditPage = () => {
         header: 'Final Result',
         accessor: 'final_result',
         sortable: true,
-        headerClassName: 'whitespace-nowrap font-bold text-white min-w-[110px]',
+        headerClassName: 'whitespace-nowrap font-bold text-white min-w-[100px]',
         render: (r) => <span className="break-words whitespace-pre-wrap max-w-xs block leading-snug font-bold">{getStatusBadge(r.final_result || r.result, true)}</span>,
         category: 'Validation'
       },
@@ -491,14 +492,15 @@ const PackageAuditPage = () => {
         header: 'Final Remarks',
         accessor: 'final_remarks',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[160px]',
-        render: (r) => <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium">{r.final_remarks || ''}</span>,
+        headerClassName: 'whitespace-nowrap min-w-[140px] max-w-[240px]',
+        render: (r) => <span className="text-slate-700 dark:text-[var(--text-primary)] break-words whitespace-pre-wrap max-w-sm block leading-snug font-medium text-xs">{r.final_remarks || ''}</span>,
         category: 'Validation'
       },
       {
         header: 'Action',
         accessor: 'action',
         sortable: true,
+        draggable: false,
         filterable: true,
         filterValue: (r) => r.action || '(Blank)',
         sortValue: (r) => r.action || '',
@@ -513,12 +515,12 @@ const PackageAuditPage = () => {
           'Others',
           '(Blank)'
         ],
-        headerClassName: 'whitespace-nowrap min-w-[150px]',
+        headerClassName: 'whitespace-nowrap min-w-[140px]',
         render: (r) => (
           <select
             value={r.action || ''}
             onChange={(e) => handleRecordChange(r, 'action', e.target.value)}
-            className={`w-full bg-white dark:bg-[var(--bg-elevated)] border border-slate-300 dark:border-[var(--border-strong)] rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-2 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer ${
+            className={`w-full bg-white dark:bg-[var(--bg-elevated)] border border-black/20 dark:border-[var(--border-strong)] rounded-md px-2 py-1 h-[30px] text-xs font-semibold focus:ring-1 focus:ring-[var(--focus-ring)] focus:outline-none transition-colors cursor-pointer ${
               r.action === 'Corrected'
                 ? 'text-emerald-700 dark:text-[var(--success)]'
                 : r.action === 'Incorrect Status'
@@ -553,14 +555,15 @@ const PackageAuditPage = () => {
         header: 'User Remark',
         accessor: 'remark',
         sortable: true,
-        headerClassName: 'whitespace-nowrap min-w-[220px]',
+        draggable: false,
+        headerClassName: 'whitespace-nowrap min-w-[200px]',
         render: (r) => (
           <textarea
-            rows={2}
+            rows={1}
             value={r.remark || ''}
             onChange={(e) => handleRecordChange(r, 'remark', e.target.value)}
             placeholder="Enter remark..."
-            className="w-full bg-white dark:bg-[var(--bg-elevated)] border border-slate-300 dark:border-[var(--border-strong)] rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-[var(--text-primary)] placeholder-slate-400 dark:placeholder-[var(--text-disabled)] focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[42px]"
+            className="w-full bg-white dark:bg-[var(--bg-elevated)] border border-black/20 dark:border-[var(--border-strong)] rounded-md px-2 py-1 text-xs text-slate-800 dark:text-[var(--text-primary)] placeholder-slate-400 dark:placeholder-[var(--text-disabled)] focus:ring-1 focus:ring-[var(--focus-ring)] focus:border-[var(--focus-ring)] focus:outline-none transition-all resize-y min-h-[30px] leading-tight"
           />
         ),
         category: 'Audit'
@@ -579,13 +582,53 @@ const PackageAuditPage = () => {
     if (!allAvailableAuditColumns || allAvailableAuditColumns.length === 0) return [];
     const activeKeys = selectedColumnKeys && selectedColumnKeys.length > 0 ? selectedColumnKeys : DEFAULT_SELECTED_COLUMNS;
     const colMap = new Map(allAvailableAuditColumns.map((c) => [c.accessor, c]));
-    return activeKeys.map((k) => colMap.get(k)).filter(Boolean);
+
+    // Middle/non-fixed columns in current configured order (excluding 'action' and 'remark')
+    const nonFixedCols = activeKeys
+      .filter((k) => k !== 'action' && k !== 'remark')
+      .map((k) => colMap.get(k))
+      .filter(Boolean);
+
+    const isActionVisible = activeKeys.includes('action');
+    const isRemarkVisible = activeKeys.includes('remark');
+
+    const fixedEndCols = [];
+    if (isActionVisible && colMap.has('action')) {
+      const baseActionCol = colMap.get('action');
+      const rightOffset = isRemarkVisible ? 200 : 0;
+      fixedEndCols.push({
+        ...baseActionCol,
+        draggable: false,
+        headerClassName: `sticky top-0 z-30 bg-[#24a1dd] text-white border-l border-black/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.headerClassName || ''}`,
+        cellClassName: `sticky z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-l border-black/20 dark:border-white/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] min-w-[140px] w-[140px] max-w-[140px] ${baseActionCol.cellClassName || ''}`,
+        style: { right: `${rightOffset}px`, width: '140px', minWidth: '140px', maxWidth: '140px' },
+        cellStyle: { right: `${rightOffset}px`, width: '140px', minWidth: '140px', maxWidth: '140px' }
+      });
+    }
+
+    if (isRemarkVisible && colMap.has('remark')) {
+      const baseRemarkCol = colMap.get('remark');
+      fixedEndCols.push({
+        ...baseRemarkCol,
+        draggable: false,
+        headerClassName: `sticky top-0 right-0 z-30 bg-[#24a1dd] text-white border-l border-black/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.headerClassName || ''}`,
+        cellClassName: `sticky right-0 z-10 bg-white dark:bg-[var(--bg-surface)] group-hover:bg-slate-50 dark:group-hover:bg-[var(--bg-elevated)] border-l border-black/20 dark:border-white/20 shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.08)] min-w-[200px] w-[200px] max-w-[200px] ${baseRemarkCol.cellClassName || ''}`,
+        style: { right: '0px', width: '200px', minWidth: '200px', maxWidth: '200px' },
+        cellStyle: { right: '0px', width: '200px', minWidth: '200px', maxWidth: '200px' }
+      });
+    }
+
+    return [...nonFixedCols, ...fixedEndCols];
   }, [allAvailableAuditColumns, selectedColumnKeys]);
 
   const handleColumnOrderChange = async (newOrderedKeys) => {
-    setSelectedColumnKeys(newOrderedKeys);
+    const nonFixed = newOrderedKeys.filter((k) => k !== 'action' && k !== 'remark');
+    const finalKeys = [...nonFixed];
+    if (newOrderedKeys.includes('action')) finalKeys.push('action');
+    if (newOrderedKeys.includes('remark')) finalKeys.push('remark');
+    setSelectedColumnKeys(finalKeys);
     try {
-      await userPreferencesService.saveColumnPreferences('package_audit', newOrderedKeys);
+      await userPreferencesService.saveColumnPreferences('package_audit', finalKeys);
       notify.success('Column order updated');
     } catch (e) {
       console.error('Failed to save reordered columns:', e);
@@ -593,11 +636,11 @@ const PackageAuditPage = () => {
   };
 
   const customHeaderControls = (
-    <div className="flex items-center gap-3">
-      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] border border-[var(--border)] px-3.5 py-1.5 rounded-xl hover:bg-[var(--bg-muted)] transition-all select-none shadow-2xs">
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <label className="inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] border border-[var(--border)] px-2.5 sm:px-3.5 py-1.5 rounded-xl hover:bg-[var(--bg-muted)] transition-all select-none shadow-2xs">
         <input
           type="checkbox"
-          className="rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)] h-4 w-4 cursor-pointer accent-[var(--primary)]"
+          className="rounded border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--focus-ring)] h-3.5 w-3.5 sm:h-4 sm:w-4 cursor-pointer accent-[var(--primary)]"
           checked={showAll}
           onChange={(e) => setShowAll(e.target.checked)}
         />
@@ -607,12 +650,13 @@ const PackageAuditPage = () => {
         <button
           type="button"
           onClick={() => setShowManageColumnsModal(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold rounded-xl hover:bg-[var(--bg-muted)] transition-all shadow-2xs cursor-pointer select-none"
+          className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold rounded-xl hover:bg-[var(--bg-muted)] transition-all shadow-2xs cursor-pointer select-none"
           aria-label="Manage Columns"
         >
           <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
+          <span className="hidden sm:inline">Columns</span>
           <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[var(--primary-soft)] text-[var(--primary)] rounded-full border border-[var(--primary)]/30">
             {visibleAuditColumns.length}/{allAvailableAuditColumns.length}
           </span>
@@ -628,8 +672,8 @@ const PackageAuditPage = () => {
       {/* Main Page Container */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Top Control Bar */}
-        <div className="px-3 sm:px-6 py-2 sm:py-2.5 border-b border-[var(--border)] bg-[var(--bg-header)] flex items-center justify-between flex-shrink-0 shadow-2xs z-10 gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="px-3 sm:px-6 py-2 sm:py-2.5 border-b border-[var(--border)] bg-[var(--bg-header)] flex flex-col sm:flex-row sm:items-center sm:justify-between flex-shrink-0 shadow-2xs z-10 gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
@@ -642,25 +686,27 @@ const PackageAuditPage = () => {
               </svg>
             </button>
 
-            <div className="w-8 h-8 rounded-lg bg-[var(--success-bg)] border border-[var(--success)]/30 text-[var(--success)] flex items-center justify-center shadow-2xs shrink-0">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--success-bg)] border border-[var(--success)]/30 text-[var(--success)] flex items-center justify-center shadow-2xs shrink-0">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
 
-            <div className="min-w-0">
-              <h1 className="text-xs sm:text-base font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-1.5 sm:gap-2 min-w-0">
-                <span>Package Audit:</span>
-                <span className="font-semibold text-[var(--text-primary)] max-w-[120px] sm:max-w-[260px] md:max-w-none truncate">{packageDetails?.package?.filename || (detailsLoading ? 'Loading...' : 'Package')}</span>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xs sm:text-base font-bold text-[var(--text-primary)] flex items-center flex-wrap gap-1 sm:gap-2 min-w-0 leading-tight">
+                <span className="hidden xs:inline">Package Audit:</span>
+                <span className="font-semibold text-[var(--text-primary)] truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[260px] md:max-w-none" title={packageDetails?.package?.filename}>
+                  {packageDetails?.package?.filename || (detailsLoading ? 'Loading...' : 'Package')}
+                </span>
                 {loanId && (
-                  <span className="font-semibold text-[var(--text-secondary)] text-[11px] sm:text-sm">
-                    (Loan Id - {loanId})
+                  <span className="font-semibold text-[var(--text-secondary)] text-[11px] sm:text-sm whitespace-nowrap">
+                    (ID: {loanId})
                   </span>
                 )}
               </h1>
               {localRecords.length > 0 && (
-                <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-0.5">
-                  <span>Total: <strong>{localRecords.length}</strong> fields</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--text-secondary)] mt-0.5">
+                  <span>Total: <strong>{localRecords.length}</strong></span>
                   <span>•</span>
                   <span className="text-[var(--text-secondary)] font-medium">
                     Showing {modalRecordsFiltered.length} {showAll ? '(All)' : '(Invalid only)'}
@@ -671,13 +717,13 @@ const PackageAuditPage = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2.5 shrink-0 w-full sm:w-auto pt-1 sm:pt-0 border-t border-[var(--border)]/50 sm:border-t-0">
             <Tooltip text="Download Excel Report" position="bottom">
               <button
                 type="button"
                 onClick={handleDownloadExcel}
                 disabled={detailsLoading || !packageDetails}
-                className="inline-flex items-center justify-center p-2 sm:p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)]/40 text-[var(--success)] disabled:opacity-50 font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                className="inline-flex items-center justify-center p-2 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--success-bg)] hover:border-[var(--success)]/40 text-[var(--success)] disabled:opacity-50 font-semibold rounded-xl text-xs transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                 aria-label="Download Excel Report"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -689,7 +735,7 @@ const PackageAuditPage = () => {
               type="button"
               onClick={handleDiscard}
               disabled={updateLoading || detailsLoading}
-              className="px-3 py-1.5 border border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] disabled:opacity-50 text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 border border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-muted)] disabled:opacity-50 text-[var(--text-primary)] font-semibold rounded-xl text-xs transition-all cursor-pointer text-center"
             >
               Discard
             </button>
@@ -697,21 +743,21 @@ const PackageAuditPage = () => {
               type="button"
               onClick={handleUpdate}
               disabled={updateLoading || detailsLoading}
-              className="px-4 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center gap-2 transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-white font-semibold rounded-xl text-xs shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center"
             >
               {updateLoading && (
                 <svg className="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4}></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               )}
-              {updateLoading ? 'Updating...' : 'Update'}
+              <span>{updateLoading ? 'Saving...' : 'Update'}</span>
             </button>
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
               disabled={updateLoading}
-              className="px-3.5 py-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-xl text-xs sm:text-sm transition-all cursor-pointer"
+              className="px-2.5 sm:px-3.5 py-1.5 border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-xl text-xs transition-all cursor-pointer"
             >
               Close
             </button>
@@ -788,40 +834,40 @@ const PackageAuditPage = () => {
               </div>
             ) : (
               /* TAB 2: SUMMARY SHEET */
-              <div className="flex-1 bg-[var(--bg-app)] p-6 sm:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
-                <div className="max-w-5xl mx-auto space-y-8">
+              <div className="flex-1 bg-[var(--bg-app)] p-3 sm:p-6 lg:p-8 overflow-y-auto smooth-scroll custom-scrollbar">
+                <div className="max-w-5xl mx-auto space-y-4 sm:space-y-8">
                   {/* General Summary Card */}
-                  <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-6">General Statistics</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                      <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-[var(--text-primary)]">{packageDetails.summary?.["Total Fields"] ?? 0}</div>
-                        <div className="text-xs text-[var(--text-secondary)] mt-1 font-semibold">Total Fields</div>
+                  <div className="bg-[var(--bg-surface)] rounded-2xl sm:rounded-3xl border border-[var(--border)] shadow-sm p-3.5 sm:p-6">
+                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3.5 sm:mb-6">General Statistics</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-6">
+                      <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center">
+                        <div className="text-xl sm:text-3xl font-extrabold text-[var(--text-primary)]">{packageDetails.summary?.["Total Fields"] ?? 0}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--text-secondary)] mt-0.5 sm:mt-1 font-semibold">Total Fields</div>
                       </div>
-                      <div className="bg-[var(--success-bg)] border border-[var(--success)]/30 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-[var(--success)]">{packageDetails.summary?.["Final Valid"] ?? 0}</div>
-                        <div className="text-xs text-[var(--success)] mt-1 font-semibold">Final Valid</div>
+                      <div className="bg-[var(--success-bg)] border border-[var(--success)]/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center">
+                        <div className="text-xl sm:text-3xl font-extrabold text-[var(--success)]">{packageDetails.summary?.["Final Valid"] ?? 0}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--success)] mt-0.5 sm:mt-1 font-semibold">Final Valid</div>
                       </div>
-                      <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-[var(--error)]">{packageDetails.summary?.["Final Invalid"] ?? 0}</div>
-                        <div className="text-xs text-[var(--error)] mt-1 font-semibold">Final Invalid</div>
+                      <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center">
+                        <div className="text-xl sm:text-3xl font-extrabold text-[var(--error)]">{packageDetails.summary?.["Final Invalid"] ?? 0}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--error)] mt-0.5 sm:mt-1 font-semibold">Final Invalid</div>
                       </div>
-                      <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 rounded-2xl p-4 text-center">
-                        <div className="text-3xl font-extrabold text-[var(--warning)]">{packageDetails.summary?.["Review Required"] ?? 0}</div>
-                        <div className="text-xs text-[var(--warning)] mt-1 font-semibold">Review Required</div>
+                      <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center">
+                        <div className="text-xl sm:text-3xl font-extrabold text-[var(--warning)]">{packageDetails.summary?.["Review Required"] ?? 0}</div>
+                        <div className="text-[10px] sm:text-xs text-[var(--warning)] mt-0.5 sm:mt-1 font-semibold">Review Required</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Detailed Analysis Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-8">
                     {/* Dictionary Matches */}
-                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
+                    <div className="bg-[var(--bg-surface)] rounded-2xl sm:rounded-3xl border border-[var(--border)] shadow-sm p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
                         Dictionary Match Checks ({packageDetails.summary?.["Total Fields"] ?? 0} Total)
                       </h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center text-sm">
+                      <div className="space-y-2.5 sm:space-y-3">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Matched Fields</span>
                           <span className="font-bold text-[var(--success)]">{packageDetails.summary?.["Matched"] ?? 0}</span>
                         </div>
@@ -837,7 +883,7 @@ const PackageAuditPage = () => {
                             }}
                           />
                         </div>
-                        <div className="flex justify-between items-center text-sm pt-2">
+                        <div className="flex justify-between items-center text-xs sm:text-sm pt-1">
                           <span className="text-[var(--text-secondary)] font-semibold">Unmatched Fields</span>
                           <span className="font-bold text-[var(--error)]">{packageDetails.summary?.["Unmatched"] ?? 0}</span>
                         </div>
@@ -845,20 +891,20 @@ const PackageAuditPage = () => {
                     </div>
 
                     {/* Data Type Checks */}
-                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
+                    <div className="bg-[var(--bg-surface)] rounded-2xl sm:rounded-3xl border border-[var(--border)] shadow-sm p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
                         Data Type Validation ({((packageDetails.summary?.["Type Pass"] ?? 0) + (packageDetails.summary?.["Type Fail"] ?? 0) + (packageDetails.summary?.["Blank Values"] ?? 0))} Total)
                       </h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center text-sm">
+                      <div className="space-y-2.5 sm:space-y-3">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Type Check Pass</span>
                           <span className="font-bold text-[var(--success)]">{packageDetails.summary?.["Type Pass"] ?? 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Type Check Fail</span>
                           <span className="font-bold text-[var(--error)]">{packageDetails.summary?.["Type Fail"] ?? 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Blank Values (N/A)</span>
                           <span className="font-bold text-[var(--text-disabled)]">{packageDetails.summary?.["Blank Values"] ?? 0}</span>
                         </div>
@@ -866,24 +912,24 @@ const PackageAuditPage = () => {
                     </div>
 
                     {/* Enum Checks */}
-                    <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
+                    <div className="bg-[var(--bg-surface)] rounded-2xl sm:rounded-3xl border border-[var(--border)] shadow-sm p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+                      <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border)] pb-2">
                         Enumeration Checks ({packageDetails.summary?.["Total Enum"] ?? 0} Total)
                       </h4>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Enum Valid</span>
                           <span className="font-bold text-[var(--success)]">{packageDetails.summary?.["Enum Pass"] ?? 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-[var(--text-secondary)] font-semibold">Format Variance (Warnings)</span>
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
+                          <span className="text-[var(--text-secondary)] font-semibold">Format Variance</span>
                           <span className="font-bold text-[var(--warning)]">{packageDetails.summary?.["Enum Format Variance"] ?? 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Enum Fail</span>
                           <span className="font-bold text-[var(--error)]">{packageDetails.summary?.["Enum Fail"] ?? 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-[var(--text-secondary)] font-semibold">Enum No List</span>
                           <span className="font-bold text-[var(--text-disabled)]">{packageDetails.summary?.["Enum No List"] ?? 0}</span>
                         </div>
@@ -892,19 +938,19 @@ const PackageAuditPage = () => {
 
                     {/* Condition Validation */}
                     {condSummary && (
-                      <div className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border)] shadow-sm p-6 space-y-4 md:col-span-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                      <div className="bg-[var(--bg-surface)] rounded-2xl sm:rounded-3xl border border-[var(--border)] shadow-sm p-3.5 sm:p-6 space-y-3 sm:space-y-4 md:col-span-3">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[var(--border)] pb-2">
+                          <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                             Condition Validation ({condSummary.condRulesApplied} Rules Applied)
                           </h4>
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                          <span className="text-[11px] sm:text-xs font-medium text-[var(--text-secondary)]">
                             {condSummary.condTotal} Total Fields Evaluated
                           </span>
                         </div>
 
                         {condSummary.condRulesApplied > 0 && (
                           <div className="space-y-1.5">
-                            <div className="flex justify-between text-xs font-semibold text-[var(--text-primary)]">
+                            <div className="flex justify-between text-[11px] sm:text-xs font-semibold text-[var(--text-primary)]">
                               <span>Applied Rules Outcome</span>
                               <span>{condSummary.condValid + condSummary.condValidPartial} / {condSummary.condRulesApplied} Passing</span>
                             </div>
@@ -933,43 +979,43 @@ const PackageAuditPage = () => {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                          <div className="bg-[var(--success-bg)] border border-[var(--success)]/30 rounded-xl p-3">
-                            <div className="text-xs text-[var(--success)] font-semibold">Valid</div>
-                            <div className="text-xl font-bold text-[var(--success)] mt-0.5">{condSummary.condValid}</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 pt-1 sm:pt-2">
+                          <div className="bg-[var(--success-bg)] border border-[var(--success)]/30 rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--success)] font-semibold">Valid</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--success)] mt-0.5">{condSummary.condValid}</div>
                           </div>
-                          <div className="bg-[#2DD4BF]/12 border border-[#2DD4BF]/30 rounded-xl p-3">
-                            <div className="text-xs text-[#2DD4BF] font-semibold">Valid - Partial</div>
-                            <div className="text-xl font-bold text-[#2DD4BF] mt-0.5">{condSummary.condValidPartial}</div>
+                          <div className="bg-[#2DD4BF]/12 border border-[#2DD4BF]/30 rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[#2DD4BF] font-semibold">Valid - Partial</div>
+                            <div className="text-base sm:text-xl font-bold text-[#2DD4BF] mt-0.5">{condSummary.condValidPartial}</div>
                           </div>
-                          <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 rounded-xl p-3">
-                            <div className="text-xs text-[var(--error)] font-semibold">Invalid</div>
-                            <div className="text-xl font-bold text-[var(--error)] mt-0.5">{condSummary.condInvalid}</div>
+                          <div className="bg-[var(--error-bg)] border border-[var(--error)]/30 rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--error)] font-semibold">Invalid</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--error)] mt-0.5">{condSummary.condInvalid}</div>
                           </div>
-                          <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 rounded-xl p-3">
-                            <div className="text-xs text-[var(--warning)] font-semibold">Not Automated</div>
-                            <div className="text-xl font-bold text-[var(--warning)] mt-0.5">{condSummary.condNotAutomated}</div>
+                          <div className="bg-[var(--warning-bg)] border border-[var(--warning)]/30 rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--warning)] font-semibold">Not Automated</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--warning)] mt-0.5">{condSummary.condNotAutomated}</div>
                           </div>
-                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-3">
-                            <div className="text-xs text-[var(--text-secondary)] font-semibold">Condition Not Met</div>
-                            <div className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condNotMet}</div>
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--text-secondary)] font-semibold">Condition Not Met</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condMet || condSummary.condNotMet}</div>
                           </div>
-                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-3">
-                            <div className="text-xs text-[var(--text-secondary)] font-semibold">No Rule</div>
-                            <div className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condNoRule}</div>
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--text-secondary)] font-semibold">No Rule</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condNoRule}</div>
                           </div>
-                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-3">
-                            <div className="text-xs text-[var(--text-secondary)] font-semibold">Blank Value</div>
-                            <div className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condBlank}</div>
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--text-secondary)] font-semibold">Blank Value</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condBlank}</div>
                           </div>
-                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-3">
-                            <div className="text-xs text-[var(--text-secondary)] font-semibold">Informational</div>
-                            <div className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condInfo}</div>
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl p-2.5 sm:p-3">
+                            <div className="text-[10px] sm:text-xs text-[var(--text-secondary)] font-semibold">Informational</div>
+                            <div className="text-base sm:text-xl font-bold text-[var(--text-primary)] mt-0.5">{condSummary.condInfo}</div>
                           </div>
                           {condSummary.condUnclassified > 0 && (
-                            <div className="bg-[#C084FC]/12 border border-[#C084FC]/30 rounded-xl p-3">
-                              <div className="text-xs text-[#C084FC] font-semibold">Unclassified</div>
-                              <div className="text-xl font-bold text-[#C084FC] mt-0.5">{condSummary.condUnclassified}</div>
+                            <div className="bg-[#C084FC]/12 border border-[#C084FC]/30 rounded-xl p-2.5 sm:p-3">
+                              <div className="text-[10px] sm:text-xs text-[#C084FC] font-semibold">Unclassified</div>
+                              <div className="text-base sm:text-xl font-bold text-[#C084FC] mt-0.5">{condSummary.condUnclassified}</div>
                             </div>
                           )}
                         </div>
@@ -984,12 +1030,12 @@ const PackageAuditPage = () => {
 
         {/* Bottom Worksheet Tab Selector */}
         {!detailsLoading && !detailsError && packageDetails && (
-          <div className="h-10 bg-[var(--bg-header)] border-t border-[var(--border)] flex items-center px-4 flex-shrink-0 select-none">
-            <div className="flex items-center h-full gap-1">
+          <div className="h-10 bg-[var(--bg-header)] border-t border-[var(--border)] flex items-center px-2 sm:px-4 flex-shrink-0 select-none">
+            <div className="flex items-center h-full gap-1 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setActiveSheet('results')}
-                className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3 sm:px-5 h-[34px] flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
                   activeSheet === 'results'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
                     : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
@@ -998,13 +1044,13 @@ const PackageAuditPage = () => {
                 <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                Result Sheet
+                <span>Result Sheet</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveSheet('summary')}
-                className={`px-5 h-[34px] flex items-center gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3 sm:px-5 h-[34px] flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-bold transition-all rounded-t-lg cursor-pointer ${
                   activeSheet === 'summary'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-t-2 border-t-[var(--primary)] border-x border-[var(--border)] shadow-xs'
                     : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
@@ -1013,7 +1059,7 @@ const PackageAuditPage = () => {
                 <svg className="w-3.5 h-3.5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Summary Sheet
+                <span>Summary Sheet</span>
               </button>
             </div>
           </div>
@@ -1027,8 +1073,12 @@ const PackageAuditPage = () => {
         allColumns={allAvailableAuditColumns}
         selectedColumnKeys={selectedColumnKeys && selectedColumnKeys.length > 0 ? selectedColumnKeys : DEFAULT_SELECTED_COLUMNS}
         onApply={async (newKeys) => {
-          setSelectedColumnKeys(newKeys);
-          const res = await userPreferencesService.saveColumnPreferences('package_audit', newKeys);
+          const nonFixed = newKeys.filter((k) => k !== 'action' && k !== 'remark');
+          const finalKeys = [...nonFixed];
+          if (newKeys.includes('action')) finalKeys.push('action');
+          if (newKeys.includes('remark')) finalKeys.push('remark');
+          setSelectedColumnKeys(finalKeys);
+          const res = await userPreferencesService.saveColumnPreferences('package_audit', finalKeys);
           if (res) {
             notify.success('Column preferences saved to database successfully!');
           } else {

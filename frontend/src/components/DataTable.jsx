@@ -633,6 +633,15 @@ export const DataTable = ({
       return;
     }
 
+    const targetCol = columns[targetIndex];
+    const sourceCol = columns[draggedHeaderIdx];
+    if (targetCol?.draggable === false || sourceCol?.draggable === false || targetCol?.accessor === 'sno' || targetCol?.accessor === 'selection') {
+      setDraggedHeaderIdx(null);
+      setDragOverHeaderIdx(null);
+      setDragOverSide(null);
+      return;
+    }
+
     const fromIndex = draggedHeaderIdx;
     let toIndex = targetIndex;
     if (dragOverSide === 'left') {
@@ -1020,6 +1029,56 @@ export const DataTable = ({
     }
   }, [serverSide, searchTerm, columnFilters, itemsPerPage]);
 
+  // Mobile Card View Column Categorizations
+  const snoCol = useMemo(() => {
+    return columns.find(c => 
+      c.accessor === 'sno' || 
+      c.accessor === 'selection' || 
+      (c.accessor === 'id' && (c.header === 'S.No' || c.header === 'S.No.'))
+    );
+  }, [columns]);
+
+  const actionCol = useMemo(() => {
+    return columns.find(c => c.accessor === 'actions' || c.accessor === 'action');
+  }, [columns]);
+
+  const primaryCol = useMemo(() => {
+    return columns.find(c => 
+      c.accessor !== 'sno' && 
+      c.accessor !== 'selection' && 
+      !(c.accessor === 'id' && (c.header === 'S.No' || c.header === 'S.No.')) && 
+      c.accessor !== 'actions' && 
+      c.accessor !== 'action'
+    ) || columns[0];
+  }, [columns]);
+
+  const statusCol = useMemo(() => {
+    return columns.find(c => 
+      c !== primaryCol &&
+      c !== snoCol &&
+      c !== actionCol &&
+      (c.accessor === 'status' || 
+       c.accessor === 'final_result' || 
+       c.accessor === 'result' ||
+       c.accessor === 'role' ||
+       c.accessor === 'ingestion_mode')
+    );
+  }, [columns, primaryCol, snoCol, actionCol]);
+
+  const cardBodyCols = useMemo(() => {
+    return columns.filter(c => 
+      c !== snoCol && 
+      c !== actionCol && 
+      c !== primaryCol &&
+      c !== statusCol &&
+      c.accessor !== 'selection'
+    );
+  }, [columns, snoCol, actionCol, primaryCol, statusCol]);
+
+  const sortableCols = useMemo(() => {
+    return columns.filter(c => c.sortable && c.accessor && c.accessor !== 'sno' && c.accessor !== 'actions');
+  }, [columns]);
+
   return (
     <div className={`w-full flex flex-col min-h-0 ${className}`}>
       {/* Search, Filter Controls & Header Row */}
@@ -1098,7 +1157,242 @@ export const DataTable = ({
           className="overflow-x-auto overflow-y-auto flex-1 min-h-0 smooth-scroll custom-scrollbar scroll-smooth overscroll-contain"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <table className="w-full text-left border-collapse min-w-[720px] sm:min-w-[850px] lg:min-w-[950px]">
+          {/* ═══════════════════════════════════════════════════════════
+              MOBILE CARD VIEW (< md breakpoints)
+             ═══════════════════════════════════════════════════════════ */}
+          <div className="md:hidden flex flex-col">
+            {/* Mobile Header / Quick Sort & Select-All Bar */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-[var(--bg-elevated)]/60 border-b border-[var(--border)] text-xs flex-wrap gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                {typeof snoCol?.header === 'function' && (
+                  <div className="flex items-center">
+                    {snoCol.header({ filteredData: sortedData })}
+                  </div>
+                )}
+                <span className="text-xs text-[var(--text-secondary)] font-medium">
+                  {totalEntries} {totalEntries === 1 ? 'record' : 'records'}
+                </span>
+              </div>
+
+              {sortableCols.length > 0 && (
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <label htmlFor="mobile-sort-select" className="text-[11px] text-[var(--text-disabled)] font-medium">Sort:</label>
+                  <select
+                    id="mobile-sort-select"
+                    value={sortConfig.key ? `${sortConfig.key}-${sortConfig.direction}` : ''}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setSortConfig({ key: null, direction: 'asc' });
+                      } else {
+                        const [k, d] = e.target.value.split('-');
+                        setSortConfig({ key: k, direction: d });
+                      }
+                    }}
+                    className="bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)] cursor-pointer"
+                    aria-label="Sort records on mobile"
+                  >
+                    <option value="">Default</option>
+                    {sortableCols.map((c) => {
+                      const name = typeof c.header === 'string' ? c.header : (c.headerTitle || c.accessor);
+                      return (
+                        <React.Fragment key={c.accessor}>
+                          <option value={`${c.accessor}-asc`}>{name} (Asc)</option>
+                          <option value={`${c.accessor}-desc`}>{name} (Desc)</option>
+                        </React.Fragment>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Cards Container */}
+            <div className="p-3 flex flex-col gap-3">
+              {loading && data.length === 0 ? (
+                /* Mobile Card Skeleton */
+                Array.from({ length: Math.min(defaultItemsPerPage || 5, 5) }).map((_, idx) => (
+                  <div key={`skel-card-${idx}`} className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-3.5 space-y-3 animate-pulse">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                        <div className="w-32 h-4 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                      </div>
+                      <div className="w-16 h-5 rounded-full bg-slate-200 dark:bg-[var(--border)]" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <div className="w-14 h-2.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                        <div className="w-20 h-3.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="w-14 h-2.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                        <div className="w-20 h-3.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="w-14 h-2.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                        <div className="w-24 h-3.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="w-14 h-2.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                        <div className="w-16 h-3.5 rounded bg-slate-200 dark:bg-[var(--border)]" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : paginatedData.length > 0 ? (
+                paginatedData.map((row, rowIndex) => {
+                  const currentKey = getRowKey(row, rowIndex);
+                  const isExpanded = Boolean(renderExpandedRow && currentExpandedKeys.has(currentKey));
+                  const globalIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+
+                  return (
+                    <div
+                      key={currentKey}
+                      onClick={(e) => handleRowClick(row, rowIndex, e)}
+                      className={`bg-[var(--bg-surface)] border rounded-xl p-3.5 shadow-2xs transition-all flex flex-col gap-2.5 ${
+                        isExpanded
+                          ? 'border-[var(--primary)]/60 bg-sky-50/20 dark:bg-[var(--primary-soft)]/20 ring-1 ring-[var(--primary)]/20'
+                          : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+                      } ${(expandOnRowClick || onRowClick) ? 'cursor-pointer active:scale-[0.99]' : ''}`}
+                    >
+                      {/* Top Bar: Primary / Title, S.No, Status Badge, Expand Toggle */}
+                      <div className="flex items-start justify-between gap-2.5 pb-2 border-b border-[var(--border)]/70">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          {snoCol && (
+                            <div className="shrink-0 flex items-center">
+                              {snoCol.render
+                                ? snoCol.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded)
+                                : <span className="font-mono text-xs font-semibold text-[var(--text-secondary)]">#{globalIndex + 1}</span>}
+                            </div>
+                          )}
+                          {primaryCol && (
+                            <div className="min-w-0 flex-1 font-semibold text-sm text-[var(--text-primary)]">
+                              {primaryCol.render
+                                ? primaryCol.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded)
+                                : (row[primaryCol.accessor] ?? '-')}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {statusCol && (
+                            <div className="shrink-0">
+                              {statusCol.render
+                                ? statusCol.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded)
+                                : <span className="text-xs font-semibold">{row[statusCol.accessor] ?? ''}</span>}
+                            </div>
+                          )}
+                          {renderExpandedRow && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRowExpandToggle(currentKey, row, rowIndex);
+                              }}
+                              className={`p-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--bg-elevated)] transition-transform duration-200 ${
+                                isExpanded ? 'rotate-90 text-[var(--primary)] bg-[var(--primary-soft)]' : ''
+                              }`}
+                              aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Card Content Grid */}
+                      {cardBodyCols.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2.5 text-xs py-0.5">
+                          {cardBodyCols.map((col, cIdx) => {
+                            const headerLabel = typeof col.header === 'string'
+                              ? col.header
+                              : (col.headerTitle || col.accessor || '');
+                            if (!headerLabel) return null;
+
+                            const isWide =
+                              col.accessor === 'condition_text' ||
+                              col.accessor === 'condition_outcome' ||
+                              col.accessor === 'final_remarks' ||
+                              col.accessor === 'true_data' ||
+                              col.accessor === 'uploaded_at' ||
+                              col.accessor === 'email' ||
+                              col.accessor === 'action' ||
+                              col.accessor === 'remark';
+
+                            return (
+                              <div
+                                key={col.accessor || cIdx}
+                                className={`flex flex-col gap-1 ${isWide ? 'col-span-2' : 'col-span-1'}`}
+                                onClick={(e) => {
+                                  // Don't trigger card row click when interacting with form controls
+                                  if (col.accessor === 'action' || col.accessor === 'remark') {
+                                    e.stopPropagation();
+                                  }
+                                }}
+                              >
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                  {headerLabel}
+                                </span>
+                                <div className="text-xs font-medium text-[var(--text-primary)]">
+                                  {col.render
+                                    ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded)
+                                    : (row[col.accessor] ?? '-')}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Card Footer Actions */}
+                      {actionCol && (
+                        <div
+                          className="pt-2 border-t border-[var(--border)]/70 flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {actionCol.render
+                            ? actionCol.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded)
+                            : row[actionCol.accessor]}
+                        </div>
+                      )}
+
+                      {/* Expanded View Inside Card */}
+                      {isExpanded && renderExpandedRow && (
+                        <div className="pt-2.5 border-t border-[var(--border)] animate-in fade-in slide-in-from-top-1 duration-150">
+                          {renderExpandedRow(row, rowIndex, () => handleRowExpandToggle(currentKey, row, rowIndex), containerWidth)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                /* Mobile Empty State Card */
+                <div className="p-8 text-center text-slate-500 dark:text-[var(--text-secondary)] text-sm bg-[var(--bg-surface)] rounded-xl border border-[var(--border)]">
+                  {totalActiveFilters > 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-4">
+                      <span className="text-slate-600 dark:text-[var(--text-primary)] font-medium">No records match the current filters.</span>
+                      <button
+                        type="button"
+                        onClick={handleClearAllFilters}
+                        className="px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Clear All Filters
+                      </button>
+                    </div>
+                  ) : (
+                    emptyMessage
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════
+              DESKTOP & LAPTOP TABLE VIEW (>= md breakpoints)
+             ═══════════════════════════════════════════════════════════ */}
+          <table className="hidden md:table w-full text-left border-collapse border-b border-black/15 dark:border-white/15 min-w-[720px] sm:min-w-[850px] lg:min-w-[950px]">
             <thead className="sticky top-0 z-20 bg-[#24a1dd] shadow-xs">
               <tr className="bg-[#24a1dd] text-white text-xs sm:text-sm border-b border-[#1b8ec5]">
                 {columns.map((col, index) => {
@@ -1147,8 +1441,8 @@ export const DataTable = ({
                       onDragLeave={handleHeaderDragLeave}
                       onDrop={(e) => isColReorderable && handleHeaderDrop(e, index)}
                       onDragEnd={handleHeaderDragEnd}
-                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs' : 'px-3 sm:px-4 lg:px-6 py-2 sm:py-3.5 text-xs sm:text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#1b8ec5] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
-                      style={{ width: col.width || 'auto', ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
+                      className={`group/th sticky top-0 ${activeModalKey === key ? 'z-[999]' : 'z-20'} ${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} font-semibold transition-colors bg-[#24a1dd] text-white hover:bg-[#1e8ec5] ${showColumnBorders ? 'border-r border-[#167cae] last:border-r-0' : ''} ${isDraggingThis ? 'opacity-40 bg-[#1b8ec5]' : ''} ${isOverThis && dragOverSide === 'left' ? 'border-l-4 border-l-white bg-[#1e8ec5]' : ''} ${isOverThis && dragOverSide === 'right' ? 'border-r-4 border-r-white bg-[#1e8ec5]' : ''} ${col.headerClassName || ''}`}
+                      style={{ width: col.width || 'auto', ...(col.style || {}), ...(activeModalKey === key ? { zIndex: 999 } : {}) }}
                     >
                       <div className={`flex items-center justify-between gap-1.5 ${col.align === 'right' ? 'justify-end' : col.align === 'center' ? 'justify-center' : 'justify-start'}`}>
                         <div 
@@ -1265,7 +1559,7 @@ export const DataTable = ({
                     <React.Fragment key={currentKey}>
                       <tr
                         onClick={(e) => handleRowClick(row, rowIndex, e)}
-                        className={`group transition-colors duration-150 ${
+                        className={`group transition-colors duration-150 border-b border-black/10 dark:border-white/10 ${
                           rowIndex % 2 === 1 ? 'dark:bg-[var(--bg-muted)]' : 'dark:bg-[var(--bg-surface)]'
                         } ${
                           isExpanded
@@ -1276,7 +1570,8 @@ export const DataTable = ({
                         {columns.map((col, colIndex) => (
                           <td
                             key={colIndex}
-                            className={`${density === 'compact' ? 'px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs' : 'px-3 sm:px-4 lg:px-6 py-2 sm:py-3.5 text-xs sm:text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] leading-normal ${showColumnBorders ? 'border-r border-slate-200/60 dark:border-[var(--border)]/60 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                            className={`${density === 'compact' ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-3 py-2 text-xs sm:text-sm'} align-middle break-words text-slate-700 dark:text-[var(--text-primary)] leading-normal ${showColumnBorders ? 'border-r border-black/15 dark:border-white/15 last:border-r-0' : ''} ${col.cellClassName || ''} ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                            style={col.cellStyle || col.style || undefined}
                           >
                             {col.render ? col.render(row, rowIndex, (currentPage - 1) * itemsPerPage, isExpanded) : row[col.accessor]}
                           </td>
@@ -1318,52 +1613,97 @@ export const DataTable = ({
 
         {/* Pagination */}
         {pagination && totalEntries > 0 && (
-          <div className={`px-3 sm:px-6 ${density === 'compact' ? 'py-1.5 sm:py-2 text-xs' : 'py-2.5 sm:py-3 text-xs sm:text-sm'} border-t border-slate-200 dark:border-[var(--border)] flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-[var(--bg-elevated)] gap-2.5 sm:gap-3 flex-shrink-0 text-slate-600 dark:text-[var(--text-primary)]`}>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
-              <span>Show</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                className="border border-[var(--border-strong)] rounded px-2 py-1 focus:outline-none focus:border-[var(--focus-ring)] bg-[var(--bg-elevated)] text-[var(--text-primary)] text-xs sm:text-sm cursor-pointer"
-              >
-                {itemsPerPageOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-              <span>entries</span>
+          <div className={`px-3 sm:px-6 ${density === 'compact' ? 'py-2 sm:py-2.5 text-xs' : 'py-2.5 sm:py-3 text-xs sm:text-sm'} border-t border-slate-200 dark:border-[var(--border)] flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-[var(--bg-elevated)] gap-2.5 sm:gap-3 flex-shrink-0 text-slate-600 dark:text-[var(--text-primary)]`}>
+            {/* Mobile-optimized Pagination Bar: Top Row on mobile (entries per page + range info) */}
+            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-[11px] sm:text-xs">Show</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  className="border border-[var(--border-strong)] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)] bg-[var(--bg-surface)] text-[var(--text-primary)] text-xs font-medium cursor-pointer"
+                  aria-label="Rows per page"
+                >
+                  {itemsPerPageOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <span className="text-[11px] sm:text-xs">/ page</span>
+              </div>
+
+              {/* Range badge visible on mobile */}
+              <span className="sm:hidden text-[11px] font-semibold text-[var(--text-secondary)] bg-[var(--bg-surface)] px-2 py-1 rounded-md border border-[var(--border)]">
+                {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries}
+              </span>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-              <span className="text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries} entries
+            {/* Bottom Row on mobile: Desktop range info + Navigation Buttons */}
+            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+              <span className="hidden sm:inline text-xs sm:text-sm text-slate-600 dark:text-[var(--text-secondary)]">
+                Showing <strong>{((currentPage - 1) * itemsPerPage) + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, totalEntries)}</strong> of <strong>{totalEntries}</strong> entries
               </span>
-              <div className="flex items-center gap-1.5">
+
+              {/* Navigation controls: touch-friendly Previous / Page Status / Next */}
+              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1.5">
+                <Tooltip text="First page" position="top">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center text-xs font-medium"
+                    aria-label="First page"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </Tooltip>
+
                 <Tooltip text="Previous page" position="top">
                   <button
                     type="button"
                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="h-8 px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-1 text-xs font-semibold"
                     aria-label="Previous page"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
+                    <span className="hidden xs:inline">Prev</span>
                   </button>
                 </Tooltip>
-                <div className="flex items-center justify-center min-w-[32px] h-8 px-2 rounded-lg bg-[var(--primary)] text-white text-xs sm:text-sm font-semibold shadow-xs">
-                  {currentPage}
+
+                {/* Page indicator pill */}
+                <div className="flex items-center justify-center min-w-[70px] sm:min-w-[80px] h-8 px-2.5 rounded-lg bg-[var(--primary)] text-white text-xs sm:text-sm font-bold shadow-2xs select-none">
+                  <span>Page {currentPage} of {totalPages || 1}</span>
                 </div>
+
                 <Tooltip text="Next page" position="top">
                   <button
                     type="button"
                     onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage >= totalPages}
-                    className="p-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                    className="h-8 px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-1 text-xs font-semibold"
                     aria-label="Next page"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <span className="hidden xs:inline">Next</span>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </Tooltip>
+
+                <Tooltip text="Last page" position="top">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage >= totalPages}
+                    className="h-8 px-2 rounded-lg border border-slate-300 dark:border-[var(--border-strong)] text-slate-600 dark:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--bg-muted)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center text-xs font-medium"
+                    aria-label="Last page"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                     </svg>
                   </button>
                 </Tooltip>
