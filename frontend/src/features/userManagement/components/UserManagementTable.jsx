@@ -19,6 +19,15 @@ const STATUS_OPTIONS = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
+/** Safely parse dates, ensuring UTC timestamps without a timezone suffix are treated as UTC */
+const parseUtcDate = (dateVal) => {
+  if (!dateVal) return null;
+  if (typeof dateVal === 'string' && !dateVal.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(dateVal)) {
+    return new Date(dateVal + 'Z');
+  }
+  return new Date(dateVal);
+};
+
 export const UserManagementTable = () => {
   const { users, loading, error, fetchUsers, updateRole, updateStatus } = useUserStore();
   const { user: currentUser } = useAuth();
@@ -381,6 +390,25 @@ export const UserManagementTable = () => {
           </span>
         );
       }
+    },
+    {
+      header: 'Created At',
+      accessor: 'created_at',
+      sortable: true,
+      headerClassName: 'whitespace-nowrap min-w-[150px]',
+      cellClassName: 'whitespace-nowrap',
+      render: (u) => {
+        const parsed = parseUtcDate(u.created_at);
+        return (
+          <span className="text-[var(--text-secondary)] text-xs">
+            {parsed && !isNaN(parsed.getTime()) ? parsed.toLocaleString() : '-'}
+          </span>
+        );
+      },
+      sortValue: (u) => {
+        const parsed = parseUtcDate(u.created_at);
+        return parsed && !isNaN(parsed.getTime()) ? parsed.getTime() : 0;
+      },
     },
     {
       header: 'Actions',

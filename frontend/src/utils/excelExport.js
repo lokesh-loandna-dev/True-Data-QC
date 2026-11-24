@@ -293,6 +293,12 @@ export const exportUsersToExcel = ({
   const safeUsers = Array.isArray(users) ? users : [];
 
   const rows = safeUsers.map((u, idx) => {
+    const parsedCreated = u.created_at
+      ? (typeof u.created_at === 'string' && !u.created_at.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(u.created_at)
+          ? new Date(u.created_at + 'Z')
+          : new Date(u.created_at))
+      : null;
+
     const row = {
       'S.No': idx + 1,
       'Username': u.username ?? '',
@@ -305,11 +311,9 @@ export const exportUsersToExcel = ({
             .split(' ')
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' '),
-      'Status': u.status === 'active' ? 'Active' : u.status === 'rejected' ? 'Rejected' : 'Pending Approval'
+      'Status': u.status === 'active' ? 'Active' : u.status === 'rejected' ? 'Rejected' : 'Pending Approval',
+      'Created At': parsedCreated && !isNaN(parsedCreated.getTime()) ? parsedCreated.toLocaleString() : '-'
     };
-    if (u.created_at) {
-      row['Created At'] = u.created_at;
-    }
     return row;
   });
 

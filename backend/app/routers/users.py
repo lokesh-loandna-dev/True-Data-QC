@@ -33,9 +33,25 @@ def require_super_admin(user_id: int = Depends(get_current_user_id)):
         raise HTTPException(status_code=403, detail="Super Admin privileges required")
     return user
 
+def _format_utc_iso(dt_val):
+    """Serialize a database datetime (stored in UTC) as an ISO-8601 string with 'Z' suffix."""
+    if not dt_val:
+        return None
+    if isinstance(dt_val, str):
+        if not dt_val.endswith("Z") and "+" not in dt_val:
+            return dt_val + "Z"
+        return dt_val
+    iso = dt_val.isoformat()
+    if not iso.endswith("Z") and "+" not in iso:
+        return iso + "Z"
+    return iso
+
 @router.get("/")
 def get_users(admin_user: dict = Depends(require_admin)):
     users = get_all_users()
+    for u in users:
+        if u.get("created_at"):
+            u["created_at"] = _format_utc_iso(u["created_at"])
     return {"status": "success", "users": users}
 
 @router.put("/{user_id}/role")
