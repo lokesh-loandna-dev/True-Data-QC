@@ -527,40 +527,64 @@ const UploadPage = () => {
         )}
 
         {/* Ingestion Source Switcher Tabs */}
-        <div className="flex items-center gap-2 mb-6 w-full">
-          <div className="inline-flex p-1 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)] w-full sm:w-auto">
+        <div className="flex items-center mb-6 w-full">
+          <div
+            role="tablist"
+            aria-label="Ingestion source"
+            className="inline-flex items-center gap-1 p-1 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)] w-full sm:w-auto"
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={ingestionTab === 'api'}
               onClick={() => {
                 setIngestionTab('api');
                 setApiError('');
                 setError('');
               }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${
                 ingestionTab === 'api'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  ? 'bg-[var(--primary)] text-white font-semibold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/60 font-medium'
               }`}
             >
-              <svg className="w-4 h-4 text-[var(--text-secondary)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg
+                className={`w-4 h-4 shrink-0 transition-colors duration-150 ${
+                  ingestionTab === 'api' ? 'text-white' : 'text-[var(--text-secondary)]'
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span>Truedata via API</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={ingestionTab === 'file'}
               onClick={() => {
                 setIngestionTab('file');
                 setApiError('');
                 setError('');
               }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-md text-xs sm:text-sm transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${
                 ingestionTab === 'file'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border)] shadow-2xs font-semibold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  ? 'bg-[var(--primary)] text-white font-semibold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]/60 font-medium'
               }`}
             >
-              <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg
+                className={`w-4 h-4 shrink-0 transition-colors duration-150 ${
+                  ingestionTab === 'file' ? 'text-white' : 'text-[var(--text-secondary)]'
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <span>Direct File Upload</span>
