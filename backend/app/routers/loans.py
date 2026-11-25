@@ -1060,6 +1060,8 @@ def bulk_export_packages(
             "Action", "User Remark"
         }
 
+        excluded_dynamic_cols = {"all source", "all sources"}
+
         for r in records_rows:
             rec = dict(r)
             pkg = packages_dict.get(rec.get("package_id")) or {}
@@ -1075,6 +1077,9 @@ def bulk_export_packages(
 
             if isinstance(raw_dict, dict):
                 for k in raw_dict.keys():
+                    norm_k = re.sub(r"[\s_]+", " ", str(k).strip().lower())
+                    if norm_k in excluded_dynamic_cols:
+                        continue
                     if k not in standard_fixed_cols and k not in dynamic_cols_set:
                         dynamic_cols_set.add(k)
                         dynamic_cols_order.append(k)
